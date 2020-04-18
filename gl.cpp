@@ -1,10 +1,8 @@
 #include "stb.h"
 #include <stdio.h>
-
 #include <GLES3/gl32.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
-
 #include <stdlib.h>
 
 /*
@@ -54,7 +52,7 @@ int main(void) {
     glfwGetFramebufferSize(window, &width, &height);
 
     glViewport(0, 0, width, height);
-    glClearColor(1, 0, (frame & 255) / 255.0f, 1);
+    glClearColor(1, 20, (frame & 255) / 155.0f, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glfwSwapBuffers(window);
