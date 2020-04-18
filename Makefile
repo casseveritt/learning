@@ -9,7 +9,7 @@ all: gl
 H := $(wildcard *.h)
 
 gl: gl.cpp $(H) stb.o
-	g++ ${CFLAGS} gl.cpp stb.o -o gl
+	g++ ${CFLAGS} gl.cpp stb.o -o gl -lGLESv2 -lglfw
 
 stb.o: stb.cpp
 	g++ ${CFLAGS_NOWARN} stb.cpp -c
