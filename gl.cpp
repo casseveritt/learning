@@ -52,7 +52,7 @@ int main(void) {
     glfwGetFramebufferSize(window, &width, &height);
 
     glViewport(0, 0, width, height);
-    glClearColor(1, 20, (frame & 255) / 155.0f, 0);
+    glClearColor(0.01f, 20, (frame & 255) / 155.0f, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glfwSwapBuffers(window);
