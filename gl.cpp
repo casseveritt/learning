@@ -86,15 +86,17 @@ int main(void) {
   GLuint vert_buffer;
   glGenBuffers( 1, &vert_buffer);
   glBindBuffer( GL_ARRAY_BUFFER, vert_buffer );
-  glBufferData( GL_ARRAY_BUFFER, sizeof( vert2d ), vert2d, GL_STATIC_DRAW);
+  glBufferData( GL_ARRAY_BUFFER, sizeof(vert2d), vert2d, GL_DYNAMIC_DRAW);
 
   GLint pos_loc = glGetAttribLocation(program, "pos");
   glVertexAttribPointer( static_cast<GLuint>(pos_loc), 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), static_cast<void*>(0));
   glEnableVertexAttribArray( static_cast<GLuint>(pos_loc) );
 
   int frame = 0;
-  float mov = 2.0;
+  float x = 2.0;
+  float y = 2.0;
   bool dir = true;
+  bool lorr = true;
   while (!glfwWindowShouldClose(window)) {
     int width, height;
 
@@ -107,14 +109,24 @@ int main(void) {
     glUseProgram(program);
     glDrawArrays( GL_TRIANGLES, 0, 3);
 
-    if(frame % 5 == 0){
-      if(mov == 2.0)dir = false;
-      if(mov == 0.0)dir = true;
-      if(dir)mov+=0.025;
-      else mov-=0.025;
-      vert2d[1][0] = mov-1.0f;
-      vert2d[2][1] = mov-1.0f;
-      glBufferSubData(GL_ARRAY_BUFFER,sizeof(vert2d),vert2d,GL_STATIC_DRAW);
+    if(frame % 2 == 0){
+      if(dir){
+        if(lorr)x-=0.025;
+        else x+=0.025;
+        if(x<=0.0 || x>=2.0){
+          dir=false;
+        }
+      }else{
+        if(lorr)y-=0.025;
+        else y+=0.025;
+        if(y<=0.0 || y>=2.0){
+          dir=true;
+          lorr = !lorr;
+        }
+      }
+      vert2d[2] = x-1.0f;
+      vert2d[5] = y-1.0f;
+      glBufferSubData(GL_ARRAY_BUFFER,0,sizeof(vert2d),vert2d);
     }
 
     glfwSwapBuffers(window);
