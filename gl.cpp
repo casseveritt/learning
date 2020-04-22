@@ -93,17 +93,29 @@ int main(void) {
   glEnableVertexAttribArray( static_cast<GLuint>(pos_loc) );
 
   int frame = 0;
+  float mov = 2.0;
+  bool dir = true;
   while (!glfwWindowShouldClose(window)) {
     int width, height;
 
     glfwGetFramebufferSize(window, &width, &height);
 
     glViewport(0, 0, width, height);
-    glClearColor((frame & 255) * 255.0f, 20, (frame & 255) / 155.0f, 0);
+    glClearColor(0.5, 20, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(program);
     glDrawArrays( GL_TRIANGLES, 0, 3);
+
+    if(frame % 5 == 0){
+      if(mov == 2.0)dir = false;
+      if(mov == 0.0)dir = true;
+      if(dir)mov+=0.025;
+      else mov-=0.025;
+      vert2d[1][0] = mov-1.0f;
+      vert2d[2][1] = mov-1.0f;
+      glBufferSubData(GL_ARRAY_BUFFER,sizeof(vert2d),vert2d,GL_STATIC_DRAW);
+    }
 
     glfwSwapBuffers(window);
     glfwPollEvents();
