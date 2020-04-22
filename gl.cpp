@@ -124,7 +124,7 @@ int main(void) {
     glUseProgram(program);
     glDrawArrays( GL_TRIANGLES, 0, 3);
 
-    if(frame % 5 == 0){
+    if(frame % 1 == 0){
       if(dir){
         if(lorr)x-=0.0125;
         else x+=0.0125;
@@ -165,6 +165,7 @@ int main(void) {
       }
     }
     glBufferSubData(GL_ARRAY_BUFFER,0,sizeof(pos),pos);
+    glBufferSubData(GL_ARRAY_BUFFER,sizeof(pos),sizeof(col),col);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
