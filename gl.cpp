@@ -1,11 +1,14 @@
 #include "glprog.h"
-
+#include "linear.h"
 #include "stb.h"
 #include <GLES3/gl32.h>
 #include <stdio.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <stdlib.h>
+#include <math.h>
+
+using namespace r3;
 
 /*
   You need dev packages to build and run this:
@@ -15,29 +18,29 @@
 
 static const char *vertex_shader_text =
     "#version 300 es\n"
-    "in highp vec2 pos;\n"
+    "in highp vec3 pos;\n"
     "in highp vec3 col;\n"
     "out highp vec3 outcol;\n"
     "void main()\n"
     "{\n"
-    "    gl_Position = vec4(pos, 0.0, 1.0);\n"
+    "    gl_Position = vec4(pos, 1.0);\n"
     "    outcol = col;\n"
     "}\n";
 
-static const char *fragment_shader_text = "#version 300 es\n"
-                                          "in highp vec3 outcol;\n"
-                                          "out mediump vec4 fragColor;\n"
-                                          "void main()\n"
-                                          "{\n"
-                                          "    fragColor = vec4(outcol, 1.0);\n"
-                                          "}\n";
+static const char *fragment_shader_text = 
+    "#version 300 es\n"
+    "in highp vec3 outcol;\n"
+    "out mediump vec4 fragColor;\n"
+    "void main()\n"
+    "{\n"
+    "    fragColor = vec4(outcol, 1.0);\n"
+    "}\n";
 
 static void error_callback(int error, const char *description) {
   fprintf(stderr, "Error: %s\n", description);
 }
 
-static void key_callback(GLFWwindow *window, int key, int scancode, int action,
-                         int mods) {
+static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
@@ -69,8 +72,8 @@ int main(void) {
 
   GLuint program = createProgram(vertex_shader_text, fragment_shader_text);
 
-  float pos[] = {0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f};
-  float col[] = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+  Vec3f pos[] = { { 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } };
+  Vec3f col[] = { { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f } };
 
   GLuint vert_buffer;
   glGenBuffers(1, &vert_buffer);
@@ -81,8 +84,8 @@ int main(void) {
   glBufferSubData(GL_ARRAY_BUFFER, sizeof(pos), sizeof(col), col);
 
   GLint pos_loc = glGetAttribLocation(program, "pos");
-  glVertexAttribPointer(static_cast<GLuint>(pos_loc), 2, GL_FLOAT, GL_FALSE,
-                        2 * sizeof(float), static_cast<void *>(0));
+  glVertexAttribPointer(static_cast<GLuint>(pos_loc), 3, GL_FLOAT, GL_FALSE,
+                        3 * sizeof(float), static_cast<void *>(0));
   glEnableVertexAttribArray(static_cast<GLuint>(pos_loc));
   GLint col_loc = glGetAttribLocation(program, "col");
   glVertexAttribPointer(static_cast<GLuint>(col_loc), 3, GL_FLOAT, GL_FALSE,
@@ -101,7 +104,9 @@ int main(void) {
 
     glfwGetFramebufferSize(window, &width, &height);
 
-    glViewport(0, 0, width, height);
+    int wh = std::max( width, height );
+    glViewport(0, 0, wh, wh);
+
     glClearColor(1.0f, 1.0f, 1.0f, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -109,6 +114,21 @@ int main(void) {
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     if (frame % 1 == 0) {
+
+      Posef pose;
+      pose.t.x = 0.5 * sin( frame * 0.05f );
+      pose.t.y = 0.5 * cos( frame * 0.05f );
+      pose.r = Quaternionf( Vec3f( 0, 0, 1 ), frame * -0.05f);
+
+      Vec3f xpos[3];
+      for ( int i = 0; i < 3; i++ ) {
+        xpos[i] = pose.Transform( pos[i] );
+      }
+      glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(xpos), xpos);
+
+
+
+      /*
       if (dir) {
         if (lorr)
           x -= 0.0125;
@@ -128,36 +148,35 @@ int main(void) {
         }
       }
       pos[2] = x - 1.0f;
-      pos[5] = y - 1.0f;
+      pos[5] = y - 1.0f;*/
 
       for (int i = 0; i < 3; i++) {
         if (vertcol[i] == 0) {
-          if (col[(i * 3)] <= 0.0f)
+          if (col[i].x <= 0.0f)
             vertcol[i] = 1;
           else {
-            col[(i * 3)] -= 0.025;
-            col[(i * 3) + 1] += 0.025;
+            col[i].x -= 0.025;
+            col[i].y += 0.025;
           }
         }
         if (vertcol[i] == 1) {
-          if (col[(i * 3 + 1)] <= 0.0f)
+          if (col[i].y <= 0.0f)
             vertcol[i] = 2;
           else {
-            col[(i * 3) + 1] -= 0.025;
-            col[(i * 3) + 2] += 0.025;
+            col[i].y -= 0.025;
+            col[i].z += 0.025;
           }
         }
         if (vertcol[i] == 2) {
-          if (col[(i * 3) + 2] <= 0.0f)
+          if (col[i].z <= 0.0f)
             vertcol[i] = 0;
           else {
-            col[(i * 3) + 2] -= 0.025;
-            col[(i * 3)] += 0.025;
+            col[i].z -= 0.025;
+            col[i].x += 0.025;
           }
         }
       }
     }
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pos), pos);
     glBufferSubData(GL_ARRAY_BUFFER, sizeof(pos), sizeof(col), col);
 
     glfwSwapBuffers(window);
