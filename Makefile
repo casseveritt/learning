@@ -8,18 +8,27 @@ all: gl
 
 H := $(wildcard *.h)
 
-gl: gl.cpp $(H) stb.o
-	g++ ${CFLAGS} gl.cpp stb.o -o gl -lGLESv2 -lglfw
+SRC := gl.cpp glprog.cpp
+
+OBJ := $(patsubst %.cpp, %.o, $(SRC))
+
+.cpp.o:
+	g++ $(CFLAGS) $< -c
+
+gl: $(OBJ) $(H) stb.o
+	g++ $(CFLAGS) $(OBJ) stb.o -o gl -lGLESv2 -lglfw
 
 stb.o: stb.cpp
-	g++ ${CFLAGS_NOWARN} stb.cpp -c
+	g++ $(CFLAGS_NOWARN) stb.cpp -c
 
-format: format_h
-	clang-format -style=file gl.cpp > tmp.cpp
-	mv tmp.cpp gl.cpp
+format: format_h format_cpp
 
 format_h: $(H)
 	for h in $^; do clang-format -style=file $$h > tmp.h; mv tmp.h $$h; done
+
+format_cpp: $(SRC)
+	for cpp in $^; do clang-format -style=file $$cpp > tmp.cpp; mv tmp.cpp $$cpp; done
+
 
 
 clean:
