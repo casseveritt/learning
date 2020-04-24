@@ -26,7 +26,7 @@ static const char *vertex_shader_text =
     "out highp vec3 outcol;\n"
     "void main()\n"
     "{\n"
-    "    gl_Position = vec4(pos, 1.0) * mod * view * proj;\n"
+    "    gl_Position = proj * view * mod * vec4(pos, 1.0);\n"
     "    outcol = col;\n"
     "}\n";
 
@@ -38,9 +38,19 @@ static const char *fragment_shader_text = "#version 300 es\n"
                                           "    fragColor = vec4(outcol, 1.0);\n"
                                           "}\n";
 
-Matrix4f projMat;
+float fovy = 60.0;
 Posef camPose;
 Posef modelPose;
+
+static void printMatrix( const Matrix4f &m ) {
+  for( int i = 0; i < 4; i++ ){
+    for(int j=0; j < 4; j++){
+      printf("%.2f ", m.GetValue()[(i*4)+j]);
+    }
+    printf("\n");
+  }
+}
+
 
 static void error_callback(int error, const char *description) {
   fprintf(stderr, "Error: %s\n", description);
@@ -50,7 +60,7 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
                          int mods) {
 
   if (action == GLFW_PRESS) {
-    switch( key ) {
+    switch(key){
       case GLFW_KEY_ESCAPE:
         glfwSetWindowShouldClose(window, GLFW_TRUE);
         break;
@@ -67,16 +77,16 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
         modelPose.t.x += 0.025;
         break;
       case GLFW_KEY_UP:
-        camPose.t.y -= 0.025;
-        break;
-      case GLFW_KEY_LEFT:
-        camPose.t.x += 0.025;
+        camPose.t.z -= 0.025;
         break;
       case GLFW_KEY_DOWN:
-        camPose.t.y += 0.025;
+        camPose.t.z += 0.025;
         break;
-      case GLFW_KEY_RIGHT:
-        camPose.t.x -= 0.025;
+      case GLFW_KEY_I:
+        fovy -= 1.0;
+        break;
+      case GLFW_KEY_O:
+        fovy += 1.0;
         break;
       default:
         break;
@@ -85,6 +95,8 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
 }
 
 int main(void) {
+
+  camPose.t.z = 1.0;
   GLFWwindow *window;
 
   glfwSetErrorCallback(error_callback);
@@ -147,15 +159,16 @@ int main(void) {
 
     glfwGetFramebufferSize(window, &width, &height);
 
-    int wh = std::max(width, height);
-    glViewport(0, 0, wh, wh);
+    glViewport(0, 0, width, height);
 
     glClearColor(1.0f, 1.0f, 1.0f, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(program);
-    glUniformMatrix4fv(proj_loc, 1, GL_TRUE, projMat.GetValue());
-    glUniformMatrix4fv(view_loc, 1, GL_TRUE, camPose.GetMatrix4().GetValue());
+    Matrix4f projMat = Perspective(fovy, float(width)/height, 0.1f, 100.0f );
+    printMatrix(projMat);
+    glUniformMatrix4fv(proj_loc, 1, GL_FALSE, projMat.GetValue());
+    glUniformMatrix4fv(view_loc, 1, GL_TRUE, camPose.Inverted().GetMatrix4().GetValue());
     glUniformMatrix4fv(mod_loc, 1, GL_TRUE, modelPose.GetMatrix4().GetValue());
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
