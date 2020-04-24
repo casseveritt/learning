@@ -18,15 +18,13 @@ using namespace r3;
 
 static const char *vertex_shader_text =
     "#version 300 es\n"
-    "uniform mat4 proj ;\n"
-    "uniform mat4 view ;\n"
-    "uniform mat4 mod;\n"
+    "uniform highp mat4 pvm;\n"
     "in highp vec3 pos;\n"
     "in highp vec3 col;\n"
     "out highp vec3 outcol;\n"
     "void main()\n"
     "{\n"
-    "    gl_Position = proj * view * mod * vec4(pos, 1.0);\n"
+    "    gl_Position = pvm * vec4(pos, 1.0);\n"
     "    outcol = col;\n"
     "}\n";
 
@@ -46,7 +44,7 @@ int frame = 0;
 static void printMatrix( const Matrix4f &m ) {
   for( int i = 0; i < 4; i++ ){
     for(int j=0; j < 4; j++){
-      printf("%.2f ", m.GetValue()[(i*4)+j]);
+      printf("%.2f ", m.el(i, j));
     }
     printf("\n");
   }
@@ -145,9 +143,7 @@ int main(void) {
                         reinterpret_cast<void *>(sizeof(pos)));
   glEnableVertexAttribArray(static_cast<GLuint>(col_loc));
   glUseProgram(program);
-  GLint proj_loc = glGetUniformLocation(program, "proj");
-  GLint view_loc = glGetUniformLocation(program, "view");
-  GLint mod_loc = glGetUniformLocation(program, "mod");
+  GLint pvm_loc = glGetUniformLocation(program, "pvm");
 
   float x = 2.0;
   float y = 2.0;
@@ -170,20 +166,17 @@ int main(void) {
     Matrix4f projMat = Perspective( fovy, aspect, 0.1f, 100.0f );
     Matrix4f viewMat = camPose.Inverted().GetMatrix4();
     Matrix4f modelMat = modelPose.GetMatrix4();
-    Matrix4f mvp = projMat * viewMat * modelMat;
+    Matrix4f pvm = projMat * viewMat * modelMat;
     if(frame == 1) {
-      printMatrix(projMat);
+      printMatrix(pvm);
       printf("\n");
-      mvp = mvp.Transpose();
       for( int i = 0; i < 3; i++ ) {
         Vec3f v = pos[i];
-        mvp.MultMatrixVec( v );
+        pvm.MultMatrixVec( v );
         printf( "v: (%.2f %.2f %.2f)\n", v.x, v.y, v.z );
       }
     }
-    glUniformMatrix4fv(proj_loc, 1, GL_TRUE, projMat.GetValue());
-    glUniformMatrix4fv(view_loc, 1, GL_TRUE, viewMat.GetValue());
-    glUniformMatrix4fv(mod_loc, 1, GL_TRUE, modelMat.GetValue());
+    glUniformMatrix4fv(pvm_loc, 1, GL_TRUE, pvm.GetValue());
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     if (frame % 1 == 0) {
