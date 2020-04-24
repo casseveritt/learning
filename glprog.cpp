@@ -12,9 +12,18 @@ GLuint createProgram(const char *vertexShader, const char *fragmentShader) {
   vertex_shader = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vertex_shader, 1, &vertexShader, NULL);
   glCompileShader(vertex_shader);
+  GLint stat = GL_FALSE;
+  glGetShaderiv(vertex_shader,GL_COMPILE_STATUS, &stat);
+  if(stat == GL_FALSE){
+    printf("Vertex comple failed\n");
+  }
   fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(fragment_shader, 1, &fragmentShader, NULL);
   glCompileShader(fragment_shader);
+  glGetShaderiv(fragment_shader,GL_COMPILE_STATUS, &stat);
+  if(stat == GL_FALSE){
+    printf("Fragment comple failed\n");
+  }
 
   GLuint program = glCreateProgram();
 

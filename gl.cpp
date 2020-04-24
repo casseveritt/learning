@@ -18,12 +18,13 @@ using namespace r3;
 
 static const char *vertex_shader_text =
     "#version 300 es\n"
+    "uniform mat4 mod;\n"
     "in highp vec3 pos;\n"
     "in highp vec3 col;\n"
     "out highp vec3 outcol;\n"
     "void main()\n"
     "{\n"
-    "    gl_Position = vec4(pos, 1.0);\n"
+    "    gl_Position = vec4(pos, 1.0) * mod;\n"
     "    outcol = col;\n"
     "}\n";
 
@@ -92,6 +93,16 @@ int main(void) {
                         3 * sizeof(float),
                         reinterpret_cast<void *>(sizeof(pos)));
   glEnableVertexAttribArray(static_cast<GLuint>(col_loc));
+  GLint mod_loc = glGetUniformLocation(program, "mod");
+  Matrix4f m;
+  glUniformMatrix4fv(mod_loc, 1, GL_FALSE, m.GetValue());
+  printf("Mod loc = %d\n", mod_loc);
+  for(int i=0;i<4;i++){
+    for(int j=0;j<4;j++){
+      printf("%f ", m.GetValue()[(i*4)+j]);
+    }
+    printf("\n");
+  }
 
   int frame = 0;
   float x = 2.0;
@@ -126,10 +137,7 @@ int main(void) {
       }
       glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(xpos), xpos);
 
-
-
-      /*
-      if (dir) {
+      /*if (dir) {
         if (lorr)
           x -= 0.0125;
         else
