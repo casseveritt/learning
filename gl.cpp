@@ -5,8 +5,8 @@
 #include <stdio.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
-#include <stdlib.h>
 #include <math.h>
+#include <stdlib.h>
 
 using namespace r3;
 
@@ -18,29 +18,30 @@ using namespace r3;
 
 static const char *vertex_shader_text =
     "#version 300 es\n"
+    "uniform mat4 mod;\n"
     "in highp vec3 pos;\n"
     "in highp vec3 col;\n"
     "out highp vec3 outcol;\n"
     "void main()\n"
     "{\n"
-    "    gl_Position = vec4(pos, 1.0);\n"
+    "    gl_Position = vec4(pos, 1.0) * mod;\n"
     "    outcol = col;\n"
     "}\n";
 
-static const char *fragment_shader_text = 
-    "#version 300 es\n"
-    "in highp vec3 outcol;\n"
-    "out mediump vec4 fragColor;\n"
-    "void main()\n"
-    "{\n"
-    "    fragColor = vec4(outcol, 1.0);\n"
-    "}\n";
+static const char *fragment_shader_text = "#version 300 es\n"
+                                          "in highp vec3 outcol;\n"
+                                          "out mediump vec4 fragColor;\n"
+                                          "void main()\n"
+                                          "{\n"
+                                          "    fragColor = vec4(outcol, 1.0);\n"
+                                          "}\n";
 
 static void error_callback(int error, const char *description) {
   fprintf(stderr, "Error: %s\n", description);
 }
 
-static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
+static void key_callback(GLFWwindow *window, int key, int scancode, int action,
+                         int mods) {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
@@ -72,8 +73,8 @@ int main(void) {
 
   GLuint program = createProgram(vertex_shader_text, fragment_shader_text);
 
-  Vec3f pos[] = { { 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } };
-  Vec3f col[] = { { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f } };
+  Vec3f pos[] = {{0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}};
+  Vec3f col[] = {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
 
   GLuint vert_buffer;
   glGenBuffers(1, &vert_buffer);
@@ -92,6 +93,17 @@ int main(void) {
                         3 * sizeof(float),
                         reinterpret_cast<void *>(sizeof(pos)));
   glEnableVertexAttribArray(static_cast<GLuint>(col_loc));
+  GLint mod_loc = glGetUniformLocation(program, "mod");
+  glUseProgram(program);
+  Matrix4f m;
+  glUniformMatrix4fv(mod_loc, 1, GL_FALSE, m.GetValue());
+  printf("Mod loc = %d\n", mod_loc);
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      printf("%f ", m.GetValue()[(i * 4) + j]);
+    }
+    printf("\n");
+  }
 
   int frame = 0;
   float x = 2.0;
@@ -104,7 +116,7 @@ int main(void) {
 
     glfwGetFramebufferSize(window, &width, &height);
 
-    int wh = std::max( width, height );
+    int wh = std::max(width, height);
     glViewport(0, 0, wh, wh);
 
     glClearColor(1.0f, 1.0f, 1.0f, 0);
@@ -116,19 +128,19 @@ int main(void) {
     if (frame % 1 == 0) {
 
       Posef pose;
-      pose.t.x = 0.5 * sin( frame * 0.05f );
-      pose.t.y = 0.5 * cos( frame * 0.05f );
-      pose.r = Quaternionf( Vec3f( 0, 0, 1 ), frame * -0.05f);
+      pose.t.x = 0.5 * sin(frame * 0.05f);
+      pose.t.y = 0.5 * cos(frame * 0.05f);
+      pose.r = Quaternionf(Vec3f(0, 0, 1), frame * -0.05f);
 
-      Vec3f xpos[3];
+      m = pose.GetMatrix4();
+      glUniformMatrix4fv(mod_loc, 1, GL_TRUE, m.GetValue());
+
+      /*Vec3f xpos[3];
       for ( int i = 0; i < 3; i++ ) {
         xpos[i] = pose.Transform( pos[i] );
       }
       glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(xpos), xpos);
 
-
-
-      /*
       if (dir) {
         if (lorr)
           x -= 0.0125;
