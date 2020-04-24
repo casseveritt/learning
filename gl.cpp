@@ -41,15 +41,14 @@ Posef camPose;
 Posef modelPose;
 int frame = 0;
 
-static void printMatrix( const Matrix4f &m ) {
-  for( int i = 0; i < 4; i++ ){
-    for(int j=0; j < 4; j++){
+static void printMatrix(const Matrix4f &m) {
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
       printf("%.2f ", m.el(i, j));
     }
     printf("\n");
   }
 }
-
 
 static void error_callback(int error, const char *description) {
   fprintf(stderr, "Error: %s\n", description);
@@ -59,36 +58,36 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
                          int mods) {
   if (action == GLFW_PRESS) {
     frame = 0;
-    switch(key){
-      case GLFW_KEY_ESCAPE:
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-        break;
-      case GLFW_KEY_W:
-        modelPose.t.y += 0.025;
-        break;
-      case GLFW_KEY_A:
-        modelPose.t.x -= 0.025;
-        break;
-      case GLFW_KEY_S:
-        modelPose.t.y -= 0.025;
-        break;
-      case GLFW_KEY_D:
-        modelPose.t.x += 0.025;
-        break;
-      case GLFW_KEY_UP:
-        camPose.t.z -= 0.025;
-        break;
-      case GLFW_KEY_DOWN:
-        camPose.t.z += 0.025;
-        break;
-      case GLFW_KEY_I:
-        fovy -= 1.0;
-        break;
-      case GLFW_KEY_O:
-        fovy += 1.0;
-        break;
-      default:
-        break;
+    switch (key) {
+    case GLFW_KEY_ESCAPE:
+      glfwSetWindowShouldClose(window, GLFW_TRUE);
+      break;
+    case GLFW_KEY_W:
+      modelPose.t.y += 0.025;
+      break;
+    case GLFW_KEY_A:
+      modelPose.t.x -= 0.025;
+      break;
+    case GLFW_KEY_S:
+      modelPose.t.y -= 0.025;
+      break;
+    case GLFW_KEY_D:
+      modelPose.t.x += 0.025;
+      break;
+    case GLFW_KEY_UP:
+      camPose.t.z -= 0.025;
+      break;
+    case GLFW_KEY_DOWN:
+      camPose.t.z += 0.025;
+      break;
+    case GLFW_KEY_I:
+      fovy -= 1.0;
+      break;
+    case GLFW_KEY_O:
+      fovy += 1.0;
+      break;
+    default:
+      break;
     }
   }
 }
@@ -150,7 +149,7 @@ int main(void) {
   bool dir = true;
   bool lorr = true;
   int vertcol[] = {0, 1, 2};
-  glDisable( GL_CULL_FACE );
+  glDisable(GL_CULL_FACE);
   while (!glfwWindowShouldClose(window)) {
     int width, height;
 
@@ -162,18 +161,18 @@ int main(void) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(program);
-    float aspect = float(width)/float(height);
-    Matrix4f projMat = Perspective( fovy, aspect, 0.1f, 100.0f );
+    float aspect = float(width) / float(height);
+    Matrix4f projMat = Perspective(fovy, aspect, 0.1f, 100.0f);
     Matrix4f viewMat = camPose.Inverted().GetMatrix4();
     Matrix4f modelMat = modelPose.GetMatrix4();
     Matrix4f pvm = projMat * viewMat * modelMat;
-    if(frame == 1) {
+    if (frame == 1) {
       printMatrix(pvm);
       printf("\n");
-      for( int i = 0; i < 3; i++ ) {
+      for (int i = 0; i < 3; i++) {
         Vec3f v = pos[i];
-        pvm.MultMatrixVec( v );
-        printf( "v: (%.2f %.2f %.2f)\n", v.x, v.y, v.z );
+        pvm.MultMatrixVec(v);
+        printf("v: (%.2f %.2f %.2f)\n", v.x, v.y, v.z);
       }
     }
     glUniformMatrix4fv(pvm_loc, 1, GL_TRUE, pvm.GetValue());
@@ -181,9 +180,9 @@ int main(void) {
 
     if (frame % 1 == 0) {
 
-      //modelPose.t.x = 0.5 * sin(frame * 0.05f);
-      //modelPose.t.y = 0.5 * cos(frame * 0.05f);
-      //modelPose.r = Quaternionf(Vec3f(0, 0, 1), frame * -0.05f);
+      // modelPose.t.x = 0.5 * sin(frame * 0.05f);
+      // modelPose.t.y = 0.5 * cos(frame * 0.05f);
+      // modelPose.r = Quaternionf(Vec3f(0, 0, 1), frame * -0.05f);
 
       /*Vec3f xpos[3];
       for ( int i = 0; i < 3; i++ ) {
