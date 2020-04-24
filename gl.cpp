@@ -39,7 +39,7 @@ static const char *fragment_shader_text = "#version 300 es\n"
                                           "}\n";
 
 Matrix4f projMat;
-Posef viewPose;
+Posef camPose;
 Posef modelPose;
 
 static void error_callback(int error, const char *description) {
@@ -65,6 +65,18 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
         break;
       case GLFW_KEY_D:
         modelPose.t.x += 0.025;
+        break;
+      case GLFW_KEY_UP:
+        camPose.t.y -= 0.025;
+        break;
+      case GLFW_KEY_LEFT:
+        camPose.t.x += 0.025;
+        break;
+      case GLFW_KEY_DOWN:
+        camPose.t.y += 0.025;
+        break;
+      case GLFW_KEY_RIGHT:
+        camPose.t.x -= 0.025;
         break;
       default:
         break;
@@ -143,7 +155,7 @@ int main(void) {
 
     glUseProgram(program);
     glUniformMatrix4fv(proj_loc, 1, GL_TRUE, projMat.GetValue());
-    glUniformMatrix4fv(view_loc, 1, GL_TRUE, viewPose.GetMatrix4().GetValue());
+    glUniformMatrix4fv(view_loc, 1, GL_TRUE, camPose.GetMatrix4().GetValue());
     glUniformMatrix4fv(mod_loc, 1, GL_TRUE, modelPose.GetMatrix4().GetValue());
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
