@@ -141,7 +141,7 @@ int main(void) {
       }
       glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(xpos), xpos);
 
-      if (dir) {
+      /*if (dir) {
         if (lorr)
           x -= 0.0125;
         else
