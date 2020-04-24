@@ -18,13 +18,15 @@ using namespace r3;
 
 static const char *vertex_shader_text =
     "#version 300 es\n"
+    "uniform mat4 proj ;\n"
+    "uniform mat4 view ;\n"
     "uniform mat4 mod;\n"
     "in highp vec3 pos;\n"
     "in highp vec3 col;\n"
     "out highp vec3 outcol;\n"
     "void main()\n"
     "{\n"
-    "    gl_Position = vec4(pos, 1.0) * mod;\n"
+    "    gl_Position = vec4(pos, 1.0) * mod * view * proj;\n"
     "    outcol = col;\n"
     "}\n";
 
@@ -36,7 +38,9 @@ static const char *fragment_shader_text = "#version 300 es\n"
                                           "    fragColor = vec4(outcol, 1.0);\n"
                                           "}\n";
 
-Posef pose;
+Matrix4f projMat;
+Posef viewPose;
+Posef modelPose;
 
 static void error_callback(int error, const char *description) {
   fprintf(stderr, "Error: %s\n", description);
@@ -44,16 +48,28 @@ static void error_callback(int error, const char *description) {
 
 static void key_callback(GLFWwindow *window, int key, int scancode, int action,
                          int mods) {
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-    glfwSetWindowShouldClose(window, GLFW_TRUE);
-  if (key == GLFW_KEY_W)
-    pose.t.y += 0.025;
-  if (key == GLFW_KEY_A)
-    pose.t.x -= 0.025;
-  if (key == GLFW_KEY_S)
-    pose.t.y -= 0.025;
-  if (key == GLFW_KEY_D)
-    pose.t.x += 0.025;
+
+  if (action == GLFW_PRESS) {
+    switch( key ) {
+      case GLFW_KEY_ESCAPE:
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+        break;
+      case GLFW_KEY_W:
+        modelPose.t.y += 0.025;
+        break;
+      case GLFW_KEY_A:
+        modelPose.t.x -= 0.025;
+        break;
+      case GLFW_KEY_S:
+        modelPose.t.y -= 0.025;
+        break;
+      case GLFW_KEY_D:
+        modelPose.t.x += 0.025;
+        break;
+      default:
+        break;
+      }
+  }
 }
 
 int main(void) {
@@ -103,17 +119,10 @@ int main(void) {
                         3 * sizeof(float),
                         reinterpret_cast<void *>(sizeof(pos)));
   glEnableVertexAttribArray(static_cast<GLuint>(col_loc));
-  GLint mod_loc = glGetUniformLocation(program, "mod");
   glUseProgram(program);
-  Matrix4f m;
-  glUniformMatrix4fv(mod_loc, 1, GL_FALSE, m.GetValue());
-  printf("Mod loc = %d\n", mod_loc);
-  for (int i = 0; i < 4; i++) {
-    for (int j = 0; j < 4; j++) {
-      printf("%f ", m.GetValue()[(i * 4) + j]);
-    }
-    printf("\n");
-  }
+  GLint proj_loc = glGetUniformLocation(program, "proj");
+  GLint view_loc = glGetUniformLocation(program, "view");
+  GLint mod_loc = glGetUniformLocation(program, "mod");
 
   int frame = 0;
   float x = 2.0;
@@ -133,20 +142,20 @@ int main(void) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(program);
+    glUniformMatrix4fv(proj_loc, 1, GL_TRUE, projMat.GetValue());
+    glUniformMatrix4fv(view_loc, 1, GL_TRUE, viewPose.GetMatrix4().GetValue());
+    glUniformMatrix4fv(mod_loc, 1, GL_TRUE, modelPose.GetMatrix4().GetValue());
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     if (frame % 1 == 0) {
 
-      //pose.t.x = 0.5 * sin(frame * 0.05f);
-      //pose.t.y = 0.5 * cos(frame * 0.05f);
-      //pose.r = Quaternionf(Vec3f(0, 0, 1), frame * -0.05f);
-
-      m = pose.GetMatrix4();
-      glUniformMatrix4fv(mod_loc, 1, GL_TRUE, m.GetValue());
+      //modelPose.t.x = 0.5 * sin(frame * 0.05f);
+      //modelPose.t.y = 0.5 * cos(frame * 0.05f);
+      //modelPose.r = Quaternionf(Vec3f(0, 0, 1), frame * -0.05f);
 
       /*Vec3f xpos[3];
       for ( int i = 0; i < 3; i++ ) {
-        xpos[i] = pose.Transform( pos[i] );
+        xpos[i] = modelPose.Transform( pos[i] );
       }
       glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(xpos), xpos);
       */
