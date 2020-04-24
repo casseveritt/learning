@@ -36,6 +36,8 @@ static const char *fragment_shader_text = "#version 300 es\n"
                                           "    fragColor = vec4(outcol, 1.0);\n"
                                           "}\n";
 
+Posef pose;
+
 static void error_callback(int error, const char *description) {
   fprintf(stderr, "Error: %s\n", description);
 }
@@ -44,6 +46,14 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
                          int mods) {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     glfwSetWindowShouldClose(window, GLFW_TRUE);
+  if (key == GLFW_KEY_W)
+    pose.t.y += 0.025;
+  if (key == GLFW_KEY_A)
+    pose.t.x -= 0.025;
+  if (key == GLFW_KEY_S)
+    pose.t.y -= 0.025;
+  if (key == GLFW_KEY_D)
+    pose.t.x += 0.025;
 }
 
 int main(void) {
@@ -127,10 +137,9 @@ int main(void) {
 
     if (frame % 1 == 0) {
 
-      Posef pose;
-      pose.t.x = 0.5 * sin(frame * 0.05f);
-      pose.t.y = 0.5 * cos(frame * 0.05f);
-      pose.r = Quaternionf(Vec3f(0, 0, 1), frame * -0.05f);
+      //pose.t.x = 0.5 * sin(frame * 0.05f);
+      //pose.t.y = 0.5 * cos(frame * 0.05f);
+      //pose.r = Quaternionf(Vec3f(0, 0, 1), frame * -0.05f);
 
       m = pose.GetMatrix4();
       glUniformMatrix4fv(mod_loc, 1, GL_TRUE, m.GetValue());
@@ -167,24 +176,24 @@ int main(void) {
           if (col[i].x <= 0.0f)
             vertcol[i] = 1;
           else {
-            col[i].x -= 0.025;
-            col[i].y += 0.025;
+            col[i].x -= 0.05;
+            col[i].y += 0.05;
           }
         }
         if (vertcol[i] == 1) {
           if (col[i].y <= 0.0f)
             vertcol[i] = 2;
           else {
-            col[i].y -= 0.025;
-            col[i].z += 0.025;
+            col[i].y -= 0.05;
+            col[i].z += 0.05;
           }
         }
         if (vertcol[i] == 2) {
           if (col[i].z <= 0.0f)
             vertcol[i] = 0;
           else {
-            col[i].z -= 0.025;
-            col[i].x += 0.025;
+            col[i].z -= 0.05;
+            col[i].x += 0.05;
           }
         }
       }
