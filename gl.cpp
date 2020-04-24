@@ -38,9 +38,10 @@ static const char *fragment_shader_text = "#version 300 es\n"
                                           "    fragColor = vec4(outcol, 1.0);\n"
                                           "}\n";
 
-float fovy = 60.0;
+float fovy = 60.0f;
 Posef camPose;
 Posef modelPose;
+int frame = 0;
 
 static void printMatrix( const Matrix4f &m ) {
   for( int i = 0; i < 4; i++ ){
@@ -58,8 +59,8 @@ static void error_callback(int error, const char *description) {
 
 static void key_callback(GLFWwindow *window, int key, int scancode, int action,
                          int mods) {
-
   if (action == GLFW_PRESS) {
+    frame = 0;
     switch(key){
       case GLFW_KEY_ESCAPE:
         glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -90,13 +91,13 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
         break;
       default:
         break;
-      }
+    }
   }
 }
 
 int main(void) {
 
-  camPose.t.z = 1.0;
+  camPose.t.z = 2.0;
   GLFWwindow *window;
 
   glfwSetErrorCallback(error_callback);
@@ -148,12 +149,12 @@ int main(void) {
   GLint view_loc = glGetUniformLocation(program, "view");
   GLint mod_loc = glGetUniformLocation(program, "mod");
 
-  int frame = 0;
   float x = 2.0;
   float y = 2.0;
   bool dir = true;
   bool lorr = true;
   int vertcol[] = {0, 1, 2};
+  glDisable( GL_CULL_FACE );
   while (!glfwWindowShouldClose(window)) {
     int width, height;
 
@@ -165,11 +166,24 @@ int main(void) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(program);
-    Matrix4f projMat = Perspective(fovy, float(width)/height, 0.1f, 100.0f );
-    printMatrix(projMat);
-    glUniformMatrix4fv(proj_loc, 1, GL_FALSE, projMat.GetValue());
-    glUniformMatrix4fv(view_loc, 1, GL_TRUE, camPose.Inverted().GetMatrix4().GetValue());
-    glUniformMatrix4fv(mod_loc, 1, GL_TRUE, modelPose.GetMatrix4().GetValue());
+    float aspect = float(width)/float(height);
+    Matrix4f projMat = Perspective( fovy, aspect, 0.1f, 100.0f );
+    Matrix4f viewMat = camPose.Inverted().GetMatrix4();
+    Matrix4f modelMat = modelPose.GetMatrix4();
+    Matrix4f mvp = projMat * viewMat * modelMat;
+    if(frame == 1) {
+      printMatrix(projMat);
+      printf("\n");
+      mvp = mvp.Transpose();
+      for( int i = 0; i < 3; i++ ) {
+        Vec3f v = pos[i];
+        mvp.MultMatrixVec( v );
+        printf( "v: (%.2f %.2f %.2f)\n", v.x, v.y, v.z );
+      }
+    }
+    glUniformMatrix4fv(proj_loc, 1, GL_TRUE, projMat.GetValue());
+    glUniformMatrix4fv(view_loc, 1, GL_TRUE, viewMat.GetValue());
+    glUniformMatrix4fv(mod_loc, 1, GL_TRUE, modelMat.GetValue());
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     if (frame % 1 == 0) {

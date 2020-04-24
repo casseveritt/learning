@@ -2004,7 +2004,6 @@ inline Matrix4<T> CameraLookAt(const Vec3<T> &eye, const Vec3<T> &lookpoint,
 template <typename T>
 inline Matrix4<T> Frustum(T left, T right, T bottom, T top, T zNear, T zFar) {
   Matrix4<T> m;
-  m.MakeIdentity();
 
   m(0, 0) = (2 * zNear) / (right - left);
   m(0, 2) = (right + left) / (right - left);
@@ -2025,7 +2024,6 @@ template <typename T>
 inline Matrix4<T> FrustumInverted(T left, T right, T bottom, T top, T zNear,
                                   T zFar) {
   Matrix4<T> m;
-  m.MakeIdentity();
 
   m(0, 0) = (right - left) / (2 * zNear);
   m(0, 3) = (right + left) / (2 * zNear);
