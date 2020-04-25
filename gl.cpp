@@ -97,11 +97,12 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
   }
 }
 
-static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods){
+static void mouse_button_callback(GLFWwindow *window, int button, int action,
+                                  int mods) {
   if (button == GLFW_MOUSE_BUTTON_LEFT) {
-    drag = ( action == GLFW_PRESS );
-    glfwGetCursorPos( window, &prevPos.x, &prevPos.y );
-  } 
+    drag = (action == GLFW_PRESS);
+    glfwGetCursorPos(window, &prevPos.x, &prevPos.y);
+  }
 }
 
 int main(void) {
@@ -126,7 +127,7 @@ int main(void) {
   }
 
   glfwSetKeyCallback(window, key_callback);
-  glfwSetMouseButtonCallback(window,mouse_button_callback);
+  glfwSetMouseButtonCallback(window, mouse_button_callback);
 
   glfwMakeContextCurrent(
       window); // This is the point when you can make gl calls
@@ -168,7 +169,7 @@ int main(void) {
 
     if (drag) {
       Vec2d currPos;
-      glfwGetCursorPos( window, &currPos.x, &currPos.y);
+      glfwGetCursorPos(window, &currPos.x, &currPos.y);
       diffPos = currPos - prevPos;
       prevPos = currPos;
       camPose.t.x += diffPos.x * 0.0125f;
