@@ -18,13 +18,15 @@ using namespace r3;
 
 static const char *vertex_shader_text =
     "#version 300 es\n"
-    "uniform highp mat4 pvm;\n"
+    "uniform highp mat4 proj;\n"
+    "uniform highp mat4 view;\n"
+    "uniform highp mat4 model;\n"
     "in highp vec3 pos;\n"
     "in highp vec3 col;\n"
     "out highp vec3 outcol;\n"
     "void main()\n"
     "{\n"
-    "    gl_Position = pvm * vec4(pos, 1.0);\n"
+    "    gl_Position = (proj * (view * (model * vec4(pos, 1.0))));\n"
     "    outcol = col;\n"
     "}\n";
 
@@ -41,6 +43,8 @@ Posef camPose;
 Posef modelPose;
 int frame = 0;
 bool drag = false;
+Vec2d prevPos;
+Vec2d diffPos;
 
 static void printMatrix(const Matrix4f &m) {
   for (int i = 0; i < 4; i++) {
@@ -93,12 +97,11 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
   }
 }
 
-static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
-}
-
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods){
-  if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-    drag == true;
+  if (button == GLFW_MOUSE_BUTTON_LEFT) {
+    drag = ( action == GLFW_PRESS );
+    glfwGetCursorPos( window, &prevPos.x, &prevPos.y );
+  } 
 }
 
 int main(void) {
@@ -123,9 +126,7 @@ int main(void) {
   }
 
   glfwSetKeyCallback(window, key_callback);
-  glfwSetCursorPosCallback(window, cursor_position_callback);
   glfwSetMouseButtonCallback(window,mouse_button_callback);
-
 
   glfwMakeContextCurrent(
       window); // This is the point when you can make gl calls
@@ -154,17 +155,27 @@ int main(void) {
                         reinterpret_cast<void *>(sizeof(pos)));
   glEnableVertexAttribArray(static_cast<GLuint>(col_loc));
   glUseProgram(program);
-  GLint pvm_loc = glGetUniformLocation(program, "pvm");
+  GLint proj_loc = glGetUniformLocation(program, "proj");
+  GLint view_loc = glGetUniformLocation(program, "view");
+  GLint model_loc = glGetUniformLocation(program, "model");
 
   float x = 2.0;
   float y = 2.0;
   bool dir = true;
   bool lorr = true;
   int vertcol[] = {0, 1, 2};
-  glDisable(GL_CULL_FACE);
   while (!glfwWindowShouldClose(window)) {
-    int width, height;
 
+    if (drag) {
+      Vec2d currPos;
+      glfwGetCursorPos( window, &currPos.x, &currPos.y);
+      diffPos = currPos - prevPos;
+      prevPos = currPos;
+      camPose.t.x += diffPos.x * 0.0125f;
+      camPose.t.y -= diffPos.y * 0.0125f;
+    }
+
+    int width, height;
     glfwGetFramebufferSize(window, &width, &height);
 
     glViewport(0, 0, width, height);
@@ -179,6 +190,7 @@ int main(void) {
     Matrix4f modelMat = modelPose.GetMatrix4();
     Matrix4f pvm = projMat * viewMat * modelMat;
     if (frame == 1) {
+      printf("\n");
       printMatrix(pvm);
       printf("\n");
       for (int i = 0; i < 3; i++) {
@@ -187,7 +199,9 @@ int main(void) {
         printf("v: (%.2f %.2f %.2f)\n", v.x, v.y, v.z);
       }
     }
-    glUniformMatrix4fv(pvm_loc, 1, GL_TRUE, pvm.GetValue());
+    glUniformMatrix4fv(proj_loc, 1, GL_FALSE, projMat.GetValue());
+    glUniformMatrix4fv(view_loc, 1, GL_FALSE, viewMat.GetValue());
+    glUniformMatrix4fv(model_loc, 1, GL_FALSE, modelMat.GetValue());
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     if (frame % 1 == 0) {
