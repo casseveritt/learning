@@ -40,6 +40,7 @@ float fovy = 60.0f;
 Posef camPose;
 Posef modelPose;
 int frame = 0;
+bool drag = false;
 
 static void printMatrix(const Matrix4f &m) {
   for (int i = 0; i < 4; i++) {
@@ -92,9 +93,12 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
   }
 }
 
+static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
+}
+
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods){
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-        printf("Click!\n");
+  if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    drag == true;
 }
 
 int main(void) {
@@ -119,8 +123,9 @@ int main(void) {
   }
 
   glfwSetKeyCallback(window, key_callback);
-
+  glfwSetCursorPosCallback(window, cursor_position_callback);
   glfwSetMouseButtonCallback(window,mouse_button_callback);
+
 
   glfwMakeContextCurrent(
       window); // This is the point when you can make gl calls
