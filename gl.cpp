@@ -92,6 +92,11 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
   }
 }
 
+static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods){
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+        printf("Click!\n");
+}
+
 int main(void) {
 
   camPose.t.z = 2.0;
@@ -114,6 +119,8 @@ int main(void) {
   }
 
   glfwSetKeyCallback(window, key_callback);
+
+  glfwSetMouseButtonCallback(window,mouse_button_callback);
 
   glfwMakeContextCurrent(
       window); // This is the point when you can make gl calls
