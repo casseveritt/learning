@@ -16,28 +16,6 @@ using namespace r3;
   sudo apt install libgles2-mesa-dev libglfw3-dev
 */
 
-static const char *vertex_shader_text =
-    "#version 300 es\n"
-    "uniform highp mat4 proj;\n"
-    "uniform highp mat4 view;\n"
-    "uniform highp mat4 model;\n"
-    "in highp vec3 pos;\n"
-    "in highp vec3 col;\n"
-    "out highp vec3 outcol;\n"
-    "void main()\n"
-    "{\n"
-    "    gl_Position = (proj * (view * (model * vec4(pos, 1.0))));\n"
-    "    outcol = col;\n"
-    "}\n";
-
-static const char *fragment_shader_text = "#version 300 es\n"
-                                          "in highp vec3 outcol;\n"
-                                          "out mediump vec4 fragColor;\n"
-                                          "void main()\n"
-                                          "{\n"
-                                          "    fragColor = vec4(outcol, 1.0);\n"
-                                          "}\n";
-
 float fovy = 60.0f;
 Posef camPose;
 Posef modelPose;
@@ -132,7 +110,7 @@ int main(void) {
       window); // This is the point when you can make gl calls
   glfwSwapInterval(1);
 
-  GLuint program = createProgram(vertex_shader_text, fragment_shader_text);
+  GLuint program = createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
 
   Vec3f pos[] = {{0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}};
   Vec3f col[] = {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
