@@ -142,16 +142,24 @@ int main(void) {
   // triangle initialization end
 
   // grid init begin
-  Vec3f gridPos[] = {{1.0f, 0.0f, 0.0f},{-1.0f, 0.0f, 0.0f},{0.0f, 1.0f, 0.0f},{0.0f, -1.0f, 0.0f}};
-  Vec3f gridCol[] = {{1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}};
-
+  int gridsize = 5;
+  Vec3f gridPos[gridsize*8+4];
+  Vec3f gridCol[gridsize*8+4];
+  int gridPosSize = gridsize*8+4;
+  for(int j=0;j<gridsize*2+1;j++){
+    gridPos[0+j] = {float(gridsize*2*-1),0.0f,float(gridsize*-1+j)};
+    gridPos[1+j] = {float(gridsize*2),0.0f,float(gridsize*-1+j)};
+    gridPos[2+j] = {float(gridsize*-1+j),0.0f,float(gridsize*2*-1)};
+    gridPos[2+j] = {float(gridsize*-1+j),0.0f,float(gridsize*2*-1)};
+  }for(int j=0;j<gridsize*8+4;j++) gridPos[j] = {1.0f,0.0f,0.0f};
+  
   GLuint grid_vert_buffer;
   glGenBuffers(1, &grid_vert_buffer);
   glBindBuffer(GL_ARRAY_BUFFER, grid_vert_buffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(gridPos) + sizeof(gridCol), nullptr,
+  glBufferData(GL_ARRAY_BUFFER, gridPosSize + gridPosSize, nullptr,
                GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(gridPos), gridPos);
-  glBufferSubData(GL_ARRAY_BUFFER, sizeof(gridPos), sizeof(gridCol), gridCol);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, gridPosSize, gridPos);
+  glBufferSubData(GL_ARRAY_BUFFER, gridPosSize, gridPosSize, gridCol);
   // grid init end
 
   float x = 2.0;
@@ -219,7 +227,7 @@ int main(void) {
     glUniformMatrix4fv(proj_loc, 1, GL_FALSE, projMat.GetValue());
     glUniformMatrix4fv(view_loc, 1, GL_FALSE, viewMat.GetValue());
     glUniformMatrix4fv(model_loc, 1, GL_FALSE, gridModelMat.GetValue());
-    glDrawArrays(GL_LINES, 0, 4);
+    glDrawArrays(GL_LINES, 0, (gridsize*8+4));
     glDisableVertexAttribArray(static_cast<GLuint>(pos_loc));
     glDisableVertexAttribArray(static_cast<GLuint>(col_loc));
     glBindBuffer(GL_ARRAY_BUFFER, dummy_buffer);
