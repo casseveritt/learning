@@ -104,6 +104,8 @@ int main(void) {
     exit(EXIT_FAILURE);
   }
 
+
+
   glfwSetKeyCallback(window, key_callback);
   glfwSetMouseButtonCallback(window, mouse_button_callback);
 
@@ -111,32 +113,46 @@ int main(void) {
       window); // This is the point when you can make gl calls
   glfwSwapInterval(1);
 
+  // program initialization begin
   GLuint program = createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
-
-  Vec3f pos[] = {{0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}};
-  Vec3f col[] = {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
-
-  GLuint vert_buffer;
-  glGenBuffers(1, &vert_buffer);
-  glBindBuffer(GL_ARRAY_BUFFER, vert_buffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(pos) + sizeof(col), nullptr,
-               GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pos), pos);
-  glBufferSubData(GL_ARRAY_BUFFER, sizeof(pos), sizeof(col), col);
-
   GLint pos_loc = glGetAttribLocation(program, "pos");
-  glVertexAttribPointer(static_cast<GLuint>(pos_loc), 3, GL_FLOAT, GL_FALSE,
-                        3 * sizeof(float), static_cast<void *>(0));
-  glEnableVertexAttribArray(static_cast<GLuint>(pos_loc));
   GLint col_loc = glGetAttribLocation(program, "col");
-  glVertexAttribPointer(static_cast<GLuint>(col_loc), 3, GL_FLOAT, GL_FALSE,
-                        3 * sizeof(float),
-                        reinterpret_cast<void *>(sizeof(pos)));
-  glEnableVertexAttribArray(static_cast<GLuint>(col_loc));
+
   glUseProgram(program);
   GLint proj_loc = glGetUniformLocation(program, "proj");
   GLint view_loc = glGetUniformLocation(program, "view");
   GLint model_loc = glGetUniformLocation(program, "model");
+  // program initialization end
+
+  GLuint dummy_program = glCreateProgram();
+  GLuint dummy_buffer;
+  glGenBuffers(1, &dummy_buffer);
+
+  // triangle initialization begin
+  Vec3f pos[] = {{0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}};
+  Vec3f col[] = {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
+
+  GLuint tri_vert_buffer;
+  glGenBuffers(1, &tri_vert_buffer);
+  glBindBuffer(GL_ARRAY_BUFFER, tri_vert_buffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(pos) + sizeof(col), nullptr,
+               GL_DYNAMIC_DRAW);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pos), pos);
+  glBufferSubData(GL_ARRAY_BUFFER, sizeof(pos), sizeof(col), col);
+  // triangle initialization end
+
+  // grid init begin
+  Vec3f gridPos[] = {{1.0f, 0.0f, 0.0f},{-1.0f, 0.0f, 0.0f},{0.0f, 1.0f, 0.0f},{0.0f, -1.0f, 0.0f}};
+  Vec3f gridCol[] = {{1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}};
+
+  GLuint grid_vert_buffer;
+  glGenBuffers(1, &grid_vert_buffer);
+  glBindBuffer(GL_ARRAY_BUFFER, grid_vert_buffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(gridPos) + sizeof(gridCol), nullptr,
+               GL_DYNAMIC_DRAW);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(gridPos), gridPos);
+  glBufferSubData(GL_ARRAY_BUFFER, sizeof(gridPos), sizeof(gridCol), gridCol);
+  // grid init end
 
   float x = 2.0;
   float y = 2.0;
@@ -162,60 +178,58 @@ int main(void) {
     glClearColor(1.0f, 1.0f, 1.0f, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glUseProgram(program);
     float aspect = float(width) / float(height);
     Matrix4f projMat = Perspective(fovy, aspect, 0.1f, 100.0f);
     Matrix4f viewMat = camPose.Inverted().GetMatrix4();
+
+    // begin render triangle
+    glUseProgram(program);
+    glBindBuffer(GL_ARRAY_BUFFER, tri_vert_buffer);
+    glVertexAttribPointer(static_cast<GLuint>(pos_loc), 3, GL_FLOAT, GL_FALSE,
+                          3 * sizeof(float), static_cast<void *>(0));
+    glVertexAttribPointer(static_cast<GLuint>(col_loc), 3, GL_FLOAT, GL_FALSE,
+                          3 * sizeof(float),
+                          reinterpret_cast<void *>(sizeof(pos)));
+    glEnableVertexAttribArray(static_cast<GLuint>(pos_loc));
+    glEnableVertexAttribArray(static_cast<GLuint>(col_loc));
+
     Matrix4f modelMat = modelPose.GetMatrix4();
-    Matrix4f pvm = projMat * viewMat * modelMat;
-    if (frame == 1) {
-      printf("\n");
-      printMatrix(pvm);
-      printf("\n");
-      for (int i = 0; i < 3; i++) {
-        Vec3f v = pos[i];
-        pvm.MultMatrixVec(v);
-        printf("v: (%.2f %.2f %.2f)\n", v.x, v.y, v.z);
-      }
-    }
     glUniformMatrix4fv(proj_loc, 1, GL_FALSE, projMat.GetValue());
     glUniformMatrix4fv(view_loc, 1, GL_FALSE, viewMat.GetValue());
     glUniformMatrix4fv(model_loc, 1, GL_FALSE, modelMat.GetValue());
     glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDisableVertexAttribArray(static_cast<GLuint>(pos_loc));
+    glDisableVertexAttribArray(static_cast<GLuint>(col_loc));
+    glBindBuffer(GL_ARRAY_BUFFER, dummy_buffer);
+    glUseProgram(dummy_program);
+    // end render triangle
+
+    // grid render begin
+    glUseProgram(program);
+    glBindBuffer(GL_ARRAY_BUFFER, grid_vert_buffer);
+    glVertexAttribPointer(static_cast<GLuint>(pos_loc), 2, GL_FLOAT, GL_FALSE,
+                          3 * sizeof(float), static_cast<void *>(0));
+    glVertexAttribPointer(static_cast<GLuint>(col_loc), 3, GL_FLOAT, GL_FALSE,
+                          3 * sizeof(float),
+                          reinterpret_cast<void *>(sizeof(pos)));
+    glEnableVertexAttribArray(static_cast<GLuint>(pos_loc));
+    glEnableVertexAttribArray(static_cast<GLuint>(col_loc));
+
+    Matrix4f gridModelMat = modelPose.GetMatrix4();
+    glUniformMatrix4fv(proj_loc, 1, GL_FALSE, projMat.GetValue());
+    glUniformMatrix4fv(view_loc, 1, GL_FALSE, viewMat.GetValue());
+    glUniformMatrix4fv(model_loc, 1, GL_FALSE, gridModelMat.GetValue());
+    glDrawArrays(GL_LINES, 0, 4);
+    glDisableVertexAttribArray(static_cast<GLuint>(pos_loc));
+    glDisableVertexAttribArray(static_cast<GLuint>(col_loc));
+    glBindBuffer(GL_ARRAY_BUFFER, dummy_buffer);
+    glUseProgram(dummy_program);
+    // grid render end
+
+    glUseProgram(program);
+    glBindBuffer(GL_ARRAY_BUFFER, tri_vert_buffer);
 
     if (frame % 1 == 0) {
-
-      // modelPose.t.x = 0.5 * sin(frame * 0.05f);
-      // modelPose.t.y = 0.5 * cos(frame * 0.05f);
-      // modelPose.r = Quaternionf(Vec3f(0, 0, 1), frame * -0.05f);
-
-      /*Vec3f xpos[3];
-      for ( int i = 0; i < 3; i++ ) {
-        xpos[i] = modelPose.Transform( pos[i] );
-      }
-      glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(xpos), xpos);
-      */
-      /*if (dir) {
-        if (lorr)
-          x -= 0.0125;
-        else
-          x += 0.0125;
-        if (x <= 0.0 || x >= 2.0) {
-          dir = false;
-        }
-      } else {
-        if (lorr)
-          y -= 0.0125;
-        else
-          y += 0.0125;
-        if (y <= 0.0 || y >= 2.0) {
-          dir = true;
-          lorr = !lorr;
-        }
-      }
-      pos[2] = x - 1.0f;
-      pos[5] = y - 1.0f;*/
-
       for (int i = 0; i < 3; i++) {
         if (vertcol[i] == 0) {
           if (col[i].x <= 0.0f)
