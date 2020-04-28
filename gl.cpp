@@ -23,6 +23,8 @@ int frame = 0;
 bool drag = false;
 Vec2d prevPos;
 Vec2d diffPos;
+GLuint dummy_program;
+GLuint dummy_buffer;
 
 static void printMatrix(const Matrix4f &m) {
   for (int i = 0; i < 4; i++) {
@@ -83,6 +85,58 @@ static void mouse_button_callback(GLFWwindow *window, int button, int action,
   }
 }
 
+#define OFFSET_OF(v) reinterpret_cast<void*>(v)
+
+class Object{
+public:
+  GLuint p, b;
+  GLint pos_loc, col_loc, proj_loc, view_loc, model_loc;
+  int numv;
+  Posef modelPose;
+  GLenum primType;
+
+public:
+
+  GLsizeiptr sz( int ncomp, int size ) {
+    return ncomp * size * numv;
+  }
+
+  void init(GLuint program, int numVerts, Vec3f* pos, Vec3f* col){
+    p = program;
+    pos_loc = glGetAttribLocation(program, "pos");
+    col_loc = glGetAttribLocation(program, "col");
+    proj_loc = glGetUniformLocation(program, "proj");
+    view_loc = glGetUniformLocation(program, "view");
+    model_loc = glGetUniformLocation(program, "model");
+    numv = numVerts;
+    glGenBuffers(1, &b);
+    glBindBuffer(GL_ARRAY_BUFFER, b);
+    glBufferData(GL_ARRAY_BUFFER, sz(6, sizeof(float)), nullptr, GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sz(3, sizeof(float)), pos);
+    glBufferSubData(GL_ARRAY_BUFFER, sz(3, sizeof(float)), sz(3, sizeof(float)), col);
+    primType = GL_TRIANGLES;
+  }
+
+  void render(int numVerts, Matrix4f projMat, Matrix4f viewMat){
+    glUseProgram(p);
+    glBindBuffer(GL_ARRAY_BUFFER, b);
+    glVertexAttribPointer(static_cast<GLuint>(pos_loc), 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), OFFSET_OF(0));
+    glVertexAttribPointer(static_cast<GLuint>(col_loc), 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), OFFSET_OF(sz(3, sizeof(float))));
+    glEnableVertexAttribArray(static_cast<GLuint>(pos_loc));
+    glEnableVertexAttribArray(static_cast<GLuint>(col_loc));
+
+    Matrix4f modelMat = modelPose.GetMatrix4();
+    glUniformMatrix4fv(proj_loc, 1, GL_FALSE, projMat.GetValue());
+    glUniformMatrix4fv(view_loc, 1, GL_FALSE, viewMat.GetValue());
+    glUniformMatrix4fv(model_loc, 1, GL_FALSE, modelMat.GetValue());
+    glDrawArrays(primType, 0, numv);
+    glDisableVertexAttribArray(static_cast<GLuint>(pos_loc));
+    glDisableVertexAttribArray(static_cast<GLuint>(col_loc));
+    glBindBuffer(GL_ARRAY_BUFFER, dummy_buffer);
+    glUseProgram(dummy_program);
+  }
+};
+
 int main(void) {
 
   camPose.t.z = 2.0;
@@ -104,8 +158,6 @@ int main(void) {
     exit(EXIT_FAILURE);
   }
 
-
-
   glfwSetKeyCallback(window, key_callback);
   glfwSetMouseButtonCallback(window, mouse_button_callback);
 
@@ -124,31 +176,23 @@ int main(void) {
   GLint model_loc = glGetUniformLocation(program, "model");
   // program initialization end
 
-  GLuint dummy_program = glCreateProgram();
-  GLuint dummy_buffer;
+  dummy_program = glCreateProgram();
   glGenBuffers(1, &dummy_buffer);
 
   // triangle initialization begin
-  GLuint tri_vert_buffer;
-  void* sizeof_pos;
+  Object tri;
   Vec3f col[] = {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
   {
     Vec3f pos[] = {{0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}};
-    sizeof_pos = reinterpret_cast<void*>(sizeof(pos));
 
-    glGenBuffers(1, &tri_vert_buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, tri_vert_buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(pos) + sizeof(col), nullptr,
-                 GL_DYNAMIC_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pos), pos);
-    glBufferSubData(GL_ARRAY_BUFFER, sizeof(pos), sizeof(col), col);
+    tri.init(program, 3, pos, col);
   }
   // triangle initialization end
 
   // grid init begin
+  Object grid;
   static const int gridsize = 7; // vertical or horizontal size odd
   static const int numGridVerts = gridsize*4;
-  GLuint grid_vert_buffer;
   {
     Vec3f gridPos[numGridVerts];
     Vec3f gridCol[numGridVerts];
@@ -163,13 +207,9 @@ int main(void) {
     for(int j=0;j<numGridVerts;j++) {
       gridCol[j] = Vec3f(1.0f,0.0f,0.0f);
     }
-    
-    glGenBuffers(1, &grid_vert_buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, grid_vert_buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(gridPos) + sizeof(gridCol), nullptr,
-                 GL_STATIC_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(gridPos), gridPos);
-    glBufferSubData(GL_ARRAY_BUFFER, sizeof(gridPos), sizeof(gridCol), gridCol);
+
+    grid.init(program, numGridVerts, gridPos, gridCol);
+    grid.primType = GL_LINES;    
   }
   // grid init end
 
@@ -202,48 +242,9 @@ int main(void) {
     Matrix4f projMat = Perspective(fovy, aspect, 0.1f, 100.0f);
     Matrix4f viewMat = camPose.Inverted().GetMatrix4();
 
-    // begin render triangle
-    glUseProgram(program);
-    glBindBuffer(GL_ARRAY_BUFFER, tri_vert_buffer);
-    glVertexAttribPointer(static_cast<GLuint>(pos_loc), 3, GL_FLOAT, GL_FALSE,
-                          3 * sizeof(float), static_cast<void *>(0));
-    glVertexAttribPointer(static_cast<GLuint>(col_loc), 3, GL_FLOAT, GL_FALSE,
-                          3 * sizeof(float), sizeof_pos);
-    glEnableVertexAttribArray(static_cast<GLuint>(pos_loc));
-    glEnableVertexAttribArray(static_cast<GLuint>(col_loc));
-
-    Matrix4f modelMat = modelPose.GetMatrix4();
-    glUniformMatrix4fv(proj_loc, 1, GL_FALSE, projMat.GetValue());
-    glUniformMatrix4fv(view_loc, 1, GL_FALSE, viewMat.GetValue());
-    glUniformMatrix4fv(model_loc, 1, GL_FALSE, modelMat.GetValue());
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-    glDisableVertexAttribArray(static_cast<GLuint>(pos_loc));
-    glDisableVertexAttribArray(static_cast<GLuint>(col_loc));
-    glBindBuffer(GL_ARRAY_BUFFER, dummy_buffer);
-    glUseProgram(dummy_program);
-    // end render triangle
-
-    // grid render begin
-    glUseProgram(program);
-    glBindBuffer(GL_ARRAY_BUFFER, grid_vert_buffer);
-    glVertexAttribPointer(static_cast<GLuint>(pos_loc), 3, GL_FLOAT, GL_FALSE,
-                          3 * sizeof(float), static_cast<void *>(0));
-    glVertexAttribPointer(static_cast<GLuint>(col_loc), 3, GL_FLOAT, GL_FALSE,
-                          3 * sizeof(float),
-                          reinterpret_cast<void *>(3*sizeof(float)*numGridVerts));
-    glEnableVertexAttribArray(static_cast<GLuint>(pos_loc));
-    glEnableVertexAttribArray(static_cast<GLuint>(col_loc));
-
-    Matrix4f gridModelMat;
-    glUniformMatrix4fv(proj_loc, 1, GL_FALSE, projMat.GetValue());
-    glUniformMatrix4fv(view_loc, 1, GL_FALSE, viewMat.GetValue());
-    glUniformMatrix4fv(model_loc, 1, GL_FALSE, gridModelMat.GetValue());
-    glDrawArrays(GL_LINES, 0, numGridVerts);
-    glDisableVertexAttribArray(static_cast<GLuint>(pos_loc));
-    glDisableVertexAttribArray(static_cast<GLuint>(col_loc));
-    glBindBuffer(GL_ARRAY_BUFFER, dummy_buffer);
-    glUseProgram(dummy_program);
-    // grid render end
+    tri.modelPose = modelPose;
+    tri.render(3, projMat, viewMat);
+    grid.render(2, projMat, viewMat);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
