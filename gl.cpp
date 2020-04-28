@@ -129,37 +129,48 @@ int main(void) {
   glGenBuffers(1, &dummy_buffer);
 
   // triangle initialization begin
-  Vec3f pos[] = {{0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}};
-  Vec3f col[] = {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
-
   GLuint tri_vert_buffer;
-  glGenBuffers(1, &tri_vert_buffer);
-  glBindBuffer(GL_ARRAY_BUFFER, tri_vert_buffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(pos) + sizeof(col), nullptr,
-               GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pos), pos);
-  glBufferSubData(GL_ARRAY_BUFFER, sizeof(pos), sizeof(col), col);
+  void* sizeof_pos;
+  Vec3f col[] = {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
+  {
+    Vec3f pos[] = {{0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}};
+    sizeof_pos = reinterpret_cast<void*>(sizeof(pos));
+
+    glGenBuffers(1, &tri_vert_buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, tri_vert_buffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(pos) + sizeof(col), nullptr,
+                 GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(pos), pos);
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(pos), sizeof(col), col);
+  }
   // triangle initialization end
 
   // grid init begin
-  int gridsize = 5;
-  Vec3f gridPos[gridsize*8+4];
-  Vec3f gridCol[gridsize*8+4];
-  int gridPosSize = gridsize*8+4;
-  for(int j=0;j<gridsize*2+1;j++){
-    gridPos[0+j] = {float(gridsize*2*-1),0.0f,float(gridsize*-1+j)};
-    gridPos[1+j] = {float(gridsize*2),0.0f,float(gridsize*-1+j)};
-    gridPos[2+j] = {float(gridsize*-1+j),0.0f,float(gridsize*2*-1)};
-    gridPos[2+j] = {float(gridsize*-1+j),0.0f,float(gridsize*2*-1)};
-  }for(int j=0;j<gridsize*8+4;j++) gridPos[j] = {1.0f,0.0f,0.0f};
-  
+  static const int gridsize = 7; // vertical or horizontal size odd
+  static const int numGridVerts = gridsize*4;
   GLuint grid_vert_buffer;
-  glGenBuffers(1, &grid_vert_buffer);
-  glBindBuffer(GL_ARRAY_BUFFER, grid_vert_buffer);
-  glBufferData(GL_ARRAY_BUFFER, gridPosSize + gridPosSize, nullptr,
-               GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, gridPosSize, gridPos);
-  glBufferSubData(GL_ARRAY_BUFFER, gridPosSize, gridPosSize, gridCol);
+  {
+    Vec3f gridPos[numGridVerts];
+    Vec3f gridCol[numGridVerts];
+    for(int j=0;j<gridsize;j++){
+      float frac = j/(gridsize - 1.0f);
+      float v = -1 * (1 - frac) + 1 * frac;
+      gridPos[(j*4)+0] = Vec3f(v, 0, -1);
+      gridPos[(j*4)+1] = Vec3f(v, 0,  1);
+      gridPos[(j*4)+2] = Vec3f( 1, 0, v);
+      gridPos[(j*4)+3] = Vec3f(-1, 0, v);
+    }
+    for(int j=0;j<numGridVerts;j++) {
+      gridCol[j] = Vec3f(1.0f,0.0f,0.0f);
+    }
+    
+    glGenBuffers(1, &grid_vert_buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, grid_vert_buffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(gridPos) + sizeof(gridCol), nullptr,
+                 GL_STATIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(gridPos), gridPos);
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(gridPos), sizeof(gridCol), gridCol);
+  }
   // grid init end
 
   float x = 2.0;
@@ -184,7 +195,8 @@ int main(void) {
     glViewport(0, 0, width, height);
 
     glClearColor(1.0f, 1.0f, 1.0f, 0);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
 
     float aspect = float(width) / float(height);
     Matrix4f projMat = Perspective(fovy, aspect, 0.1f, 100.0f);
@@ -196,8 +208,7 @@ int main(void) {
     glVertexAttribPointer(static_cast<GLuint>(pos_loc), 3, GL_FLOAT, GL_FALSE,
                           3 * sizeof(float), static_cast<void *>(0));
     glVertexAttribPointer(static_cast<GLuint>(col_loc), 3, GL_FLOAT, GL_FALSE,
-                          3 * sizeof(float),
-                          reinterpret_cast<void *>(sizeof(pos)));
+                          3 * sizeof(float), sizeof_pos);
     glEnableVertexAttribArray(static_cast<GLuint>(pos_loc));
     glEnableVertexAttribArray(static_cast<GLuint>(col_loc));
 
@@ -215,57 +226,24 @@ int main(void) {
     // grid render begin
     glUseProgram(program);
     glBindBuffer(GL_ARRAY_BUFFER, grid_vert_buffer);
-    glVertexAttribPointer(static_cast<GLuint>(pos_loc), 2, GL_FLOAT, GL_FALSE,
+    glVertexAttribPointer(static_cast<GLuint>(pos_loc), 3, GL_FLOAT, GL_FALSE,
                           3 * sizeof(float), static_cast<void *>(0));
     glVertexAttribPointer(static_cast<GLuint>(col_loc), 3, GL_FLOAT, GL_FALSE,
                           3 * sizeof(float),
-                          reinterpret_cast<void *>(sizeof(pos)));
+                          reinterpret_cast<void *>(3*sizeof(float)*numGridVerts));
     glEnableVertexAttribArray(static_cast<GLuint>(pos_loc));
     glEnableVertexAttribArray(static_cast<GLuint>(col_loc));
 
-    Matrix4f gridModelMat = modelPose.GetMatrix4();
+    Matrix4f gridModelMat;
     glUniformMatrix4fv(proj_loc, 1, GL_FALSE, projMat.GetValue());
     glUniformMatrix4fv(view_loc, 1, GL_FALSE, viewMat.GetValue());
     glUniformMatrix4fv(model_loc, 1, GL_FALSE, gridModelMat.GetValue());
-    glDrawArrays(GL_LINES, 0, (gridsize*8+4));
+    glDrawArrays(GL_LINES, 0, numGridVerts);
     glDisableVertexAttribArray(static_cast<GLuint>(pos_loc));
     glDisableVertexAttribArray(static_cast<GLuint>(col_loc));
     glBindBuffer(GL_ARRAY_BUFFER, dummy_buffer);
     glUseProgram(dummy_program);
     // grid render end
-
-    glUseProgram(program);
-    glBindBuffer(GL_ARRAY_BUFFER, tri_vert_buffer);
-
-    if (frame % 1 == 0) {
-      for (int i = 0; i < 3; i++) {
-        if (vertcol[i] == 0) {
-          if (col[i].x <= 0.0f)
-            vertcol[i] = 1;
-          else {
-            col[i].x -= 0.05;
-            col[i].y += 0.05;
-          }
-        }
-        if (vertcol[i] == 1) {
-          if (col[i].y <= 0.0f)
-            vertcol[i] = 2;
-          else {
-            col[i].y -= 0.05;
-            col[i].z += 0.05;
-          }
-        }
-        if (vertcol[i] == 2) {
-          if (col[i].z <= 0.0f)
-            vertcol[i] = 0;
-          else {
-            col[i].z -= 0.05;
-            col[i].x += 0.05;
-          }
-        }
-      }
-    }
-    glBufferSubData(GL_ARRAY_BUFFER, sizeof(pos), sizeof(col), col);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
@@ -275,5 +253,5 @@ int main(void) {
   glfwDestroyWindow(window);
 
   glfwTerminate();
-  exit(EXIT_SUCCESS);
+  return 0;
 }
