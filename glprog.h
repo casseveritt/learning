@@ -4,4 +4,5 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-GLuint createProgram(const char *vertexShaderFilename, const char *fragmentShaderFilename);
+GLuint createProgram(const char *vertexShaderFilename,
+                     const char *fragmentShaderFilename);

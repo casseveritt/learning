@@ -85,9 +85,9 @@ static void mouse_button_callback(GLFWwindow *window, int button, int action,
   }
 }
 
-#define OFFSET_OF(v) reinterpret_cast<void*>(v)
+#define OFFSET_OF(v) reinterpret_cast<void *>(v)
 
-class Object{
+class Object {
 public:
   GLuint p, b;
   GLint pos_loc, col_loc, proj_loc, view_loc, model_loc;
@@ -96,12 +96,9 @@ public:
   GLenum primType;
 
 public:
+  GLsizeiptr sz(int ncomp, int size) { return ncomp * size * numv; }
 
-  GLsizeiptr sz( int ncomp, int size ) {
-    return ncomp * size * numv;
-  }
-
-  void init(GLuint program, int numVerts, Vec3f* pos, Vec3f* col){
+  void init(GLuint program, int numVerts, Vec3f *pos, Vec3f *col) {
     p = program;
     pos_loc = glGetAttribLocation(program, "pos");
     col_loc = glGetAttribLocation(program, "col");
@@ -111,17 +108,21 @@ public:
     numv = numVerts;
     glGenBuffers(1, &b);
     glBindBuffer(GL_ARRAY_BUFFER, b);
-    glBufferData(GL_ARRAY_BUFFER, sz(6, sizeof(float)), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sz(6, sizeof(float)), nullptr,
+                 GL_DYNAMIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sz(3, sizeof(float)), pos);
-    glBufferSubData(GL_ARRAY_BUFFER, sz(3, sizeof(float)), sz(3, sizeof(float)), col);
+    glBufferSubData(GL_ARRAY_BUFFER, sz(3, sizeof(float)), sz(3, sizeof(float)),
+                    col);
     primType = GL_TRIANGLES;
   }
 
-  void render(int numVerts, Matrix4f projMat, Matrix4f viewMat){
+  void render(int numVerts, Matrix4f projMat, Matrix4f viewMat) {
     glUseProgram(p);
     glBindBuffer(GL_ARRAY_BUFFER, b);
-    glVertexAttribPointer(static_cast<GLuint>(pos_loc), 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), OFFSET_OF(0));
-    glVertexAttribPointer(static_cast<GLuint>(col_loc), 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), OFFSET_OF(sz(3, sizeof(float))));
+    glVertexAttribPointer(static_cast<GLuint>(pos_loc), 3, GL_FLOAT, GL_FALSE,
+                          3 * sizeof(float), OFFSET_OF(0));
+    glVertexAttribPointer(static_cast<GLuint>(col_loc), 3, GL_FLOAT, GL_FALSE,
+                          3 * sizeof(float), OFFSET_OF(sz(3, sizeof(float))));
     glEnableVertexAttribArray(static_cast<GLuint>(pos_loc));
     glEnableVertexAttribArray(static_cast<GLuint>(col_loc));
 
@@ -166,7 +167,8 @@ int main(void) {
   glfwSwapInterval(1);
 
   // program initialization begin
-  GLuint program = createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
+  GLuint program =
+      createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
   GLint pos_loc = glGetAttribLocation(program, "pos");
   GLint col_loc = glGetAttribLocation(program, "col");
 
@@ -192,24 +194,24 @@ int main(void) {
   // grid init begin
   Object grid;
   static const int gridsize = 7; // vertical or horizontal size odd
-  static const int numGridVerts = gridsize*4;
+  static const int numGridVerts = gridsize * 4;
   {
     Vec3f gridPos[numGridVerts];
     Vec3f gridCol[numGridVerts];
-    for(int j=0;j<gridsize;j++){
-      float frac = j/(gridsize - 1.0f);
+    for (int j = 0; j < gridsize; j++) {
+      float frac = j / (gridsize - 1.0f);
       float v = -1 * (1 - frac) + 1 * frac;
-      gridPos[(j*4)+0] = Vec3f(v, 0, -1);
-      gridPos[(j*4)+1] = Vec3f(v, 0,  1);
-      gridPos[(j*4)+2] = Vec3f( 1, 0, v);
-      gridPos[(j*4)+3] = Vec3f(-1, 0, v);
+      gridPos[(j * 4) + 0] = Vec3f(v, 0, -1);
+      gridPos[(j * 4) + 1] = Vec3f(v, 0, 1);
+      gridPos[(j * 4) + 2] = Vec3f(1, 0, v);
+      gridPos[(j * 4) + 3] = Vec3f(-1, 0, v);
     }
-    for(int j=0;j<numGridVerts;j++) {
-      gridCol[j] = Vec3f(1.0f,0.0f,0.0f);
+    for (int j = 0; j < numGridVerts; j++) {
+      gridCol[j] = Vec3f(1.0f, 0.0f, 0.0f);
     }
 
     grid.init(program, numGridVerts, gridPos, gridCol);
-    grid.primType = GL_LINES;    
+    grid.primType = GL_LINES;
   }
   // grid init end
 
