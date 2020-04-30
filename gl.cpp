@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 #include <math.h>
 #include <stdlib.h>
+#include <vector>
 
 using namespace r3;
 
@@ -91,46 +92,57 @@ class Object {
 public:
   GLuint p, b;
   GLint pos_loc, col_loc, proj_loc, view_loc, model_loc;
-  int numv;
   Posef modelPose;
   GLenum primType;
+  struct Vertex {
+    Vec3f color;
+    Vec3f position;
+  };
+
+  Vertex v;
+  std::vector<Vertex> verts;
 
 public:
-  GLsizeiptr sz(int ncomp, int size) { return ncomp * size * numv; }
-
-  void init(GLuint program, int numVerts, Vec3f *pos, Vec3f *col) {
+  void begin(GLuint program, GLenum prim) {
     p = program;
     pos_loc = glGetAttribLocation(program, "pos");
     col_loc = glGetAttribLocation(program, "col");
     proj_loc = glGetUniformLocation(program, "proj");
     view_loc = glGetUniformLocation(program, "view");
     model_loc = glGetUniformLocation(program, "model");
-    numv = numVerts;
     glGenBuffers(1, &b);
-    glBindBuffer(GL_ARRAY_BUFFER, b);
-    glBufferData(GL_ARRAY_BUFFER, sz(6, sizeof(float)), nullptr,
-                 GL_DYNAMIC_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sz(3, sizeof(float)), pos);
-    glBufferSubData(GL_ARRAY_BUFFER, sz(3, sizeof(float)), sz(3, sizeof(float)),
-                    col);
-    primType = GL_TRIANGLES;
+    primType = prim;
+    verts.clear();
   }
 
-  void render(int numVerts, Matrix4f projMat, Matrix4f viewMat) {
+  void end() {
+    glBindBuffer(GL_ARRAY_BUFFER, b);
+    glBufferData(GL_ARRAY_BUFFER, float(sizeof(Vertex) * verts.size()),
+                 &verts[0], GL_DYNAMIC_DRAW);
+  }
+
+  void color(float r, float g, float bl) { v.color = Vec3f(r, g, bl); }
+
+  void position(float x, float y, float z) {
+    v.position = Vec3f(x, y, z);
+    verts.push_back(v);
+  }
+
+  void draw(Matrix4f projMat, Matrix4f viewMat) {
     glUseProgram(p);
     glBindBuffer(GL_ARRAY_BUFFER, b);
-    glVertexAttribPointer(static_cast<GLuint>(pos_loc), 3, GL_FLOAT, GL_FALSE,
-                          3 * sizeof(float), OFFSET_OF(0));
     glVertexAttribPointer(static_cast<GLuint>(col_loc), 3, GL_FLOAT, GL_FALSE,
-                          3 * sizeof(float), OFFSET_OF(sz(3, sizeof(float))));
-    glEnableVertexAttribArray(static_cast<GLuint>(pos_loc));
+                          sizeof(Vertex), OFFSET_OF(0));
+    glVertexAttribPointer(static_cast<GLuint>(pos_loc), 3, GL_FLOAT, GL_FALSE,
+                          sizeof(Vertex), OFFSET_OF(sizeof(Vec3f)));
     glEnableVertexAttribArray(static_cast<GLuint>(col_loc));
+    glEnableVertexAttribArray(static_cast<GLuint>(pos_loc));
 
     Matrix4f modelMat = modelPose.GetMatrix4();
     glUniformMatrix4fv(proj_loc, 1, GL_FALSE, projMat.GetValue());
     glUniformMatrix4fv(view_loc, 1, GL_FALSE, viewMat.GetValue());
     glUniformMatrix4fv(model_loc, 1, GL_FALSE, modelMat.GetValue());
-    glDrawArrays(primType, 0, numv);
+    glDrawArrays(primType, 0, verts.size());
     glDisableVertexAttribArray(static_cast<GLuint>(pos_loc));
     glDisableVertexAttribArray(static_cast<GLuint>(col_loc));
     glBindBuffer(GL_ARRAY_BUFFER, dummy_buffer);
@@ -166,60 +178,84 @@ int main(void) {
       window); // This is the point when you can make gl calls
   glfwSwapInterval(1);
 
-  // program initialization begin
+  // programs init begin
   GLuint program =
       createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
-  GLint pos_loc = glGetAttribLocation(program, "pos");
-  GLint col_loc = glGetAttribLocation(program, "col");
-
   glUseProgram(program);
-  GLint proj_loc = glGetUniformLocation(program, "proj");
-  GLint view_loc = glGetUniformLocation(program, "view");
-  GLint model_loc = glGetUniformLocation(program, "model");
-  // program initialization end
-
   dummy_program = glCreateProgram();
   glGenBuffers(1, &dummy_buffer);
+  // programs init end
 
-  // triangle initialization begin
+  // objects init begin
   Object tri;
-  Vec3f col[] = {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
-  {
-    Vec3f pos[] = {{0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}};
+  tri.begin(program, GL_TRIANGLES);
+  tri.color(0.0f, 1.0f, 0.0f);
+  tri.position(-0.5f, 0.0f, 0.0f);
+  tri.color(1.0f, 0.0f, 0.0f);
+  tri.position(0.5f, 0.0f, 0.0f);
+  tri.color(1.0f, 0.0f, 0.0f);
+  tri.position(-0.5f, 1.0f, 0.0f);
+  tri.end();
 
-    tri.init(program, 3, pos, col);
-  }
-  // triangle initialization end
+  Object tri1;
+  tri1.begin(program, GL_TRIANGLES);
+  tri1.color(0.0f, 0.0f, 0.0f);
+  tri1.position(-0.5f, 0.0f, -1.0f);
+  tri1.color(0.0f, 1.0f, 0.0f);
+  tri1.position(-1.5f, 0.0f, 0.0f);
+  tri1.color(0.0f, 1.0f, 0.0f);
+  tri1.position(-0.5f, 1.0f, -1.0f);
+  tri1.end();
 
-  // grid init begin
+  Object tri2;
+  tri2.begin(program, GL_TRIANGLES);
+  tri2.color(0.0f, 0.0f, 0.0f);
+  tri2.position(0.5f, 1.0f, -1.0f);
+  tri2.color(0.95f, 0.95f, 0.95f);
+  tri2.position(1.5f, 1.0f, 0.0f);
+  tri2.color(0.95f, 0.95f, 0.95f);
+  tri2.position(0.5f, 0.0f, -1.0f);
+  tri2.end();
+
+  Object tri3;
+  tri3.begin(program, GL_TRIANGLES);
+  tri3.color(1.0f, 0.0f, 0.0f);
+  tri3.position(0.5f, 0.0f, 1.0f);
+  tri3.color(0.0f, 0.0f, 1.0f);
+  tri3.position(1.5f, 0.0f, 0.0f);
+  tri3.color(0.0f, 0.0f, 1.0f);
+  tri3.position(0.5f, 1.0f, 1.0f);
+  tri3.end();
+
+  Object tri4;
+  tri4.begin(program, GL_TRIANGLES);
+  tri4.color(0.95f, 0.95f, 0.95f);
+  tri4.position(-0.5f, 1.0f, 1.0f);
+  tri4.color(0.0f, 0.0f, 0.0f);
+  tri4.position(-1.5f, 1.0f, 0.0f);
+  tri4.color(0.0f, 0.0f, 0.0f);
+  tri4.position(-0.5f, 0.0f, 1.0f);
+  tri4.end();
+
   Object grid;
-  static const int gridsize = 7; // vertical or horizontal size odd
-  static const int numGridVerts = gridsize * 4;
-  {
-    Vec3f gridPos[numGridVerts];
-    Vec3f gridCol[numGridVerts];
-    for (int j = 0; j < gridsize; j++) {
-      float frac = j / (gridsize - 1.0f);
-      float v = -1 * (1 - frac) + 1 * frac;
-      gridPos[(j * 4) + 0] = Vec3f(v, 0, -1);
-      gridPos[(j * 4) + 1] = Vec3f(v, 0, 1);
-      gridPos[(j * 4) + 2] = Vec3f(1, 0, v);
-      gridPos[(j * 4) + 3] = Vec3f(-1, 0, v);
-    }
-    for (int j = 0; j < numGridVerts; j++) {
-      gridCol[j] = Vec3f(1.0f, 0.0f, 0.0f);
-    }
-
-    grid.init(program, numGridVerts, gridPos, gridCol);
-    grid.primType = GL_LINES;
+  grid.begin(program, GL_LINES);
+  static const int gridsize = 15; // vertical or horizontal size odd
+  static const float s = 0.25f;   // spacing of lines
+  for (int i = 0; i < gridsize; i++) {
+    float shift = (gridsize / 2) * -1 * s + i * s;
+    float move = (gridsize / 2) * s;
+    grid.color(0.0f, 0.0f, 0.0f);
+    grid.position(shift, 0.0f, move);
+    grid.color(0.0f, 0.0f, 0.0f);
+    grid.position(shift, 0.0f, move * -1);
+    grid.color(0.0f, 0.0f, 0.0f);
+    grid.position(move, 0.0f, shift);
+    grid.color(0.0f, 0.0f, 0.0f);
+    grid.position(move * -1, 0.0f, shift);
   }
-  // grid init end
+  grid.end();
+  // objects init end
 
-  float x = 2.0;
-  float y = 2.0;
-  bool dir = true;
-  bool lorr = true;
-  int vertcol[] = {0, 1, 2};
   while (!glfwWindowShouldClose(window)) {
 
     if (drag) {
@@ -245,8 +281,12 @@ int main(void) {
     Matrix4f viewMat = camPose.Inverted().GetMatrix4();
 
     tri.modelPose = modelPose;
-    tri.render(3, projMat, viewMat);
-    grid.render(2, projMat, viewMat);
+    tri.draw(projMat, viewMat);
+    tri1.draw(projMat, viewMat);
+    tri2.draw(projMat, viewMat);
+    tri3.draw(projMat, viewMat);
+    tri4.draw(projMat, viewMat);
+    grid.draw(projMat, viewMat);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
