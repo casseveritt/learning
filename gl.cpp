@@ -27,15 +27,6 @@ Vec2d diffPos;
 GLuint dummy_program;
 GLuint dummy_buffer;
 
-static void printMatrix(const Matrix4f &m) {
-  for (int i = 0; i < 4; i++) {
-    for (int j = 0; j < 4; j++) {
-      printf("%.2f ", m.el(i, j));
-    }
-    printf("\n");
-  }
-}
-
 static void error_callback(int error, const char *description) {
   fprintf(stderr, "Error: %s\n", description);
 }
