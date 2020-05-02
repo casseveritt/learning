@@ -88,9 +88,28 @@ static void mouse_button_callback(GLFWwindow *window, int button, int action,
 
 #define OFFSET_OF(v) reinterpret_cast<void *>(v)
 
+class Prog {
+public:
+  GLuint p;
+  union Ui {
+    GLuint u;
+    GLint i;
+  };
+  Ui pos, col, proj, view, model;
+
+  void set(GLuint program){
+    p = program;
+    pos.i = glGetAttribLocation(program, "pos");
+    col.i = glGetAttribLocation(program, "col");
+    proj.i = glGetUniformLocation(program, "proj");
+    view.i = glGetUniformLocation(program, "view");
+    model.i = glGetUniformLocation(program, "model");
+  }
+};
+
 class Object {
 public:
-  GLuint p, b;
+  GLuint b;
   GLint pos_loc, col_loc, proj_loc, view_loc, model_loc;
   Posef modelPose;
   GLenum primType;
@@ -103,13 +122,7 @@ public:
   std::vector<Vertex> verts;
 
 public:
-  void begin(GLuint program, GLenum prim) {
-    p = program;
-    pos_loc = glGetAttribLocation(program, "pos");
-    col_loc = glGetAttribLocation(program, "col");
-    proj_loc = glGetUniformLocation(program, "proj");
-    view_loc = glGetUniformLocation(program, "view");
-    model_loc = glGetUniformLocation(program, "model");
+  void begin(GLenum prim) {
     glGenBuffers(1, &b);
     primType = prim;
     verts.clear();
@@ -128,23 +141,23 @@ public:
     verts.push_back(v);
   }
 
-  void draw(Matrix4f projMat, Matrix4f viewMat) {
-    glUseProgram(p);
+  void draw(Prog p, Matrix4f projMat, Matrix4f viewMat) {
+    glUseProgram(p.p);
     glBindBuffer(GL_ARRAY_BUFFER, b);
-    glVertexAttribPointer(static_cast<GLuint>(col_loc), 3, GL_FLOAT, GL_FALSE,
+    glVertexAttribPointer(p.col.u, 3, GL_FLOAT, GL_FALSE,
                           sizeof(Vertex), OFFSET_OF(0));
-    glVertexAttribPointer(static_cast<GLuint>(pos_loc), 3, GL_FLOAT, GL_FALSE,
+    glVertexAttribPointer(p.pos.u, 3, GL_FLOAT, GL_FALSE,
                           sizeof(Vertex), OFFSET_OF(sizeof(Vec3f)));
-    glEnableVertexAttribArray(static_cast<GLuint>(col_loc));
-    glEnableVertexAttribArray(static_cast<GLuint>(pos_loc));
+    glEnableVertexAttribArray(p.col.u);
+    glEnableVertexAttribArray(p.pos.u);
 
     Matrix4f modelMat = modelPose.GetMatrix4();
-    glUniformMatrix4fv(proj_loc, 1, GL_FALSE, projMat.GetValue());
-    glUniformMatrix4fv(view_loc, 1, GL_FALSE, viewMat.GetValue());
-    glUniformMatrix4fv(model_loc, 1, GL_FALSE, modelMat.GetValue());
+    glUniformMatrix4fv(p.proj.i, 1, GL_FALSE, projMat.GetValue());
+    glUniformMatrix4fv(p.view.i, 1, GL_FALSE, viewMat.GetValue());
+    glUniformMatrix4fv(p.model.i, 1, GL_FALSE, modelMat.GetValue());
     glDrawArrays(primType, 0, verts.size());
-    glDisableVertexAttribArray(static_cast<GLuint>(pos_loc));
-    glDisableVertexAttribArray(static_cast<GLuint>(col_loc));
+    glDisableVertexAttribArray(p.pos.u);
+    glDisableVertexAttribArray(p.col.u);
     glBindBuffer(GL_ARRAY_BUFFER, dummy_buffer);
     glUseProgram(dummy_program);
   }
@@ -175,20 +188,23 @@ int main(void) {
   glfwSetMouseButtonCallback(window, mouse_button_callback);
 
   glfwMakeContextCurrent(
+  // objects init begin
       window); // This is the point when you can make gl calls
   glfwSwapInterval(1);
 
   // programs init begin
-  GLuint program =
+  GLuint prog =
       createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
-  glUseProgram(program);
+  glUseProgram(prog);
+  Prog program;
+  program.set(prog);
   dummy_program = glCreateProgram();
   glGenBuffers(1, &dummy_buffer);
   // programs init end
 
   // objects init begin
   Object tri;
-  tri.begin(program, GL_TRIANGLES);
+  tri.begin(GL_TRIANGLES);
   tri.color(0.0f, 1.0f, 0.0f);
   tri.position(-0.5f, 0.0f, 0.0f);
   tri.color(1.0f, 0.0f, 0.0f);
@@ -198,7 +214,7 @@ int main(void) {
   tri.end();
 
   Object tri1;
-  tri1.begin(program, GL_TRIANGLES);
+  tri1.begin(GL_TRIANGLES);
   tri1.color(0.0f, 0.0f, 0.0f);
   tri1.position(-0.5f, 0.0f, -1.0f);
   tri1.color(0.0f, 1.0f, 0.0f);
@@ -208,7 +224,7 @@ int main(void) {
   tri1.end();
 
   Object tri2;
-  tri2.begin(program, GL_TRIANGLES);
+  tri2.begin(GL_TRIANGLES);
   tri2.color(0.0f, 0.0f, 0.0f);
   tri2.position(0.5f, 1.0f, -1.0f);
   tri2.color(0.95f, 0.95f, 0.95f);
@@ -218,7 +234,7 @@ int main(void) {
   tri2.end();
 
   Object tri3;
-  tri3.begin(program, GL_TRIANGLES);
+  tri3.begin(GL_TRIANGLES);
   tri3.color(1.0f, 0.0f, 0.0f);
   tri3.position(0.5f, 0.0f, 1.0f);
   tri3.color(0.0f, 0.0f, 1.0f);
@@ -228,7 +244,7 @@ int main(void) {
   tri3.end();
 
   Object tri4;
-  tri4.begin(program, GL_TRIANGLES);
+  tri4.begin(GL_TRIANGLES);
   tri4.color(0.95f, 0.95f, 0.95f);
   tri4.position(-0.5f, 1.0f, 1.0f);
   tri4.color(0.0f, 0.0f, 0.0f);
@@ -238,7 +254,7 @@ int main(void) {
   tri4.end();
 
   Object grid;
-  grid.begin(program, GL_LINES);
+  grid.begin(GL_LINES);
   static const int gridsize = 15; // vertical or horizontal size odd
   static const float s = 0.25f;   // spacing of lines
   for (int i = 0; i < gridsize; i++) {
@@ -281,12 +297,12 @@ int main(void) {
     Matrix4f viewMat = camPose.Inverted().GetMatrix4();
 
     tri.modelPose = modelPose;
-    tri.draw(projMat, viewMat);
-    tri1.draw(projMat, viewMat);
-    tri2.draw(projMat, viewMat);
-    tri3.draw(projMat, viewMat);
-    tri4.draw(projMat, viewMat);
-    grid.draw(projMat, viewMat);
+    tri.draw(program, projMat, viewMat);
+    tri1.draw(program, projMat, viewMat);
+    tri2.draw(program, projMat, viewMat);
+    tri3.draw(program, projMat, viewMat);
+    tri4.draw(program, projMat, viewMat);
+    grid.draw(program, projMat, viewMat);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
