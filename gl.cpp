@@ -26,6 +26,7 @@ Vec2d prevPos;
 Vec2d diffPos;
 GLuint dummy_program;
 GLuint dummy_buffer;
+bool mode1;
 
 static void error_callback(int error, const char *description) {
   fprintf(stderr, "Error: %s\n", description);
@@ -63,14 +64,17 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
     case GLFW_KEY_O:
       fovy += 1.0;
       break;
+    case GLFW_KEY_Z:
+      if(mode1) mode1 = false;
+      else mode1 = true;
+      break;
     default:
       break;
     }
   }
 }
 
-static void mouse_button_callback(GLFWwindow *window, int button, int action,
-                                  int mods) {
+static void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
   if (button == GLFW_MOUSE_BUTTON_LEFT) {
     drag = (action == GLFW_PRESS);
     glfwGetCursorPos(window, &prevPos.x, &prevPos.y);
@@ -135,8 +139,7 @@ public:
   void draw(Prog p, Matrix4f projMat, Matrix4f viewMat) {
     glUseProgram(p.p);
     glBindBuffer(GL_ARRAY_BUFFER, b);
-    glVertexAttribPointer(p.col.u, 3, GL_FLOAT, GL_FALSE,
-                          sizeof(Vertex), OFFSET_OF(0));
+    glVertexAttribPointer(p.col.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(0));
     glVertexAttribPointer(p.pos.u, 3, GL_FLOAT, GL_FALSE,
                           sizeof(Vertex), OFFSET_OF(sizeof(Vec3f)));
     glEnableVertexAttribArray(p.col.u);
@@ -266,13 +269,24 @@ int main(void) {
   while (!glfwWindowShouldClose(window)) {
 
     if (drag) {
-      Vec2d currPos;
-      glfwGetCursorPos(window, &currPos.x, &currPos.y);
-      diffPos = currPos - prevPos;
-      prevPos = currPos;
-      camPose.t.x += diffPos.x * 0.0125f;
-      camPose.t.y -= diffPos.y * 0.0125f;
+      if (mode1) {
+        Vec2d currPos;
+        glfwGetCursorPos(window, &currPos.x, &currPos.y);
+        diffPos = currPos - prevPos;
+        prevPos = currPos;
+        camPose.t.z += diffPos.x * 0.0125f;
+        camPose.t.z -= diffPos.y * 0.0125f;
+      }
+      else{
+        Vec2d currPos;
+        glfwGetCursorPos(window, &currPos.x, &currPos.y);
+        diffPos = currPos - prevPos;
+        prevPos = currPos;
+        camPose.t.x += diffPos.x * 0.0125f;
+        camPose.t.y -= diffPos.y * 0.0125f;
+      }
     }
+    
 
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
