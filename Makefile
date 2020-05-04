@@ -29,8 +29,6 @@ format_h: $(H)
 format_cpp: $(SRC)
 	for cpp in $^; do clang-format -style=file $$cpp > tmp.cpp; mv tmp.cpp $$cpp; done
 
-
-
 clean:
 	rm -f *.o
 	rm -f gl
@@ -38,3 +36,16 @@ clean:
 	rm -f .*~
 
 
+# DO NOT DELETE
+
+gl.o: glprog.h /usr/include/GLES3/gl32.h /usr/include/GLES3/gl3platform.h
+gl.o: /usr/include/KHR/khrplatform.h /usr/include/stdint.h
+gl.o: /usr/include/GLFW/glfw3.h /usr/include/stdio.h linear.h
+gl.o: /usr/include/assert.h /usr/include/features.h
+gl.o: /usr/include/stdc-predef.h /usr/include/math.h stb.h
+gl.o: /usr/include/stdlib.h /usr/include/alloca.h
+glprog.o: glprog.h /usr/include/GLES3/gl32.h /usr/include/GLES3/gl3platform.h
+glprog.o: /usr/include/KHR/khrplatform.h /usr/include/stdint.h
+glprog.o: /usr/include/GLFW/glfw3.h stb.h /usr/include/stdio.h
+glprog.o: /usr/include/stdlib.h /usr/include/alloca.h /usr/include/features.h
+glprog.o: /usr/include/stdc-predef.h
