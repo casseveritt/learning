@@ -1691,7 +1691,10 @@ public:
     Vec3<T> rotatedFromUp(fromUp);
     rLook.MultVec(rotatedFromUp);
 
-    Quaternion rTwist = Quaternion(rotatedFromUp, toUp);
+    T UdotT = toUp.Dot( toLook );
+    Vec3<T> toUpOrth = toUp - UdotT * toLook; 
+
+    Quaternion rTwist = Quaternion(rotatedFromUp, toUpOrth);
 
     *this = rTwist;
     *this *= rLook;

@@ -28,6 +28,7 @@ GLuint dummy_program;
 GLuint dummy_buffer;
 bool mode1;
 float rad = 2.0;
+float theta = 0.0;
 
 static void error_callback(int error, const char *description) {
   fprintf(stderr, "Error: %s\n", description);
@@ -269,16 +270,18 @@ int main(void) {
       glfwGetCursorPos(window, &currPos.x, &currPos.y);
       diffPos = currPos - prevPos;
       prevPos = currPos;
+      theta += diffPos.x * 0.0125f;
       if (mode1) {
-        camPose.t.z += diffPos.x * 0.0125f;
-        camPose.t.z -= diffPos.y * 0.0125f;
+        rad += diffPos.x * 0.0125f;
+        rad += diffPos.y * 0.0125f;
       }else{
-        camPose.t.x += sin(diffPos.x * 0.0125f) * rad;
-        camPose.t.y -= diffPos.y * 0.0125f;
+        camPose.t.x = sin(theta) * rad;
+        camPose.t.z = cos(theta) * rad;
+        camPose.t.y = 0.25f; //-= diffPos.y * 0.0125f;
       }
     }
 
-    camPose.r.SetValue( Vec3f( 0, 0, -1 ), -camPose.t );
+    camPose.r.SetValue( Vec3f( 0, 0, -1 ), Vec3f( 0, 1, 0), -camPose.t, Vec3f( 0, 1, 0));
 
     Matrix4f viewMat = camPose.Inverted().GetMatrix4();
 
