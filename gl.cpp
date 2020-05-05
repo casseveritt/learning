@@ -1,8 +1,8 @@
 #include "glprog.h"
-#include <stdio.h>
 #include "linear.h"
 #include "stb.h"
 #include <GLES3/gl32.h>
+#include <stdio.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <math.h>
@@ -73,8 +73,10 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
       fovy += 1.0;
       break;
     case GLFW_KEY_Z:
-      if(mode1) mode1 = false;
-      else mode1 = true;
+      if (mode1)
+        mode1 = false;
+      else
+        mode1 = true;
       break;
     default:
       break;
@@ -82,7 +84,8 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
   }
 }
 
-static void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
+static void mouse_button_callback(GLFWwindow *window, int button, int action,
+                                  int mods) {
   if (button == GLFW_MOUSE_BUTTON_LEFT) {
     drag = (action == GLFW_PRESS);
     glfwGetCursorPos(window, &prevPos.x, &prevPos.y);
@@ -100,7 +103,7 @@ public:
   };
   Ui pos, col, proj, view, model;
 
-  void set(GLuint program){
+  void set(GLuint program) {
     p = program;
     pos.i = glGetAttribLocation(program, "pos");
     col.i = glGetAttribLocation(program, "col");
@@ -133,7 +136,8 @@ public:
 
   void end() {
     glBindBuffer(GL_ARRAY_BUFFER, b);
-    glBufferData(GL_ARRAY_BUFFER, float(sizeof(Vertex) * verts.size()), &verts[0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, float(sizeof(Vertex) * verts.size()),
+                 &verts[0], GL_DYNAMIC_DRAW);
   }
 
   void color(float r, float g, float bl) { v.color = Vec3f(r, g, bl); }
@@ -146,8 +150,10 @@ public:
   void draw(Prog p, Matrix4f projMat, Matrix4f viewMat) {
     glUseProgram(p.p);
     glBindBuffer(GL_ARRAY_BUFFER, b);
-    glVertexAttribPointer(p.col.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(0));
-    glVertexAttribPointer(p.pos.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(sizeof(Vec3f)));
+    glVertexAttribPointer(p.col.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          OFFSET_OF(0));
+    glVertexAttribPointer(p.pos.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          OFFSET_OF(sizeof(Vec3f)));
     glEnableVertexAttribArray(p.col.u);
     glEnableVertexAttribArray(p.pos.u);
 
@@ -187,11 +193,13 @@ int main(void) {
   glfwSetKeyCallback(window, key_callback);
   glfwSetMouseButtonCallback(window, mouse_button_callback);
 
-  glfwMakeContextCurrent(window); // This is the point when you can make gl calls
+  glfwMakeContextCurrent(
+      window); // This is the point when you can make gl calls
   glfwSwapInterval(1);
 
   // programs init begin
-  GLuint prog = createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
+  GLuint prog =
+      createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
   glUseProgram(prog);
   Prog program;
   program.set(prog);
@@ -284,13 +292,14 @@ int main(void) {
     if (mode1) {
       rad += diffPos.x * 0.0125f;
       rad += diffPos.y * 0.0125f;
-    }else{
+    } else {
       camPose.t.x = sin(theta) * rad;
       camPose.t.z = cos(theta) * rad;
       camPose.t.y -= diffPos.y * 0.0125f;
     }
 
-    camPose.r.SetValue( Vec3f( 0, 0, -1 ), Vec3f( 0, 1, 0), -camPose.t, Vec3f( 0, 1, 0));
+    camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -camPose.t,
+                       Vec3f(0, 1, 0));
 
     Matrix4f viewMat = camPose.Inverted().GetMatrix4();
 
@@ -305,7 +314,7 @@ int main(void) {
 
     float aspect = float(width) / float(height);
     Matrix4f projMat = Perspective(fovy, aspect, 0.1f, 100.0f);
-    //Matrix4f viewMat = camPose.Inverted().GetMatrix4();
+    // Matrix4f viewMat = camPose.Inverted().GetMatrix4();
 
     tri.modelPose = modelPose;
     tri.draw(program, projMat, viewMat);

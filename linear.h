@@ -363,13 +363,13 @@ public:
     return n;
   }
 
-  void Orthonormalize( const Vec3 & to ) {
-    T d = Dot( to );
+  void Orthonormalize(const Vec3 &to) {
+    T d = Dot(to);
     (*this) -= d * to;
     Normalize();
   }
 
-  Vec3 Orthonormalized( const Vec3 & to ) const {
+  Vec3 Orthonormalized(const Vec3 &to) const {
     Vec3 o(*this);
     o.Orthonormalize(to);
     return o;
@@ -1710,7 +1710,7 @@ public:
     Vec3<T> tUo = toUp.Orthonormalized(tL);
 
     Vec3<T> ux = rfU.Cross(tUo);
-    double twist = acos( rfU.Dot(tUo) );
+    double twist = acos(rfU.Dot(tUo));
     if (ux.Dot(tL) < 0) {
       twist = -twist;
     }
@@ -1885,8 +1885,7 @@ inline Quaternion<T> operator*(const Quaternion<T> &q1,
 }
 
 template <typename T>
-inline Vec3<T> operator*(const Quaternion<T> &q,
-                         const Vec3<T> &v) {
+inline Vec3<T> operator*(const Quaternion<T> &q, const Vec3<T> &v) {
   Vec3<T> r(v);
   q.MultVec(r);
   return r;
