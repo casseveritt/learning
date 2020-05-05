@@ -277,7 +277,7 @@ int main(void) {
       }else{
         camPose.t.x = sin(theta) * rad;
         camPose.t.z = cos(theta) * rad;
-        camPose.t.y = 0.25f; //-= diffPos.y * 0.0125f;
+        camPose.t.y -= diffPos.y * 0.0125f;
       }
     }
 
