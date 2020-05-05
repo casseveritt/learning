@@ -1709,8 +1709,10 @@ public:
 
     Vec3<T> tUo = toUp.Orthonormalized(tL);
 
+    float d = std::max( -1.0f, std::min( 1.0f, rfU.Dot(tUo)));
+
+    float twist = acosf(d);
     Vec3<T> ux = rfU.Cross(tUo);
-    double twist = acos(rfU.Dot(tUo));
     if (ux.Dot(tL) < 0) {
       twist = -twist;
     }

@@ -1,8 +1,8 @@
 #include "glprog.h"
+#include <stdio.h>
 #include "linear.h"
 #include "stb.h"
 #include <GLES3/gl32.h>
-#include <stdio.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <math.h>
