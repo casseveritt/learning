@@ -114,6 +114,7 @@ public:
 };
 
 class Object {
+
 public:
   GLuint b;
   GLint pos_loc, col_loc, proj_loc, view_loc, model_loc;
@@ -123,11 +124,9 @@ public:
     Vec3f color;
     Vec3f position;
   };
-
   Vertex v;
   std::vector<Vertex> verts;
 
-public:
   void begin(GLenum prim) {
     glGenBuffers(1, &b);
     primType = prim;
@@ -144,6 +143,11 @@ public:
 
   void position(float x, float y, float z) {
     v.position = Vec3f(x, y, z);
+    verts.push_back(v);
+  }
+
+  void position( Vec3f cords ) {
+    v.position = cords;
     verts.push_back(v);
   }
 
@@ -167,6 +171,78 @@ public:
     glBindBuffer(GL_ARRAY_BUFFER, dummy_buffer);
     glUseProgram(dummy_program);
   }
+};
+
+class Cube { // 0,1,2 - 1,2,3 // 2,3,4 - 3,4,5 // 4,5,6 - 5,6,7 // 6,7,0 - 7,0,1 // 6,0,2 - 0,4,2 // 0,1,4 - 1,4,5
+
+public:
+  struct Vert {
+    Vec3f col;
+    Vec3f pos;
+  };
+  Vert cubeVerts[8];
+  Object cubePolys[12];
+
+  void begin(float x, float y, float z, float s = 1.0){
+    for(int i=0;i<8;i++) cubeVerts[i].col = Vec3f(0.0f, 0.0f, 0.0f);
+    cubeVerts[0].pos = Vec3f((0.0f*s) + x, (0.0f*s) + y, (0.0f*s) + z);
+    cubeVerts[1].pos = Vec3f((1.0f*s) + x, (0.0f*s) + y, (0.0f*s) + z);
+    cubeVerts[2].pos = Vec3f((0.0f*s) + x, (1.0f*s) + y, (0.0f*s) + z);
+    cubeVerts[3].pos = Vec3f((1.0f*s) + x, (1.0f*s) + y, (0.0f*s) + z);
+    cubeVerts[6].pos = Vec3f((0.0f*s) + x, (0.0f*s) + y, (-1.0f*s) + z);
+    cubeVerts[7].pos = Vec3f((1.0f*s) + x, (0.0f*s) + y, (-1.0f*s) + z);
+    cubeVerts[4].pos = Vec3f((0.0f*s) + x, (1.0f*s) + y, (-1.0f*s) + z);
+    cubeVerts[5].pos = Vec3f((1.0f*s) + x, (1.0f*s) + y, (-1.0f*s) + z);
+
+    //
+
+    for(int i=0;i<8;i++){
+      cubePolys[i].begin(GL_TRIANGLES);
+      cubePolys[i].color(0.0f,0.0f,0.0f);
+      for(int j=0;j<3;j++){
+        int l = (i+j) % 8; // Does i, i+1, and i+2 verts (Loops around to 0 if over 7)
+        cubePolys[i].position(cubeVerts[l].pos);
+      }
+      cubePolys[i].end();
+    }
+    cubePolys[8].begin(GL_TRIANGLES);
+    cubePolys[8].color(0.0f,0.0f,0.0f);
+    cubePolys[8].position(cubeVerts[2].pos);
+    cubePolys[8].position(cubeVerts[4].pos);
+    cubePolys[8].position(cubeVerts[0].pos);
+    cubePolys[8].end();
+    cubePolys[9].begin(GL_TRIANGLES);
+    cubePolys[9].color(0.0f,1.0f,0.0f);
+    cubePolys[9].position(cubeVerts[4].pos);
+    cubePolys[9].position(cubeVerts[6].pos);
+    cubePolys[9].position(cubeVerts[0].pos);
+    cubePolys[9].end();
+
+    cubePolys[10].begin(GL_TRIANGLES);
+    cubePolys[10].color(0.0f,0.0f,0.0f);
+    cubePolys[10].position(cubeVerts[3].pos);
+    cubePolys[10].position(cubeVerts[5].pos);
+    cubePolys[10].position(cubeVerts[1].pos);
+    cubePolys[10].end();
+    cubePolys[11].begin(GL_TRIANGLES);
+    cubePolys[11].color(0.0f,0.0f,0.0f);
+    cubePolys[11].position(cubeVerts[5].pos);
+    cubePolys[11].position(cubeVerts[7].pos);
+    cubePolys[11].position(cubeVerts[1].pos);
+    cubePolys[11].end();
+  }
+
+  void draw(Prog p, Matrix4f projMat, Matrix4f viewMat){
+    for(int i=0;i<12;i++) cubePolys[i].draw(p, projMat, viewMat);
+  }
+};
+
+class Sphere {
+
+};
+
+class Torus {
+
 };
 
 int main(void) {
@@ -208,56 +284,6 @@ int main(void) {
   // programs init end
 
   // objects init begin
-  Object tri;
-  tri.begin(GL_TRIANGLES);
-  tri.color(0.0f, 1.0f, 0.0f);
-  tri.position(-0.5f, 0.0f, 0.0f);
-  tri.color(1.0f, 0.0f, 0.0f);
-  tri.position(0.5f, 0.0f, 0.0f);
-  tri.color(1.0f, 0.0f, 0.0f);
-  tri.position(-0.5f, 1.0f, 0.0f);
-  tri.end();
-
-  Object tri1;
-  tri1.begin(GL_TRIANGLES);
-  tri1.color(0.0f, 0.0f, 1.0f);
-  tri1.position(-0.5f, 0.0f, -1.0f);
-  tri1.color(0.0f, 1.0f, 0.0f);
-  tri1.position(-1.5f, 0.0f, 0.0f);
-  tri1.color(0.0f, 1.0f, 0.0f);
-  tri1.position(-0.5f, 1.0f, -1.0f);
-  tri1.end();
-
-  Object tri2;
-  tri2.begin(GL_TRIANGLES);
-  tri2.color(0.0f, 0.0f, 0.0f);
-  tri2.position(0.5f, 1.0f, -1.0f);
-  tri2.color(0.95f, 0.95f, 0.95f);
-  tri2.position(1.5f, 1.0f, 0.0f);
-  tri2.color(0.95f, 0.95f, 0.95f);
-  tri2.position(0.5f, 0.0f, -1.0f);
-  tri2.end();
-
-  Object tri3;
-  tri3.begin(GL_TRIANGLES);
-  tri3.color(1.0f, 0.0f, 0.0f);
-  tri3.position(0.5f, 0.0f, 1.0f);
-  tri3.color(0.0f, 0.0f, 1.0f);
-  tri3.position(1.5f, 0.0f, 0.0f);
-  tri3.color(0.0f, 0.0f, 1.0f);
-  tri3.position(0.5f, 1.0f, 1.0f);
-  tri3.end();
-
-  Object tri4;
-  tri4.begin(GL_TRIANGLES);
-  tri4.color(0.95f, 0.95f, 0.95f);
-  tri4.position(-0.5f, 1.0f, 1.0f);
-  tri4.color(0.0f, 0.0f, 0.0f);
-  tri4.position(-1.5f, 1.0f, 0.0f);
-  tri4.color(0.0f, 0.0f, 0.0f);
-  tri4.position(-0.5f, 0.0f, 1.0f);
-  tri4.end();
-
   Object grid;
   grid.begin(GL_LINES);
   static const int gridsize = 15; // vertical or horizontal size odd
@@ -275,6 +301,9 @@ int main(void) {
     grid.position(move * -1, 0.0f, shift);
   }
   grid.end();
+
+  Cube cub;
+  cub.begin(-1.0f,0.0f,-1.0f,0.5f);
   // objects init end
 
   while (!glfwWindowShouldClose(window)) {
@@ -316,13 +345,8 @@ int main(void) {
     Matrix4f projMat = Perspective(fovy, aspect, 0.1f, 100.0f);
     // Matrix4f viewMat = camPose.Inverted().GetMatrix4();
 
-    tri.modelPose = modelPose;
-    tri.draw(program, projMat, viewMat);
-    tri1.draw(program, projMat, viewMat);
-    tri2.draw(program, projMat, viewMat);
-    tri3.draw(program, projMat, viewMat);
-    tri4.draw(program, projMat, viewMat);
     grid.draw(program, projMat, viewMat);
+    cub.draw(program, projMat, viewMat);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
