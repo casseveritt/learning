@@ -212,7 +212,7 @@ public:
     cubePolys[8].position(cubeVerts[0].pos);
     cubePolys[8].end();
     cubePolys[9].begin(GL_TRIANGLES);
-    cubePolys[9].color(0.0f,1.0f,0.0f);
+    cubePolys[9].color(0.0f,0.0f,0.0f);
     cubePolys[9].position(cubeVerts[4].pos);
     cubePolys[9].position(cubeVerts[6].pos);
     cubePolys[9].position(cubeVerts[0].pos);
@@ -239,6 +239,31 @@ public:
 
 class Sphere {
 
+public:
+  struct Vert {
+    Vec3f col;
+    Vec3f pos;
+  };
+  int numVerts;
+  Vert sphVerts[36];
+  Object sphPolys[36];
+
+  void begin(float x, float y, float z, float s = 1.0){
+    for(int i=0;i<36;i++){ // Degrees
+      sphVerts[i].pos = Vec3f(sin(ToRadians(theta))*0.5,cos(ToRadians(theta))*0.5,0);
+      theta += 10.0;
+    }for(int i=0;i<36;i++){
+      sphPolys[i].begin(GL_LINES);
+      sphPolys[i].color(0.0f,0.0f,1.0f);
+      sphPolys[i].position(sphVerts[i].pos);
+      sphPolys[i].position(sphVerts[(i+1)%36].pos);
+      sphPolys[i].end();
+    }
+  }
+
+  void draw(Prog p, Matrix4f projMat, Matrix4f viewMat){
+    for(int i=0;i<36;i++) sphPolys[i].draw(p, projMat, viewMat);
+  }
 };
 
 class Torus {
@@ -305,11 +330,14 @@ int main(void) {
   grid.end();
 
   Cube cub;
-  cub.begin(-1.0f,0.0f,-1.0f,0.5f);
-  // objects init end
+  cub.begin(-1.0f,0.0f,-1.0f,0.75f);
 
   Object cube;
-  makeCube( cube, Matrix4f::Scale(0.3f) );
+  makeCube( cube, Matrix4f::Scale(0.25f) );
+
+  Sphere sph;
+  sph.begin(0.0f,0.0f,0.0f);
+  // objects init end
 
   while (!glfwWindowShouldClose(window)) {
 
@@ -352,7 +380,8 @@ int main(void) {
 
     grid.draw(program, projMat, viewMat);
     cub.draw(program, projMat, viewMat);
-    cube.draw(program, projMat, viewMat);
+    //cube.draw(program, projMat, viewMat);
+    sph.draw(program, projMat, viewMat);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
