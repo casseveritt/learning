@@ -245,6 +245,8 @@ class Torus {
 
 };
 
+#include "cube.h"
+
 int main(void) {
 
   camPose.t.z = 2.0;
@@ -306,6 +308,9 @@ int main(void) {
   cub.begin(-1.0f,0.0f,-1.0f,0.5f);
   // objects init end
 
+  Object cube;
+  makeCube( cube, Matrix4f::Scale(0.3f) );
+
   while (!glfwWindowShouldClose(window)) {
 
     if (drag) {
@@ -347,6 +352,7 @@ int main(void) {
 
     grid.draw(program, projMat, viewMat);
     cub.draw(program, projMat, viewMat);
+    cube.draw(program, projMat, viewMat);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
