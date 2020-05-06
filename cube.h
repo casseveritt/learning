@@ -6,56 +6,47 @@ static void appendVert(Object & obj, const Matrix4f& m, const Vec3f& v) {
 }
 
 static void appendSquare( Object & obj, Matrix4f & m ) {
-  appendVert( obj, m, Vec3f(-1, -1, 0));
-  appendVert( obj, m, Vec3f(1, -1, 0));
-  appendVert( obj, m, Vec3f(-1, 1, 0));
+  appendVert( obj, m, Vec3f(-1, -1, 1));
+  appendVert( obj, m, Vec3f(1, -1, 1));
+  appendVert( obj, m, Vec3f(-1, 1, 1));
 
-  appendVert( obj, m, Vec3f(1, -1, 0));
-  appendVert( obj, m, Vec3f(1, 1, 0));
-  appendVert( obj, m, Vec3f(-1, 1, 0));
+  appendVert( obj, m, Vec3f(1, -1, 1));
+  appendVert( obj, m, Vec3f(1, 1, 1));
+  appendVert( obj, m, Vec3f(-1, 1, 1));
 }
 
 static void makeCube( Object& obj, const Matrix4f& mbase ) {
 
-  Matrix4f m;
-  Matrix4f mtrans;
-  {
-    Posef p;
-    p.t.z = 1;
-    mtrans = p.GetMatrix4();
-  }
-
+  Matrix4f m = mbase;
   Posef p;
 
   obj.begin(GL_TRIANGLES);
   obj.color(0.1f, 0.05f, 0.95f);
 
-  m = mbase * p.GetMatrix4() * mtrans;
   appendSquare( obj, m);
+  p.r = Quaternionf( Vec3f( 1, 0, 0 ), ToRadians(90.0f));
+  m *= p.GetMatrix4();
 
   obj.color(0.1f, 0.95f, 0.05f);
-  p.r = Quaternionf( Vec3f( 1, 0, 0 ), ToRadians(90.0f));
-  m = mbase * p.GetMatrix4() * mtrans;
   appendSquare( obj, m);
+  m *= p.GetMatrix4();
 
   obj.color(0.95f, 0.05f, 0.05f);
-  p.r = Quaternionf( Vec3f( 1, 0, 0 ), ToRadians(180.0f));
-  m = mbase * p.GetMatrix4() * mtrans;
   appendSquare( obj, m);
+  m *= p.GetMatrix4();
 
   obj.color(0.1f, 0.95f, 0.95f);
-  p.r = Quaternionf( Vec3f( 1, 0, 0 ), ToRadians(270.0f));
-  m = mbase * p.GetMatrix4() * mtrans;
   appendSquare( obj, m);
+  m *= p.GetMatrix4();
+  p.r = Quaternionf( Vec3f( 0, 1, 0 ), ToRadians(90.0f));
+  m *= p.GetMatrix4();
 
   obj.color(0.95f, 0.05f, 0.95f);
-  p.r = Quaternionf( Vec3f( 0, 1, 0 ), ToRadians(90.0f));
-  m = mbase * p.GetMatrix4() * mtrans;
   appendSquare( obj, m);
+  m *= p.GetMatrix4();
+  m *= p.GetMatrix4();
 
   obj.color(0.95f, 0.95f, 0.05f);
-  p.r = Quaternionf( Vec3f( 0, 1, 0 ), ToRadians(-90.0f));
-  m = mbase * p.GetMatrix4() * mtrans;
   appendSquare( obj, m);
 
   obj.end();
