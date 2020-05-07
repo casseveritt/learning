@@ -244,25 +244,51 @@ public:
     Vec3f col;
     Vec3f pos;
   };
-  int numVerts;
-  Vert sphVerts[36];
-  Object sphPolys[36];
+  Object sphObj;
+  Object sphObjs[18];
 
-  void begin(float x, float y, float z, float s = 1.0){
-    for(int i=0;i<36;i++){ // Degrees
-      sphVerts[i].pos = Vec3f(sin(ToRadians(theta))*0.5,cos(ToRadians(theta))*0.5,0);
+  void begin(float x, float y, float z, float s = 0.5){
+    std::vector<Vec3f> circle; 
+    for(int i=0;i<37;i++){ // Degrees
+      float tr = ToRadians(i * 10.0f);
+      circle.push_back(Vec3f(sin(tr)*s+x,cos(tr)*s+s+y,z));
       theta += 10.0;
-    }for(int i=0;i<36;i++){
-      sphPolys[i].begin(GL_LINES);
-      sphPolys[i].color(0.0f,0.0f,1.0f);
-      sphPolys[i].position(sphVerts[i].pos);
-      sphPolys[i].position(sphVerts[(i+1)%36].pos);
-      sphPolys[i].end();
+    }
+
+    float r = 0.0;
+    float g = 0.0;
+    float b = 0.0;
+    for(int j=0;j<18;j++){
+      sphObj.begin(GL_TRIANGLES);
+      r += 0.055;
+      g += 0.055;
+      b += 0.055;
+      sphObj.color(r,g,b);
+      Quaternionf q0(Vec3f( 0, 1, 0 ), ToRadians( j*10.0f ));
+      Quaternionf q1(Vec3f( 0, 1, 0 ), ToRadians( (j*10.0f)+10.0f ));
+      for(size_t i=0;i<circle.size()-1;i++){
+        Vec3f v00 = q0 * circle[i+0];
+        Vec3f v01 = q1 * circle[i+0];
+        Vec3f v10 = q0 * circle[i+1];
+        Vec3f v11 = q1 * circle[i+1];
+        sphObj.position(v00);
+        sphObj.position(v10);
+        sphObj.position(v01);
+
+        sphObj.position(v01);
+        sphObj.position(v10);
+        sphObj.position(v11);
+      }
+      sphObj.end();
+      sphObjs[j] = sphObj;
     }
   }
 
   void draw(Prog p, Matrix4f projMat, Matrix4f viewMat){
-    for(int i=0;i<36;i++) sphPolys[i].draw(p, projMat, viewMat);
+    //sphObj.draw(p, projMat, viewMat);
+    for(int i=0;i<18;i++){
+      sphObjs[i].draw(p, projMat, viewMat);
+    }
   }
 };
 
@@ -336,7 +362,7 @@ int main(void) {
   makeCube( cube, Matrix4f::Scale(0.25f) );
 
   Sphere sph;
-  sph.begin(0.0f,0.0f,0.0f);
+  sph.begin(0.0f,0.0f,0.0f,0.5f);
   // objects init end
 
   while (!glfwWindowShouldClose(window)) {
