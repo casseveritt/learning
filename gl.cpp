@@ -101,12 +101,13 @@ public:
     GLuint u;
     GLint i;
   };
-  Ui pos, col, proj, view, model;
+  Ui pos, col, norm, proj, view, model;
 
   void set(GLuint program) {
     p = program;
     pos.i = glGetAttribLocation(program, "pos");
     col.i = glGetAttribLocation(program, "col");
+    norm.i = glGetAttribLocation(program, "norm");
     proj.i = glGetUniformLocation(program, "proj");
     view.i = glGetUniformLocation(program, "view");
     model.i = glGetUniformLocation(program, "model");
@@ -117,11 +118,12 @@ class Object {
 
 public:
   GLuint b;
-  GLint pos_loc, col_loc, proj_loc, view_loc, model_loc;
+  GLint pos_loc, col_loc, proj_loc, view_loc, model_loc, norm_loc;
   Posef modelPose;
   GLenum primType;
   struct Vertex {
     Vec3f color;
+    Vec3f normal;
     Vec3f position;
   };
   Vertex v;
@@ -141,6 +143,10 @@ public:
 
   void color(float r, float g, float bl) { v.color = Vec3f(r, g, bl); }
 
+  void normal(float x, float y, float z) { v.normal = Vec3f(x, y, z); }
+
+  void normal(Vec3f norm) { v.normal = norm; }
+
   void position(float x, float y, float z) {
     v.position = Vec3f(x, y, z);
     verts.push_back(v);
@@ -154,20 +160,26 @@ public:
   void draw(Prog p, Matrix4f projMat, Matrix4f viewMat) {
     glUseProgram(p.p);
     glBindBuffer(GL_ARRAY_BUFFER, b);
-    glVertexAttribPointer(p.col.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                          OFFSET_OF(0));
-    glVertexAttribPointer(p.pos.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                          OFFSET_OF(sizeof(Vec3f)));
-    glEnableVertexAttribArray(p.col.u);
-    glEnableVertexAttribArray(p.pos.u);
+    if(p.col.i >= 0){
+      glVertexAttribPointer(p.col.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(0));
+      glEnableVertexAttribArray(p.col.u);
+    }if(p.norm.i >= 0){
+      glVertexAttribPointer(p.norm.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(sizeof(Vec3f)));
+      glEnableVertexAttribArray(p.norm.u);
+    }if(p.pos.i >= 0){
+      glVertexAttribPointer(p.pos.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(sizeof(Vec3f)*2));
+      glEnableVertexAttribArray(p.pos.u);
+    }
 
     Matrix4f modelMat = modelPose.GetMatrix4();
     glUniformMatrix4fv(p.proj.i, 1, GL_FALSE, projMat.GetValue());
     glUniformMatrix4fv(p.view.i, 1, GL_FALSE, viewMat.GetValue());
     glUniformMatrix4fv(p.model.i, 1, GL_FALSE, modelMat.GetValue());
     glDrawArrays(primType, 0, verts.size());
-    glDisableVertexAttribArray(p.pos.u);
-    glDisableVertexAttribArray(p.col.u);
+
+    if(p.col.i >= 0)  glDisableVertexAttribArray(p.pos.u);
+    if(p.norm.i >= 0) glDisableVertexAttribArray(p.norm.u);
+    if(p.pos.i >= 0)  glDisableVertexAttribArray(p.col.u);
     glBindBuffer(GL_ARRAY_BUFFER, dummy_buffer);
     glUseProgram(dummy_program);
   }
@@ -178,6 +190,7 @@ class Cube { // 0,1,2 - 1,2,3 // 2,3,4 - 3,4,5 // 4,5,6 - 5,6,7 // 6,7,0 - 7,0,1
 public:
   struct Vert {
     Vec3f col;
+    Vec3f norm;
     Vec3f pos;
   };
   Vert cubeVerts[8];
@@ -242,12 +255,14 @@ class Sphere {
 public:
   struct Vert {
     Vec3f col;
+    Vec3f norm;
     Vec3f pos;
   };
   Object sphObj;
   Object sphObjs[18];
 
   void begin(float x, float y, float z, float radi = 0.5){
+    Vec3f center = Vec3f(x,y+radi,z);
     std::vector<Vec3f> circle; 
     for(int i=0;i<37;i++){ // Degrees
       float tr = ToRadians(i * 10.0f);
@@ -255,9 +270,6 @@ public:
       theta += 10.0;
     }
 
-    float r = 0.0;
-    float g = 0.0;
-    float b = 0.0;
     for(int j=0;j<18;j++){
       sphObj.begin(GL_TRIANGLES);
       sphObj.color(0.0f,0.0f,0.0f);
@@ -268,12 +280,18 @@ public:
         Vec3f v01 = q1 * circle[i+0] + Vec3f(x,y,z);
         Vec3f v10 = q0 * circle[i+1] + Vec3f(x,y,z);
         Vec3f v11 = q1 * circle[i+1] + Vec3f(x,y,z);
+        sphObj.normal((v00-center).Normalized());
         sphObj.position(v00);
+        sphObj.normal((v10-center).Normalized());
         sphObj.position(v10);
+        sphObj.normal((v01-center).Normalized());
         sphObj.position(v01);
 
+        sphObj.normal((v01-center).Normalized());
         sphObj.position(v01);
+        sphObj.normal((v10-center).Normalized());
         sphObj.position(v10);
+        sphObj.normal((v11-center).Normalized());
         sphObj.position(v11);
       }
       sphObj.end();
@@ -304,9 +322,6 @@ public:
       theta += 10.0;
     }
 
-    float r = 0.0;
-    float g = 0.0;
-    float b = 0.0;
     for(int j=0;j<36;j++){
       torObj.begin(GL_TRIANGLES);
       torObj.color(0.0f,0.0f,0.0f);
@@ -367,11 +382,16 @@ int main(void) {
   glfwSwapInterval(1);
 
   // programs init begin
-  GLuint prog =
-      createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
+  GLuint prog = createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
   glUseProgram(prog);
   Prog program;
   program.set(prog);
+
+  GLuint litProg = createProgram("progs/Lit-Vertex.vs", "progs/Lit-Fragment.fs");
+  glUseProgram(litProg);
+  Prog litProgram;
+  litProgram.set(litProg);
+
   dummy_program = glCreateProgram();
   glGenBuffers(1, &dummy_buffer);
   // programs init end
@@ -450,7 +470,7 @@ int main(void) {
     grid.draw(program, projMat, viewMat);
     cub.draw(program, projMat, viewMat);
     //cube.draw(program, projMat, viewMat);
-    sph.draw(program, projMat, viewMat);
+    sph.draw(litProgram, projMat, viewMat);
     tor.draw(program, projMat, viewMat);
 
     glfwSwapBuffers(window);
