@@ -247,11 +247,11 @@ public:
   Object sphObj;
   Object sphObjs[18];
 
-  void begin(float x, float y, float z, float s = 0.5){
+  void begin(float x, float y, float z, float radi = 0.5){
     std::vector<Vec3f> circle; 
     for(int i=0;i<37;i++){ // Degrees
       float tr = ToRadians(i * 10.0f);
-      circle.push_back(Vec3f(sin(tr)*s+x,cos(tr)*s+s+y,z));
+      circle.push_back(Vec3f(sin(tr)*radi,cos(tr)*radi+radi+y,0.0));
       theta += 10.0;
     }
 
@@ -260,17 +260,14 @@ public:
     float b = 0.0;
     for(int j=0;j<18;j++){
       sphObj.begin(GL_TRIANGLES);
-      r += 0.055;
-      g += 0.055;
-      b += 0.055;
-      sphObj.color(r,g,b);
+      sphObj.color(0.0f,0.0f,0.0f);
       Quaternionf q0(Vec3f( 0, 1, 0 ), ToRadians( j*10.0f ));
       Quaternionf q1(Vec3f( 0, 1, 0 ), ToRadians( (j*10.0f)+10.0f ));
       for(size_t i=0;i<circle.size()-1;i++){
-        Vec3f v00 = q0 * circle[i+0];
-        Vec3f v01 = q1 * circle[i+0];
-        Vec3f v10 = q0 * circle[i+1];
-        Vec3f v11 = q1 * circle[i+1];
+        Vec3f v00 = q0 * circle[i+0] + Vec3f(x,y,z);
+        Vec3f v01 = q1 * circle[i+0] + Vec3f(x,y,z);
+        Vec3f v10 = q0 * circle[i+1] + Vec3f(x,y,z);
+        Vec3f v11 = q1 * circle[i+1] + Vec3f(x,y,z);
         sphObj.position(v00);
         sphObj.position(v10);
         sphObj.position(v01);
@@ -285,14 +282,57 @@ public:
   }
 
   void draw(Prog p, Matrix4f projMat, Matrix4f viewMat){
-    //sphObj.draw(p, projMat, viewMat);
-    for(int i=0;i<18;i++){
-      sphObjs[i].draw(p, projMat, viewMat);
-    }
+    for(int i=0;i<18;i++) sphObjs[i].draw(p, projMat, viewMat);
   }
 };
 
 class Torus {
+
+public:
+  struct Vert {
+    Vec3f col;
+    Vec3f pos;
+  };
+  Object torObj;
+  Object torObjs[36];
+
+  void begin(float x, float y, float z, float rad1 = 0.5, float rad2 = 0.25){
+    std::vector<Vec3f> torus; 
+    for(int i=0;i<37;i++){ // Degrees
+      float tr = ToRadians(i * 10.0f);
+      torus.push_back(Vec3f(sin(tr)*rad2+rad1,cos(tr)*rad2+rad2+y,0.0));
+      theta += 10.0;
+    }
+
+    float r = 0.0;
+    float g = 0.0;
+    float b = 0.0;
+    for(int j=0;j<36;j++){
+      torObj.begin(GL_TRIANGLES);
+      torObj.color(0.0f,0.0f,0.0f);
+      Quaternionf q0(Vec3f( 0, 1, 0 ), ToRadians( j*10.0f ));
+      Quaternionf q1(Vec3f( 0, 1, 0 ), ToRadians( (j*10.0f)+10.0f ));
+      for(size_t i=0;i<torus.size()-1;i++){
+        Vec3f v00 = q0 * torus[i+0] + Vec3f(x,y,z);
+        Vec3f v01 = q1 * torus[i+0] + Vec3f(x,y,z);
+        Vec3f v10 = q0 * torus[i+1] + Vec3f(x,y,z);
+        Vec3f v11 = q1 * torus[i+1] + Vec3f(x,y,z);
+        torObj.position(v00);
+        torObj.position(v10);
+        torObj.position(v01);
+
+        torObj.position(v01);
+        torObj.position(v10);
+        torObj.position(v11);
+      }
+      torObj.end();
+      torObjs[j] = torObj;
+    }
+  }
+
+  void draw(Prog p, Matrix4f projMat, Matrix4f viewMat){
+    for(int i=0;i<36;i++) torObjs[i].draw(p, projMat, viewMat);
+  }
 
 };
 
@@ -362,25 +402,28 @@ int main(void) {
   makeCube( cube, Matrix4f::Scale(0.25f) );
 
   Sphere sph;
-  sph.begin(0.0f,0.0f,0.0f,0.5f);
+  sph.begin(1.0f,0.0f,-1.0f,0.5f);
+
+  Torus tor;
+  tor.begin(1.0f,0.0f,1.0f,0.5f,0.25f);
   // objects init end
 
   while (!glfwWindowShouldClose(window)) {
 
-    if (drag) {
+    if(drag){
       Vec2d currPos;
       glfwGetCursorPos(window, &currPos.x, &currPos.y);
       diffPos = currPos - prevPos;
       prevPos = currPos;
       theta += diffPos.x * 0.0125f;
-    } else {
+    }else{
       diffPos = Vec2d();
     }
 
-    if (mode1) {
+    if(mode1){
       rad += diffPos.x * 0.0125f;
       rad += diffPos.y * 0.0125f;
-    } else {
+    }else{
       camPose.t.x = sin(theta) * rad;
       camPose.t.z = cos(theta) * rad;
       camPose.t.y -= diffPos.y * 0.0125f;
@@ -408,6 +451,7 @@ int main(void) {
     cub.draw(program, projMat, viewMat);
     //cube.draw(program, projMat, viewMat);
     sph.draw(program, projMat, viewMat);
+    tor.draw(program, projMat, viewMat);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
