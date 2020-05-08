@@ -29,6 +29,8 @@ GLuint dummy_buffer;
 bool mode1;
 float rad = 2.0;
 float theta = 0.0;
+Matrix4f projMat;
+Vec3f lightPos(0.0f,1.0f,0.0f);
 
 static void error_callback(int error, const char *description) {
   fprintf(stderr, "Error: %s\n", description);
@@ -101,7 +103,7 @@ public:
     GLuint u;
     GLint i;
   };
-  Ui pos, col, norm, proj, view, model;
+  Ui pos, col, norm, proj, view, model, lightPos;
 
   void set(GLuint program) {
     p = program;
@@ -111,6 +113,7 @@ public:
     proj.i = glGetUniformLocation(program, "proj");
     view.i = glGetUniformLocation(program, "view");
     model.i = glGetUniformLocation(program, "model");
+    lightPos.i = glGetUniformLocation(program, "lightPos");
   }
 };
 
@@ -157,8 +160,9 @@ public:
     verts.push_back(v);
   }
 
-  void draw(Prog p, Matrix4f projMat, Matrix4f viewMat) {
+  void draw(Prog p) {
     glUseProgram(p.p);
+    Matrix4f viewMat = camPose.Inverted().GetMatrix4();
     glBindBuffer(GL_ARRAY_BUFFER, b);
     if(p.col.i >= 0){
       glVertexAttribPointer(p.col.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(0));
@@ -175,6 +179,7 @@ public:
     glUniformMatrix4fv(p.proj.i, 1, GL_FALSE, projMat.GetValue());
     glUniformMatrix4fv(p.view.i, 1, GL_FALSE, viewMat.GetValue());
     glUniformMatrix4fv(p.model.i, 1, GL_FALSE, modelMat.GetValue());
+    glUniform3fv(p.lightPos.i, 1, &lightPos.x);
     glDrawArrays(primType, 0, verts.size());
 
     if(p.col.i >= 0)  glDisableVertexAttribArray(p.pos.u);
@@ -245,8 +250,8 @@ public:
     cubePolys[11].end();
   }
 
-  void draw(Prog p, Matrix4f projMat, Matrix4f viewMat){
-    for(int i=0;i<12;i++) cubePolys[i].draw(p, projMat, viewMat);
+  void draw(Prog p){
+    for(int i=0;i<12;i++) cubePolys[i].draw(p);
   }
 };
 
@@ -259,7 +264,6 @@ public:
     Vec3f pos;
   };
   Object sphObj;
-  Object sphObjs[18];
 
   void begin(float x, float y, float z, float radi = 0.5){
     Vec3f center = Vec3f(x,y+radi,z);
@@ -270,9 +274,9 @@ public:
       theta += 10.0;
     }
 
+    sphObj.begin(GL_TRIANGLES);
+    sphObj.color(0.0f,0.0f,0.0f);
     for(int j=0;j<18;j++){
-      sphObj.begin(GL_TRIANGLES);
-      sphObj.color(0.0f,0.0f,0.0f);
       Quaternionf q0(Vec3f( 0, 1, 0 ), ToRadians( j*10.0f ));
       Quaternionf q1(Vec3f( 0, 1, 0 ), ToRadians( (j*10.0f)+10.0f ));
       for(size_t i=0;i<circle.size()-1;i++){
@@ -294,13 +298,12 @@ public:
         sphObj.normal((v11-center).Normalized());
         sphObj.position(v11);
       }
-      sphObj.end();
-      sphObjs[j] = sphObj;
     }
+    sphObj.end();
   }
 
-  void draw(Prog p, Matrix4f projMat, Matrix4f viewMat){
-    for(int i=0;i<18;i++) sphObjs[i].draw(p, projMat, viewMat);
+  void draw(Prog p){
+    sphObj.draw(p);
   }
 };
 
@@ -312,41 +315,48 @@ public:
     Vec3f pos;
   };
   Object torObj;
-  Object torObjs[36];
 
-  void begin(float x, float y, float z, float rad1 = 0.5, float rad2 = 0.25){
-    std::vector<Vec3f> torus; 
+  void begin(float rad1 = 0.5, float rad2 = 0.25){
+    std::vector<Vec3f> torus;
     for(int i=0;i<37;i++){ // Degrees
       float tr = ToRadians(i * 10.0f);
-      torus.push_back(Vec3f(sin(tr)*rad2+rad1,cos(tr)*rad2+rad2+y,0.0));
+      torus.push_back(Vec3f(sin(tr)*rad2+rad1,cos(tr)*rad2,0.0));
       theta += 10.0;
     }
 
+    Vec3f center(rad1, 0, 0);
+    torObj.begin(GL_TRIANGLES);
+    torObj.color(0.0f,0.0f,0.0f);
     for(int j=0;j<36;j++){
-      torObj.begin(GL_TRIANGLES);
-      torObj.color(0.0f,0.0f,0.0f);
       Quaternionf q0(Vec3f( 0, 1, 0 ), ToRadians( j*10.0f ));
       Quaternionf q1(Vec3f( 0, 1, 0 ), ToRadians( (j*10.0f)+10.0f ));
       for(size_t i=0;i<torus.size()-1;i++){
-        Vec3f v00 = q0 * torus[i+0] + Vec3f(x,y,z);
-        Vec3f v01 = q1 * torus[i+0] + Vec3f(x,y,z);
-        Vec3f v10 = q0 * torus[i+1] + Vec3f(x,y,z);
-        Vec3f v11 = q1 * torus[i+1] + Vec3f(x,y,z);
+        Vec3f v00 = q0 * torus[i+0];
+        Vec3f v01 = q1 * torus[i+0];
+        Vec3f v10 = q0 * torus[i+1];
+        Vec3f v11 = q1 * torus[i+1];
+        Vec3f c0 = q0 * center;
+        Vec3f c1 = q1 * center;
+        torObj.normal((v00-c0).Normalized());
         torObj.position(v00);
+        torObj.normal((v10-c0).Normalized());
         torObj.position(v10);
+        torObj.normal((v01-c1).Normalized());
         torObj.position(v01);
 
+        torObj.normal((v01-c1).Normalized());
         torObj.position(v01);
+        torObj.normal((v10-c0).Normalized());
         torObj.position(v10);
+        torObj.normal((v11-c1).Normalized());
         torObj.position(v11);
       }
-      torObj.end();
-      torObjs[j] = torObj;
     }
+    torObj.end();
   }
 
-  void draw(Prog p, Matrix4f projMat, Matrix4f viewMat){
-    for(int i=0;i<36;i++) torObjs[i].draw(p, projMat, viewMat);
+  void draw(Prog p){
+    torObj.draw(p);
   }
 
 };
@@ -419,13 +429,18 @@ int main(void) {
   cub.begin(-1.0f,0.0f,-1.0f,0.75f);
 
   Object cube;
-  makeCube( cube, Matrix4f::Scale(0.25f) );
+  makeCube( cube, Matrix4f::Scale(0.375f) );
+  cube.modelPose.t = Vec3f(-1,0.375f,-1);
 
   Sphere sph;
   sph.begin(1.0f,0.0f,-1.0f,0.5f);
 
   Torus tor;
-  tor.begin(1.0f,0.0f,1.0f,0.5f,0.25f);
+  tor.torObj.modelPose.t = Vec3f( 1, 0.25f, 1);
+  tor.begin(0.5f,0.25f);
+
+  Sphere light;
+  light.begin(0.0f, 0.0f,0.0f, 0.0525f);
   // objects init end
 
   while (!glfwWindowShouldClose(window)) {
@@ -452,8 +467,6 @@ int main(void) {
     camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -camPose.t,
                        Vec3f(0, 1, 0));
 
-    Matrix4f viewMat = camPose.Inverted().GetMatrix4();
-
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
 
@@ -464,14 +477,17 @@ int main(void) {
     glEnable(GL_DEPTH_TEST);
 
     float aspect = float(width) / float(height);
-    Matrix4f projMat = Perspective(fovy, aspect, 0.1f, 100.0f);
+    projMat = Perspective(fovy, aspect, 0.1f, 100.0f);
     // Matrix4f viewMat = camPose.Inverted().GetMatrix4();
 
-    grid.draw(program, projMat, viewMat);
-    cub.draw(program, projMat, viewMat);
-    //cube.draw(program, projMat, viewMat);
-    sph.draw(litProgram, projMat, viewMat);
-    tor.draw(program, projMat, viewMat);
+    grid.draw(program);
+    //cub.draw(program);
+    cube.draw(litProgram);
+    sph.draw(litProgram);
+    tor.draw(litProgram);
+
+    light.sphObj.modelPose.t = lightPos;
+    light.draw(program);
 
     glfwSwapBuffers(window);
     glfwPollEvents();

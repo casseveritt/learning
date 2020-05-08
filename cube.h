@@ -23,29 +23,35 @@ static void makeCube( Object& obj, const Matrix4f& mbase ) {
   obj.begin(GL_TRIANGLES);
   obj.color(0.1f, 0.05f, 0.95f);
 
+  obj.normal(0.0,0.0,1.0);
   appendSquare( obj, m);
   p.r = Quaternionf( Vec3f( 1, 0, 0 ), ToRadians(90.0f));
   m *= p.GetMatrix4();
 
+  obj.normal(0.0,-1.0,0.0);
   obj.color(0.1f, 0.95f, 0.05f);
   appendSquare( obj, m);
   m *= p.GetMatrix4();
 
+  obj.normal(0.0,0.0,-1.0);
   obj.color(0.95f, 0.05f, 0.05f);
   appendSquare( obj, m);
   m *= p.GetMatrix4();
 
+  obj.normal(0.0,1.0,0.0);
   obj.color(0.1f, 0.95f, 0.95f);
   appendSquare( obj, m);
   m *= p.GetMatrix4();
   p.r = Quaternionf( Vec3f( 0, 1, 0 ), ToRadians(90.0f));
   m *= p.GetMatrix4();
 
+  obj.normal(1.0,0.0,0.0);
   obj.color(0.95f, 0.05f, 0.95f);
   appendSquare( obj, m);
   m *= p.GetMatrix4();
   m *= p.GetMatrix4();
 
+  obj.normal(-1.0,0.0,0.0);
   obj.color(0.95f, 0.95f, 0.05f);
   appendSquare( obj, m);
 
