@@ -31,11 +31,11 @@ Matrix4f projMat;
 Vec3f lightPos(0.0f,1.0f,0.0f);
 
 static void error_callback(int error, const char *description) {
-  fprintf(stderr, "Error: %s\n", description);
+  fprintf(stderr, "Error: %d: %s\n", error, description);
 }
 
-static void key_callback(GLFWwindow *window, int key, int scancode, int action,
-                         int mods) {
+static void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action,
+                         int /*mods*/) {
   if (action == GLFW_PRESS) {
     frame = 0;
     switch (key) {
@@ -85,7 +85,7 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
 }
 
 static void mouse_button_callback(GLFWwindow *window, int button, int action,
-                                  int mods) {
+                                  int /*mods*/) {
   if (button == GLFW_MOUSE_BUTTON_LEFT) {
     drag = (action == GLFW_PRESS);
     glfwGetCursorPos(window, &prevPos.x, &prevPos.y);
@@ -265,7 +265,7 @@ public:
 
   void begin(float x, float y, float z, float radi = 0.5){
     Vec3f center = Vec3f(x,y+radi,z);
-    std::vector<Vec3f> circle; 
+    std::vector<Vec3f> circle;
     for(int i=0;i<37;i++){ // Degrees
       float tr = ToRadians(i * 10.0f);
       circle.push_back(Vec3f(sin(tr)*radi,cos(tr)*radi+radi+y,0.0));

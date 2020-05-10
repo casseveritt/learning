@@ -26,10 +26,10 @@ static char *getFileContents(const char *filename) {
   return data;
 }
 
-char * concatenate(const char * a, const char * b) {
+static char * concatenate(const char * a, const char * b) {
   int alen = strlen(a);
   int blen = strlen(b);
-  char * c = new char[alen + blen];
+  char * c = new char[alen + blen + 1];
   strcpy(c, a);
   strcat(c, b);
   return c;
@@ -54,7 +54,7 @@ GLuint createProgram(const char *vertexShaderFilename,
     GLchar infoLog[4096];
     GLsizei len = 0;
     glGetShaderInfoLog( vertex_shader, sizeof(infoLog), &len, infoLog );
-    printf( "infoLog: %s\n", (char *)infoLog );
+    printf( "infoLog: %s\n", static_cast<const char *>(infoLog) );
   }
   delete[] vertex_shader_src;
 
@@ -73,7 +73,7 @@ GLuint createProgram(const char *vertexShaderFilename,
     GLchar infoLog[4096];
     GLsizei len = 0;
     glGetShaderInfoLog( fragment_shader, sizeof(infoLog), &len, infoLog );
-    printf( "infoLog: %s\n", (char *)infoLog );
+    printf( "infoLog: %s\n", static_cast<const char *>(infoLog) );
   }
   delete[] fragment_shader_src;
 

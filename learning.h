@@ -1,10 +1,11 @@
 #pragma once
 
-#if __APPLE__
+#if defined(__APPLE__)
   #define GLFW_INCLUDE_GLCOREARB
   #define GLSL_VERSION "#version 410\n"
 #else
-  #define GLFW_INCLUDE_ES32
+  #include <GLES3/gl32.h>
+  #define GLFW_INCLUDE_NONE
   #define GLSL_VERSION "#version 320 es\n"
 #endif
 
