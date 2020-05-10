@@ -36,6 +36,10 @@ GLuint createProgram(const char *vertexShaderFilename,
   glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &stat);
   if (stat == GL_FALSE) {
     printf("Vertex comple failed\n");
+    GLchar infoLog[4096];
+    GLsizei len = 0;
+    glGetShaderInfoLog( vertex_shader, sizeof(infoLog), &len, infoLog );
+    printf( "infoLog: %s\n", (char *)infoLog );
   }
   delete[] vertex_shader_src;
 
@@ -46,6 +50,10 @@ GLuint createProgram(const char *vertexShaderFilename,
   glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &stat);
   if (stat == GL_FALSE) {
     printf("Fragment comple failed\n");
+    GLchar infoLog[4096];
+    GLsizei len = 0;
+    glGetShaderInfoLog( fragment_shader, sizeof(infoLog), &len, infoLog );
+    printf( "infoLog: %s\n", (char *)infoLog );
   }
   delete[] fragment_shader_src;
 

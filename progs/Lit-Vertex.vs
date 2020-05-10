@@ -1,4 +1,4 @@
-#version 320
+#version 410
 //#version 300 es
 uniform highp mat4 proj;
 uniform highp mat4 view;
