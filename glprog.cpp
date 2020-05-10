@@ -4,6 +4,7 @@
 #include "learning.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstring>
 
 static char *getFileContents(const char *filename) {
   FILE *fp = fopen(filename, "r");
@@ -25,11 +26,25 @@ static char *getFileContents(const char *filename) {
   return data;
 }
 
+char * concatenate(const char * a, const char * b) {
+  int alen = strlen(a);
+  int blen = strlen(b);
+  char * c = new char[alen + blen];
+  strcpy(c, a);
+  strcat(c, b);
+  return c;
+}
+
 GLuint createProgram(const char *vertexShaderFilename,
                      const char *fragmentShaderFilename) {
   GLuint vertex_shader, fragment_shader;
   vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-  char *vertex_shader_src = getFileContents(vertexShaderFilename);
+  char * vertex_shader_src = nullptr;
+  {
+    char *f = getFileContents(vertexShaderFilename);
+    vertex_shader_src = concatenate(GLSL_VERSION, f);
+    delete [] f;
+  }
   glShaderSource(vertex_shader, 1, &vertex_shader_src, NULL);
   glCompileShader(vertex_shader);
   GLint stat = GL_FALSE;
@@ -44,7 +59,12 @@ GLuint createProgram(const char *vertexShaderFilename,
   delete[] vertex_shader_src;
 
   fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-  char *fragment_shader_src = getFileContents(fragmentShaderFilename);
+  char *fragment_shader_src = nullptr;
+  {
+    char * f = getFileContents(fragmentShaderFilename);
+    fragment_shader_src = concatenate(GLSL_VERSION, f);
+    delete [] f;
+  }
   glShaderSource(fragment_shader, 1, &fragment_shader_src, NULL);
   glCompileShader(fragment_shader);
   glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &stat);

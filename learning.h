@@ -2,8 +2,10 @@
 
 #if __APPLE__
   #define GLFW_INCLUDE_GLCOREARB
+  #define GLSL_VERSION "#version 410\n"
 #else
   #define GLFW_INCLUDE_ES32
+  #define GLSL_VERSION "#version 320 es\n"
 #endif
 
 #include <GLFW/glfw3.h>
