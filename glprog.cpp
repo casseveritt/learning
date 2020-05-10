@@ -1,10 +1,8 @@
 #include "glprog.h"
 
 #include "stb.h"
-#include <GLES3/gl32.h>
+#include "learning.h"
 #include <stdio.h>
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
 #include <stdlib.h>
 
 static char *getFileContents(const char *filename) {

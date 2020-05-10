@@ -777,15 +777,15 @@ public:
 
     // Algorithm: Brian Jean
     //
-    register T u;
-    register T v;
+    T u;
+    T v;
     Vec3<T> Vr = direction;
     Vec3<T> Vs = l2.direction;
-    register T Vr_Dot_Vs = Vr.Dot(Vs);
-    register T detA = T(1.0 - (Vr_Dot_Vs * Vr_Dot_Vs));
+    T Vr_Dot_Vs = Vr.Dot(Vs);
+    T detA = T(1.0 - (Vr_Dot_Vs * Vr_Dot_Vs));
     Vec3<T> C = l2.position - position;
-    register T C_Dot_Vr = C.Dot(Vr);
-    register T C_Dot_Vs = C.Dot(Vs);
+    T C_Dot_Vr = C.Dot(Vr);
+    T C_Dot_Vs = C.Dot(Vs);
 
     u = (C_Dot_Vr - Vr_Dot_Vs * C_Dot_Vs) / detA;
     v = (C_Dot_Vr * Vr_Dot_Vs - C_Dot_Vs) / detA;
@@ -1131,7 +1131,7 @@ public:
     s[2] = &r3[0];
     s[3] = &r4[0];
 
-    register int i, j, p, jj;
+    int i, j, p, jj;
     for (i = 0; i < 4; i++) {
       for (j = 0; j < 4; j++) {
         s[i][j] = el(i, j);

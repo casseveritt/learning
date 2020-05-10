@@ -1,10 +1,8 @@
+#include "learning.h"
 #include "glprog.h"
 #include <stdio.h>
 #include "linear.h"
 #include "stb.h"
-#include <GLES3/gl32.h>
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
 #include <math.h>
 #include <stdlib.h>
 #include <vector>
@@ -374,9 +372,7 @@ int main(void) {
     exit(EXIT_FAILURE);
   }
 
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+  make_hints();
 
   window = glfwCreateWindow(640, 480, "Learning", NULL, NULL);
   if (!window) {
@@ -390,6 +386,16 @@ int main(void) {
   glfwMakeContextCurrent(
       window); // This is the point when you can make gl calls
   glfwSwapInterval(1);
+
+  GLint version_maj=0;
+  GLint version_min=0;
+  glGetIntegerv( GL_MAJOR_VERSION, &version_maj );
+  glGetIntegerv( GL_MINOR_VERSION, &version_min );
+  printf( "GL Version: %d.%d\n", version_maj, version_min );
+
+  GLuint defaultVab;
+  glGenVertexArrays(1, &defaultVab);
+  glBindVertexArray( defaultVab );
 
   // programs init begin
   GLuint prog = createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");

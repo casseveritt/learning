@@ -1,8 +1,17 @@
 
-WARNFLAGS := -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wswitch-default -Wundef -Werror -Wno-unused
+UNAME := $(shell uname)
+$(info UNAME is $(UNAME))
+
+WARNFLAGS := -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-overflow=5 -Wswitch-default -Wundef
 
 CFLAGS_NOWARN := -O2 -isystem stb -std=c++11
 CFLAGS := $(CFLAGS_NOWARN) $(WARNFLAGS)
+
+ifeq ($(UNAME),Darwin)
+	GLFLAGS := -framework CoreVideo -framework OpenGL -framework IOKit -framework Cocoa -framework Carbon
+else
+	GLFLAGS := -lGLESv2
+endif
 
 all: gl
 
@@ -16,7 +25,7 @@ OBJ := $(patsubst %.cpp, %.o, $(SRC))
 	g++ $(CFLAGS) $< -c
 
 gl: $(OBJ) $(H) stb.o
-	g++ $(CFLAGS) $(OBJ) stb.o -o gl -lGLESv2 -lglfw
+	g++ $(CFLAGS) $(OBJ) stb.o -o gl $(GLFLAGS) -lglfw
 
 stb.o: stb.cpp
 	g++ $(CFLAGS_NOWARN) stb.cpp -c
@@ -36,16 +45,3 @@ clean:
 	rm -f .*~
 
 
-# DO NOT DELETE
-
-gl.o: glprog.h /usr/include/GLES3/gl32.h /usr/include/GLES3/gl3platform.h
-gl.o: /usr/include/KHR/khrplatform.h /usr/include/stdint.h
-gl.o: /usr/include/GLFW/glfw3.h /usr/include/stdio.h linear.h
-gl.o: /usr/include/assert.h /usr/include/features.h
-gl.o: /usr/include/stdc-predef.h /usr/include/math.h stb.h
-gl.o: /usr/include/stdlib.h /usr/include/alloca.h cube.h
-glprog.o: glprog.h /usr/include/GLES3/gl32.h /usr/include/GLES3/gl3platform.h
-glprog.o: /usr/include/KHR/khrplatform.h /usr/include/stdint.h
-glprog.o: /usr/include/GLFW/glfw3.h stb.h /usr/include/stdio.h
-glprog.o: /usr/include/stdlib.h /usr/include/alloca.h /usr/include/features.h
-glprog.o: /usr/include/stdc-predef.h

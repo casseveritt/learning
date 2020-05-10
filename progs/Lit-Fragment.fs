@@ -1,4 +1,5 @@
-#version 300 es
+#version 320
+//#version 300 es
 uniform highp vec3 lightPos;
 in highp vec3 outcol;
 in highp vec3 outnorm;
