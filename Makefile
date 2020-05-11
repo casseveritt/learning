@@ -17,7 +17,7 @@ all: gl
 
 H := $(wildcard *.h)
 
-SRC := gl.cpp glprog.cpp
+SRC := gl.cpp glprog.cpp geom.cpp sphere.cpp cube.cpp torus.cpp prog.cpp
 
 OBJ := $(patsubst %.cpp, %.o, $(SRC))
 

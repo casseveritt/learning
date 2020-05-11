@@ -2,10 +2,15 @@
 #include "learning.h"
 #include "linear.h"
 #include "stb.h"
+#include "geom.h"
+#include "sphere.h"
+#include "torus.h"
+#include "prog.h"
+#include "scene.h"
+#include "cube.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <vector>
 
 using namespace r3;
 
@@ -16,19 +21,15 @@ using namespace r3;
 */
 
 float fovy = 60.0f;
-Posef camPose;
 Posef modelPose;
 int frame = 0;
 bool drag = false;
 Vec2d prevPos;
 Vec2d diffPos;
-GLuint dummy_program;
-GLuint dummy_buffer;
 bool mode1;
 float rad = 2.0;
 float theta = 0.0;
-Matrix4f projMat;
-Vec3f lightPos(0.0f, 1.0f, 0.0f);
+Scene scene;
 
 static void error_callback(int error, const char *description) {
   fprintf(stderr, "Error: %d: %s\n", error, description);
@@ -92,35 +93,12 @@ static void mouse_button_callback(GLFWwindow *window, int button, int action,
   }
 }
 
-#define OFFSET_OF(v) reinterpret_cast<void *>(v)
-
-class Prog {
-public:
-  GLuint p;
-  union Ui {
-    GLuint u;
-    GLint i;
-  };
-  Ui pos, col, norm, proj, view, model, lightPos;
-
-  void set(GLuint program) {
-    p = program;
-    pos.i = glGetAttribLocation(program, "pos");
-    col.i = glGetAttribLocation(program, "col");
-    norm.i = glGetAttribLocation(program, "norm");
-    proj.i = glGetUniformLocation(program, "proj");
-    view.i = glGetUniformLocation(program, "view");
-    model.i = glGetUniformLocation(program, "model");
-    lightPos.i = glGetUniformLocation(program, "lightPos");
-  }
-};
-
-#include "cube.h"
-
 int main(void) {
 
-  camPose.t.z = 2.0;
+  scene.camPose.t.z = 2.0;
   GLFWwindow *window;
+
+  scene.lightPos = Vec3f(0, 1, 0);
 
   glfwSetErrorCallback(error_callback);
 
@@ -166,12 +144,10 @@ int main(void) {
   Prog litProgram;
   litProgram.set(litProg);
 
-  dummy_program = glCreateProgram();
-  glGenBuffers(1, &dummy_buffer);
   // programs init end
 
   // objects init begin
-  Object grid;
+  Geom grid;
   grid.begin(GL_LINES);
   static const int gridsize = 15; // vertical or horizontal size odd
   static const float s = 0.25f;   // spacing of lines
@@ -189,22 +165,19 @@ int main(void) {
   }
   grid.end();
 
-  Cube cub;
-  cub.begin(-1.0f, 0.0f, -1.0f, 0.75f);
-
-  Object cube;
+  Geom cube;
   makeCube(cube, Matrix4f::Scale(0.375f));
   cube.modelPose.t = Vec3f(-1, 0.375f, -1);
 
   Sphere sph;
-  sph.begin(1.0f, 0.0f, -1.0f, 0.5f);
+  sph.build(1.0f, 0.0f, -1.0f, 0.5f);
 
   Torus tor;
   tor.torObj.modelPose.t = Vec3f(1, 0.25f, 1);
-  tor.begin(0.5f, 0.25f);
+  tor.build(0.5f, 0.25f);
 
   Sphere light;
-  light.begin(0.0f, 0.0f, 0.0f, 0.0525f);
+  light.build(0.0f, 0.0f, 0.0f, 0.0525f);
   // objects init end
 
   while (!glfwWindowShouldClose(window)) {
@@ -223,12 +196,12 @@ int main(void) {
       rad += diffPos.x * 0.0125f;
       rad += diffPos.y * 0.0125f;
     } else {
-      camPose.t.x = sin(theta) * rad;
-      camPose.t.z = cos(theta) * rad;
-      camPose.t.y -= diffPos.y * 0.0125f;
+      scene.camPose.t.x = sin(theta) * rad;
+      scene.camPose.t.z = cos(theta) * rad;
+      scene.camPose.t.y -= diffPos.y * 0.0125f;
     }
 
-    camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -camPose.t,
+    scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t,
                        Vec3f(0, 1, 0));
 
     int width, height;
@@ -241,17 +214,17 @@ int main(void) {
     glEnable(GL_DEPTH_TEST);
 
     float aspect = float(width) / float(height);
-    projMat = Perspective(fovy, aspect, 0.1f, 100.0f);
-    // Matrix4f viewMat = camPose.Inverted().GetMatrix4();
+    scene.projMat = Perspective(fovy, aspect, 0.1f, 100.0f);
+    // Matrix4f viewMat = scene.camPose.Inverted().GetMatrix4();
 
-    grid.draw(program);
+    grid.draw(scene, program);
     // cub.draw(program);
-    cube.draw(litProgram);
-    sph.draw(litProgram);
-    tor.draw(litProgram);
+    cube.draw(scene, litProgram);
+    sph.draw(scene, litProgram);
+    tor.draw(scene, litProgram);
 
-    light.sphObj.modelPose.t = lightPos;
-    light.draw(program);
+    light.sphObj.modelPose.t = scene.lightPos;
+    light.draw(scene, program);
 
     glfwSwapBuffers(window);
     glfwPollEvents();

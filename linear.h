@@ -1998,7 +1998,7 @@ inline bool operator!=(const Plane<T> &p1, const Plane<T> &p2) {
 
 // inverse of camera_lookat
 template <typename T>
-inline Matrix4<T> ObjectLookAt(const Vec3<T> &from, const Vec3<T> &to,
+inline Matrix4<T> GeomLookAt(const Vec3<T> &from, const Vec3<T> &to,
                                const Vec3<T> &Up) {
   Vec3<T> look = to - from;
   look.Normalize();

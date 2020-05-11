@@ -1,15 +1,11 @@
-#include "glprog.h"
+#pragma once
 #include "learning.h"
 #include "linear.h"
-#include "stb.h"
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "prog.h"
+#include "scene.h"
 #include <vector>
 
-using namespace r3;
-
-class Object {
+class Geom {
 
 public:
   GLuint b;
@@ -23,6 +19,8 @@ public:
   };
   Vertex v;
   std::vector<Vertex> verts;
+
+  Geom();
 
   void begin(GLenum prim);
 
@@ -38,5 +36,5 @@ public:
 
   void position(Vec3f cords);
 
-  void draw(Prog p);
+  void draw(const Scene & scene, Prog p);
 };

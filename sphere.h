@@ -1,4 +1,5 @@
-#include "object.h"
+#pragma once
+#include "geom.h"
 
 using namespace r3;
 
@@ -10,9 +11,9 @@ public:
     Vec3f norm;
     Vec3f pos;
   };
-  Object sphObj;
+  Geom sphObj;
 
   void build(float x, float y, float z, float radi = 0.5);
 
-  void draw(Prog p);
+  void draw(const Scene & scene, Prog p);
 };
