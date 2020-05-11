@@ -1705,11 +1705,11 @@ public:
     Quaternion r = Quaternion(fL, tL);
 
     Vec3<T> rfU = r * fU;
-    //Vec3<T> rfL = r * fL;
+    // Vec3<T> rfL = r * fL;
 
     Vec3<T> tUo = tU.Orthonormalized(tL);
 
-    float d = std::max( -1.0f, std::min( 1.0f, rfU.Dot(tUo)));
+    float d = std::max(-1.0f, std::min(1.0f, rfU.Dot(tUo)));
 
     float twist = acosf(d);
     Vec3<T> ux = rfU.Cross(tUo);
