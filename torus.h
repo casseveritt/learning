@@ -12,7 +12,7 @@ public:
   };
   Geom torObj;
 
-  void build(float rad1 = 0.5, float rad2 = 0.25) ;
+  void build(float rad1 = 0.5, float rad2 = 0.25);
 
-  void draw(const Scene & scene, Prog p) ;
+  void draw(const Scene &scene, Prog p);
 };

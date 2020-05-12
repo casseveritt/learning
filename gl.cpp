@@ -1,13 +1,13 @@
+#include "cube.h"
+#include "geom.h"
 #include "glprog.h"
 #include "learning.h"
 #include "linear.h"
-#include "stb.h"
-#include "geom.h"
-#include "sphere.h"
-#include "torus.h"
 #include "prog.h"
 #include "scene.h"
-#include "cube.h"
+#include "sphere.h"
+#include "stb.h"
+#include "torus.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -202,7 +202,7 @@ int main(void) {
     }
 
     scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t,
-                       Vec3f(0, 1, 0));
+                             Vec3f(0, 1, 0));
 
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);

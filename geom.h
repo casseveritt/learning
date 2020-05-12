@@ -36,5 +36,5 @@ public:
 
   void position(r3::Vec3f cords);
 
-  void draw(const Scene & scene, Prog p);
+  void draw(const Scene &scene, Prog p);
 };

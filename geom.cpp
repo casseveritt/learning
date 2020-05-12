@@ -3,9 +3,9 @@
 using namespace r3;
 
 namespace {
-  GLuint dummy_program = 0;
-  GLuint dummy_buffer = 0;
-}
+GLuint dummy_program = 0;
+GLuint dummy_buffer = 0;
+} // namespace
 
 Geom::Geom() {
   if (dummy_buffer == 0) {
@@ -22,7 +22,8 @@ void Geom::begin(GLenum prim) {
 
 void Geom::end() {
   glBindBuffer(GL_ARRAY_BUFFER, b);
-  glBufferData(GL_ARRAY_BUFFER, float(sizeof(Vertex) * verts.size()), &verts[0], GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, float(sizeof(Vertex) * verts.size()), &verts[0],
+               GL_DYNAMIC_DRAW);
 }
 
 void Geom::color(float r, float g, float bl) { v.color = Vec3f(r, g, bl); }
@@ -36,25 +37,30 @@ void Geom::position(float x, float y, float z) {
   verts.push_back(v);
 }
 
-void Geom::position( Vec3f cords ) {
+void Geom::position(Vec3f cords) {
   v.position = cords;
   verts.push_back(v);
 }
 
 #define OFFSET_OF(v) reinterpret_cast<void *>(v)
 
-void Geom::draw(const Scene& scene, Prog p) {
+void Geom::draw(const Scene &scene, Prog p) {
   glUseProgram(p.p);
   Matrix4f viewMat = scene.camPose.Inverted().GetMatrix4();
   glBindBuffer(GL_ARRAY_BUFFER, b);
-  if(p.col.i >= 0){
-    glVertexAttribPointer(p.col.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(0));
+  if (p.col.i >= 0) {
+    glVertexAttribPointer(p.col.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          OFFSET_OF(0));
     glEnableVertexAttribArray(p.col.u);
-  }if(p.norm.i >= 0){
-    glVertexAttribPointer(p.norm.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(sizeof(Vec3f)));
+  }
+  if (p.norm.i >= 0) {
+    glVertexAttribPointer(p.norm.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          OFFSET_OF(sizeof(Vec3f)));
     glEnableVertexAttribArray(p.norm.u);
-  }if(p.pos.i >= 0){
-    glVertexAttribPointer(p.pos.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(sizeof(Vec3f)*2));
+  }
+  if (p.pos.i >= 0) {
+    glVertexAttribPointer(p.pos.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          OFFSET_OF(sizeof(Vec3f) * 2));
     glEnableVertexAttribArray(p.pos.u);
   }
 
@@ -65,9 +71,12 @@ void Geom::draw(const Scene& scene, Prog p) {
   glUniform3fv(p.lightPos.i, 1, &scene.lightPos.x);
   glDrawArrays(primType, 0, verts.size());
 
-  if(p.col.i >= 0)  glDisableVertexAttribArray(p.pos.u);
-  if(p.norm.i >= 0) glDisableVertexAttribArray(p.norm.u);
-  if(p.pos.i >= 0)  glDisableVertexAttribArray(p.col.u);
+  if (p.col.i >= 0)
+    glDisableVertexAttribArray(p.pos.u);
+  if (p.norm.i >= 0)
+    glDisableVertexAttribArray(p.norm.u);
+  if (p.pos.i >= 0)
+    glDisableVertexAttribArray(p.col.u);
   glBindBuffer(GL_ARRAY_BUFFER, dummy_buffer);
   glUseProgram(dummy_program);
 }

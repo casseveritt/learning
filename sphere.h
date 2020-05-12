@@ -15,5 +15,5 @@ public:
 
   void build(float x, float y, float z, float radi = 0.5);
 
-  void draw(const Scene & scene, Prog p);
+  void draw(const Scene &scene, Prog p);
 };
