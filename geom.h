@@ -10,7 +10,7 @@ class Geom {
 public:
   GLuint b;
   GLint pos_loc, col_loc, proj_loc, view_loc, model_loc, norm_loc;
-  Posef modelPose;
+  r3::Posef modelPose;
   GLenum primType;
   struct Vertex {
     r3::Vec3f color;
@@ -30,11 +30,11 @@ public:
 
   void normal(float x, float y, float z);
 
-  void normal(Vec3f norm);
+  void normal(r3::Vec3f norm);
 
   void position(float x, float y, float z);
 
-  void position(Vec3f cords);
+  void position(r3::Vec3f cords);
 
   void draw(const Scene & scene, Prog p);
 };

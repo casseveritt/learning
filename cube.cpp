@@ -1,5 +1,6 @@
 #include "cube.h"
 
+using namespace r3;
 // cube generator
 
 static void appendVert(Geom &obj, const Matrix4f &m, const Vec3f &v) {
