@@ -11,7 +11,7 @@ void Sphere::build(float x, float y, float z, float radi) {
   }
 
   sphObj.begin(GL_TRIANGLES);
-  sphObj.color(0.0f, 0.0f, 0.0f);
+  sphObj.color(0.9f, 0.9f, 0.9f);
   for (int j = 0; j < 18; j++) {
     Quaternionf q0(Vec3f(0, 1, 0), ToRadians(j * 10.0f));
     Quaternionf q1(Vec3f(0, 1, 0), ToRadians((j * 10.0f) + 10.0f));

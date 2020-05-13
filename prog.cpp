@@ -9,4 +9,6 @@ void Prog::set(GLuint program) {
   view.i = glGetUniformLocation(program, "view");
   model.i = glGetUniformLocation(program, "model");
   lightPos.i = glGetUniformLocation(program, "lightPos");
+  lightCol.i = glGetUniformLocation(program, "lightCol");
+  matCol.i = glGetUniformLocation(program, "matCol");
 }

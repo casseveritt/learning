@@ -69,6 +69,8 @@ void Geom::draw(const Scene &scene, Prog p) {
   glUniformMatrix4fv(p.view.i, 1, GL_FALSE, viewMat.GetValue());
   glUniformMatrix4fv(p.model.i, 1, GL_FALSE, modelMat.GetValue());
   glUniform3fv(p.lightPos.i, 1, &scene.lightPos.x);
+  glUniform3fv(p.lightCol.i, 1, &scene.lightCol.x);
+  glUniform3fv(p.matCol.i, 1, &matCol.x);
   glDrawArrays(primType, 0, verts.size());
 
   if (p.col.i >= 0)

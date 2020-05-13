@@ -16,7 +16,6 @@ using namespace r3;
 
 /*
   You need dev packages to build and run this:
-
   sudo apt install libgles2-mesa-dev libglfw3-dev
 */
 
@@ -99,6 +98,7 @@ int main(void) {
   GLFWwindow *window;
 
   scene.lightPos = Vec3f(0, 1, 0);
+  scene.lightCol = Vec3f(1, 1, 1);
 
   glfwSetErrorCallback(error_callback);
 
@@ -149,18 +149,15 @@ int main(void) {
   // objects init begin
   Geom grid;
   grid.begin(GL_LINES);
+  grid.color(0.90f, 0.90f, 0.90f);
   static const int gridsize = 15; // vertical or horizontal size odd
   static const float s = 0.25f;   // spacing of lines
   for (int i = 0; i < gridsize; i++) {
     float shift = (gridsize / 2) * -1 * s + i * s;
     float move = (gridsize / 2) * s;
-    grid.color(0.0f, 0.0f, 0.0f);
     grid.position(shift, 0.0f, move);
-    grid.color(0.0f, 0.0f, 0.0f);
     grid.position(shift, 0.0f, move * -1);
-    grid.color(0.0f, 0.0f, 0.0f);
     grid.position(move, 0.0f, shift);
-    grid.color(0.0f, 0.0f, 0.0f);
     grid.position(move * -1, 0.0f, shift);
   }
   grid.end();
@@ -168,16 +165,20 @@ int main(void) {
   Geom cube;
   makeCube(cube, Matrix4f::Scale(0.375f));
   cube.modelPose.t = Vec3f(-1, 0.375f, -1);
+  cube.matCol = Vec3f(1.0f, 0.0f, 0.0f);
 
   Sphere sph;
   sph.build(1.0f, 0.0f, -1.0f, 0.5f);
+  sph.sphObj.matCol = Vec3f(0.0f, 1.0f, 0.0f);
 
   Torus tor;
   tor.torObj.modelPose.t = Vec3f(1, 0.25f, 1);
   tor.build(0.5f, 0.25f);
+  tor.torObj.matCol = Vec3f(0.0f, 0.0f, 1.0f);
 
   Sphere light;
   light.build(0.0f, 0.0f, 0.0f, 0.0525f);
+  // light
   // objects init end
 
   while (!glfwWindowShouldClose(window)) {
@@ -209,7 +210,7 @@ int main(void) {
 
     glViewport(0, 0, width, height);
 
-    glClearColor(1.0f, 1.0f, 1.0f, 0);
+    glClearColor(0.25f, 0.25f, 0.25f, 0);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
 

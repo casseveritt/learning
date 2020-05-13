@@ -17,6 +17,7 @@ public:
     r3::Vec3f normal;
     r3::Vec3f position;
   };
+  r3::Vec3f matCol = r3::Vec3f(0.9f, 0.9f, 0.9f);
   Vertex v;
   std::vector<Vertex> verts;
 
