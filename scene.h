@@ -8,4 +8,5 @@ struct Scene {
   r3::Vec3f lightPos;
   r3::Vec3f lightCol;
   r3::Vec3f matCol;
+  r3::Vec3f camPos;
 };

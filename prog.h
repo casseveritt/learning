@@ -8,7 +8,7 @@ public:
     GLuint u;
     GLint i;
   };
-  Ui pos, col, norm, proj, view, model, lightPos, lightCol, matCol;
+  Ui pos, col, norm, proj, view, model, lightPos, lightCol, matCol, camPos;
 
   void set(GLuint program);
 };

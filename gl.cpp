@@ -200,10 +200,12 @@ int main(void) {
       scene.camPose.t.x = sin(theta) * rad;
       scene.camPose.t.z = cos(theta) * rad;
       scene.camPose.t.y -= diffPos.y * 0.0125f;
+      scene.camPos = scene.camPose.t;
     }
 
     scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t,
                              Vec3f(0, 1, 0));
+    scene.camPos = scene.camPose.t;
 
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
@@ -216,10 +218,8 @@ int main(void) {
 
     float aspect = float(width) / float(height);
     scene.projMat = Perspective(fovy, aspect, 0.1f, 100.0f);
-    // Matrix4f viewMat = scene.camPose.Inverted().GetMatrix4();
 
     grid.draw(scene, program);
-    // cub.draw(program);
     cube.draw(scene, litProgram);
     sph.draw(scene, litProgram);
     tor.draw(scene, litProgram);

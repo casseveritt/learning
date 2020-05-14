@@ -82,5 +82,13 @@ GLuint createProgram(const char *vertexShaderFilename,
   glAttachShader(program, vertex_shader);
   glAttachShader(program, fragment_shader);
   glLinkProgram(program);
+  glGetProgramiv(program, GL_LINK_STATUS, &stat);
+  if (stat == GL_FALSE) {
+    printf("Program link failed\n");
+    GLchar infoLog[4096];
+    GLsizei len = 0;
+    glGetProgramInfoLog(program, sizeof(infoLog), &len, infoLog);
+    printf("infoLog: %s\n", static_cast<const char *>(infoLog));
+  }
   return program;
 }

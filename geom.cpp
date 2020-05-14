@@ -71,6 +71,7 @@ void Geom::draw(const Scene &scene, Prog p) {
   glUniform3fv(p.lightPos.i, 1, &scene.lightPos.x);
   glUniform3fv(p.lightCol.i, 1, &scene.lightCol.x);
   glUniform3fv(p.matCol.i, 1, &matCol.x);
+  glUniform3fv(p.camPos.i, 1, &scene.camPos.x);
   glDrawArrays(primType, 0, verts.size());
 
   if (p.col.i >= 0)
