@@ -132,12 +132,14 @@ int main(void) {
   glBindVertexArray(defaultVab);
 
   // programs init begin
-  GLuint prog = createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
+  GLuint prog =
+      createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
   glUseProgram(prog);
   Prog program;
   program.set(prog);
 
-  GLuint litProg = createProgram("progs/Lit-Vertex.vs", "progs/Lit-Fragment.fs");
+  GLuint litProg =
+      createProgram("progs/Lit-Vertex.vs", "progs/Lit-Fragment.fs");
   glUseProgram(litProg);
   Prog litProgram;
   litProgram.set(litProg);
