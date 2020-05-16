@@ -17,7 +17,9 @@ public:
     r3::Vec3f normal;
     r3::Vec3f position;
   };
-  r3::Vec3f matCol = r3::Vec3f(0.9f, 0.9f, 0.9f);
+  r3::Vec3f matDifCol = r3::Vec3f(0.9f, 0.9f, 0.9f);
+  r3::Vec3f matSpcCol = r3::Vec3f(0.9f, 0.9f, 0.9f);
+  float shiny = 10.0;
   Vertex v;
   std::vector<Vertex> verts;
 

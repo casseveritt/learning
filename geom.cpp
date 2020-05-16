@@ -70,7 +70,9 @@ void Geom::draw(const Scene &scene, Prog p) {
   glUniformMatrix4fv(p.model.i, 1, GL_FALSE, modelMat.GetValue());
   glUniform3fv(p.lightPos.i, 1, &scene.lightPos.x);
   glUniform3fv(p.lightCol.i, 1, &scene.lightCol.x);
-  glUniform3fv(p.matCol.i, 1, &matCol.x);
+  glUniform3fv(p.matDifCol.i, 1, &matDifCol.x);
+  glUniform3fv(p.matSpcCol.i, 1, &matSpcCol.x);
+  glUniform1f(p.shiny.i, shiny);
   glUniform3fv(p.camPos.i, 1, &scene.camPos.x);
   glDrawArrays(primType, 0, verts.size());
 

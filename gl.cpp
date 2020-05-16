@@ -132,14 +132,12 @@ int main(void) {
   glBindVertexArray(defaultVab);
 
   // programs init begin
-  GLuint prog =
-      createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
+  GLuint prog = createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
   glUseProgram(prog);
   Prog program;
   program.set(prog);
 
-  GLuint litProg =
-      createProgram("progs/Lit-Vertex.vs", "progs/Lit-Fragment.fs");
+  GLuint litProg = createProgram("progs/Lit-Vertex.vs", "progs/Lit-Fragment.fs");
   glUseProgram(litProg);
   Prog litProgram;
   litProgram.set(litProg);
@@ -165,16 +163,22 @@ int main(void) {
   Geom cube;
   makeCube(cube, Matrix4f::Scale(0.375f));
   cube.modelPose.t = Vec3f(-1, 0.375f, -1);
-  cube.matCol = Vec3f(1.0f, 0.0f, 0.0f);
+  cube.matDifCol = Vec3f(0.7f, 0.0f, 0.0f);
+  cube.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
+  cube.shiny = 7.5f;
 
   Sphere sph;
   sph.build(1.0f, 0.0f, -1.0f, 0.5f);
-  sph.sphObj.matCol = Vec3f(0.0f, 1.0f, 0.0f);
+  sph.sphObj.matDifCol = Vec3f(0.0f, 1.0f, 0.0f);
+  sph.sphObj.matSpcCol = Vec3f(0.0f, 1.0f, 0.0f);
+  sph.sphObj.shiny = 25.0f;
 
   Torus tor;
   tor.torObj.modelPose.t = Vec3f(1, 0.25f, 1);
   tor.build(0.5f, 0.25f);
-  tor.torObj.matCol = Vec3f(0.0f, 0.0f, 1.0f);
+  tor.torObj.matDifCol = Vec3f(0.0f, 0.0f, 0.5f);
+  tor.torObj.matSpcCol = Vec3f(0.3f, 0.3f, 1.0f);
+  tor.torObj.shiny = 15.0f;
 
   Sphere light;
   light.build(0.0f, 0.0f, 0.0f, 0.0525f);

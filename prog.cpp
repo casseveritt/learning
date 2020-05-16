@@ -10,6 +10,8 @@ void Prog::set(GLuint program) {
   model.i = glGetUniformLocation(program, "model");
   lightPos.i = glGetUniformLocation(program, "lightPos");
   lightCol.i = glGetUniformLocation(program, "lightCol");
-  matCol.i = glGetUniformLocation(program, "matCol");
+  matDifCol.i = glGetUniformLocation(program, "matDifCol");
+  matSpcCol.i = glGetUniformLocation(program, "matSpcCol");
+  shiny.i = glGetUniformLocation(program, "shiny");
   camPos.i = glGetUniformLocation(program, "camPos");
 }
