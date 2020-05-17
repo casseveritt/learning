@@ -156,7 +156,7 @@ int main(void) {
   Geom grid;
   grid.begin(GL_LINES);
   grid.color(0.90f, 0.90f, 0.90f);
-  static const int gridsize = 15; // vertical or horizontal size odd
+  static const int gridsize = 17; // vertical or horizontal size odd
   static const float s = 0.25f;   // spacing of lines
   for (int i = 0; i < gridsize; i++) {
     float shift = (gridsize / 2) * -1 * s + i * s;
@@ -168,17 +168,20 @@ int main(void) {
   }
   grid.end();
 
+  float sqrDime = float(gridsize / 2) * s;
+  float sqrSize = float((gridsize-1)/2);
+
   Geom square;
   square.begin(GL_TRIANGLE_STRIP);
   square.color(0.0f, 0.0f, 0.0f);
   square.texCoord(0.0f, 0.0f);
-  square.position(-float(gridsize / 2) * s, 0.0f, -float(gridsize / 2) * s);
-  square.texCoord(0.0f, 7.0f);
-  square.position(-float(gridsize / 2) * s, 0.0f, float(gridsize / 2) * s);
-  square.texCoord(7.0f, 0.0f);
-  square.position(float(gridsize / 2) * s, 0.0f, -float(gridsize / 2) * s);
-  square.texCoord(7.0f, 7.0f);
-  square.position(float(gridsize / 2) * s, 0.0f, float(gridsize / 2) * s);
+  square.position(-sqrDime, 0.0f, -sqrDime);
+  square.texCoord(0.0f, sqrSize);
+  square.position(-sqrDime, 0.0f, sqrDime);
+  square.texCoord(sqrSize, 0.0f);
+  square.position(sqrDime, 0.0f, -sqrDime);
+  square.texCoord(sqrSize, sqrSize);
+  square.position(sqrDime, 0.0f, sqrDime);
   square.end();
 
   Geom cube;
@@ -190,8 +193,8 @@ int main(void) {
 
   Sphere sph;
   sph.build(1.0f, 0.0f, -1.0f, 0.5f);
-  sph.sphObj.matDifCol = Vec3f(0.0f, 0.5f, 0.0f);
-  sph.sphObj.matSpcCol = Vec3f(0.7f, 1.0f, 0.7f);
+  sph.sphObj.matDifCol = Vec3f(0.0f, 0.3f, 0.0f);
+  sph.sphObj.matSpcCol = Vec3f(0.2f, 1.0f, 0.2f);
   sph.sphObj.shiny = 25.0f;
 
   Torus tor;
@@ -228,8 +231,7 @@ int main(void) {
       scene.camPos = scene.camPose.t;
     }
 
-    scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t,
-                             Vec3f(0, 1, 0));
+    scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t, Vec3f(0, 1, 0));
     scene.camPos = scene.camPose.t;
 
     int width, height;
