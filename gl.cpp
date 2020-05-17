@@ -132,15 +132,23 @@ int main(void) {
   glBindVertexArray(defaultVab);
 
   // programs init begin
-  GLuint prog = createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
+  GLuint prog =
+      createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
   glUseProgram(prog);
   Prog program;
   program.set(prog);
 
-  GLuint litProg = createProgram("progs/Lit-Vertex.vs", "progs/Lit-Fragment.fs");
+  GLuint litProg =
+      createProgram("progs/Lit-Vertex.vs", "progs/Lit-Fragment.fs");
   glUseProgram(litProg);
   Prog litProgram;
   litProgram.set(litProg);
+
+  GLuint texProg =
+      createProgram("progs/Tex-Vertex.vs", "progs/Tex-Fragment.fs");
+  glUseProgram(texProg);
+  Prog texProgram;
+  texProgram.set(texProg);
 
   // programs init end
 
@@ -159,6 +167,15 @@ int main(void) {
     grid.position(move * -1, 0.0f, shift);
   }
   grid.end();
+
+  Geom square;
+  square.begin(GL_TRIANGLE_STRIP);
+  square.color(0.0f, 0.0f, 0.0f);
+  square.position(-1.0f, 0.0f, -1.0f);
+  square.position(-1.0f, 0.0f, 1.0f);
+  square.position(1.0f, 0.0f, -1.0f);
+  square.position(1.0f, 0.0f, 1.0f);
+  square.end();
 
   Geom cube;
   makeCube(cube, Matrix4f::Scale(0.375f));
@@ -181,7 +198,7 @@ int main(void) {
   tor.torObj.shiny = 15.0f;
 
   Sphere light;
-  light.build(0.0f, 0.0f, 0.0f, 0.0525f);
+  light.build(0.0f, 0.0f, 0.0f, 0.02625f);
   // light
   // objects init end
 
@@ -223,7 +240,11 @@ int main(void) {
     float aspect = float(width) / float(height);
     scene.projMat = Perspective(fovy, aspect, 0.1f, 100.0f);
 
-    grid.draw(scene, program);
+    if (scene.camPose.t.y <= 0.0f) {
+      grid.draw(scene, program);
+    } else {
+      square.draw(scene, program);
+    }
     cube.draw(scene, litProgram);
     sph.draw(scene, litProgram);
     tor.draw(scene, litProgram);

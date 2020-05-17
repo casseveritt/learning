@@ -4,6 +4,7 @@ void Prog::set(GLuint program) {
   p = program;
   pos.i = glGetAttribLocation(program, "pos");
   col.i = glGetAttribLocation(program, "col");
+  texCoords.i = glGetAttribLocation(program, "texCoords");
   norm.i = glGetAttribLocation(program, "norm");
   proj.i = glGetUniformLocation(program, "proj");
   view.i = glGetUniformLocation(program, "view");
