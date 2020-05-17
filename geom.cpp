@@ -28,6 +28,8 @@ void Geom::end() {
 
 void Geom::color(float r, float g, float bl) { v.color = Vec3f(r, g, bl); }
 
+void Geom::texCoord(float s, float t) { v.texCoords = Vec2f(s, t); }
+
 void Geom::normal(float x, float y, float z) { v.normal = Vec3f(x, y, z); }
 
 void Geom::normal(Vec3f norm) { v.normal = norm; }
@@ -62,6 +64,11 @@ void Geom::draw(const Scene &scene, Prog p) {
     glVertexAttribPointer(p.pos.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           OFFSET_OF(sizeof(Vec3f) * 2));
     glEnableVertexAttribArray(p.pos.u);
+  }
+  if (p.texCoord.i >= 0) {
+    glVertexAttribPointer(p.texCoord.u, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          OFFSET_OF(sizeof(Vec3f) * 3));
+    glEnableVertexAttribArray(p.texCoord.u);
   }
 
   Matrix4f modelMat = modelPose.GetMatrix4();

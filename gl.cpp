@@ -107,6 +107,7 @@ int main(void) {
   }
 
   make_hints();
+  glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
 
   window = glfwCreateWindow(640, 480, "Learning", NULL, NULL);
   if (!window) {
@@ -149,7 +150,6 @@ int main(void) {
   glUseProgram(texProg);
   Prog texProgram;
   texProgram.set(texProg);
-
   // programs init end
 
   // objects init begin
@@ -171,10 +171,14 @@ int main(void) {
   Geom square;
   square.begin(GL_TRIANGLE_STRIP);
   square.color(0.0f, 0.0f, 0.0f);
-  square.position(-1.0f, 0.0f, -1.0f);
-  square.position(-1.0f, 0.0f, 1.0f);
-  square.position(1.0f, 0.0f, -1.0f);
-  square.position(1.0f, 0.0f, 1.0f);
+  square.texCoord(0.0f, 0.0f);
+  square.position(-float(gridsize / 2) * s, 0.0f, -float(gridsize / 2) * s);
+  square.texCoord(0.0f, 7.0f);
+  square.position(-float(gridsize / 2) * s, 0.0f, float(gridsize / 2) * s);
+  square.texCoord(7.0f, 0.0f);
+  square.position(float(gridsize / 2) * s, 0.0f, -float(gridsize / 2) * s);
+  square.texCoord(7.0f, 7.0f);
+  square.position(float(gridsize / 2) * s, 0.0f, float(gridsize / 2) * s);
   square.end();
 
   Geom cube;
@@ -243,7 +247,7 @@ int main(void) {
     if (scene.camPose.t.y <= 0.0f) {
       grid.draw(scene, program);
     } else {
-      square.draw(scene, program);
+      square.draw(scene, texProgram);
     }
     cube.draw(scene, litProgram);
     sph.draw(scene, litProgram);

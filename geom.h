@@ -33,6 +33,8 @@ public:
 
   void color(float r, float g, float bl);
 
+  void texCoord(float s, float t);
+
   void normal(float x, float y, float z);
 
   void normal(r3::Vec3f norm);
