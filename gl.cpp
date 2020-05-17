@@ -152,6 +152,22 @@ int main(void) {
   texProgram.set(texProg);
   // programs init end
 
+  // Texture begin
+  int w, h, n;
+  unsigned char *img;
+  GLuint tex;
+
+  img = image_load("check.png", &w, &h, &n);
+
+  printf("Width: %d\tHeight: %d\tNum Channels: %d\n", w, h, n);
+
+  glGenTextures(GLsizei(n), &tex);
+  glBindTexture(GL_TEXTURE_2D, tex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, img);
+
+  image_free(img);
+  // Texture end
+
   // objects init begin
   Geom grid;
   grid.begin(GL_LINES);
@@ -169,7 +185,7 @@ int main(void) {
   grid.end();
 
   float sqrDime = float(gridsize / 2) * s;
-  float sqrSize = float((gridsize-1)/2);
+  float sqrSize = float((gridsize - 1) / 2);
 
   Geom square;
   square.begin(GL_TRIANGLE_STRIP);
@@ -205,7 +221,7 @@ int main(void) {
   tor.torObj.shiny = 15.0f;
 
   Sphere light;
-  light.build(0.0f, 0.0f, 0.0f, 0.02625f);
+  light.build(0.0f, 0.0f, 0.0f, 0.03125f);
   // light
   // objects init end
 
@@ -231,7 +247,8 @@ int main(void) {
       scene.camPos = scene.camPose.t;
     }
 
-    scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t, Vec3f(0, 1, 0));
+    scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t,
+                             Vec3f(0, 1, 0));
     scene.camPos = scene.camPose.t;
 
     int width, height;
