@@ -190,8 +190,8 @@ int main(void) {
 
   Sphere sph;
   sph.build(1.0f, 0.0f, -1.0f, 0.5f);
-  sph.sphObj.matDifCol = Vec3f(0.0f, 1.0f, 0.0f);
-  sph.sphObj.matSpcCol = Vec3f(0.0f, 1.0f, 0.0f);
+  sph.sphObj.matDifCol = Vec3f(0.0f, 0.5f, 0.0f);
+  sph.sphObj.matSpcCol = Vec3f(0.7f, 1.0f, 0.7f);
   sph.sphObj.shiny = 25.0f;
 
   Torus tor;

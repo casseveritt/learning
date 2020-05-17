@@ -20,5 +20,5 @@ void main()
 	highp vec3 l = normalize(lightPos - outpos);
 	highp float diffuse = max(0.0, dot(l,n));
 	highp vec3 difLit = lightCol * matDifCol * vec3(diffuse);
-    fragColor = vec4(difLit, 1.0) + vec4(spcLit, 1.0);
+	fragColor = vec4(difLit, 1.0) + vec4(spcLit, 1.0);
 }
