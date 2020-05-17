@@ -9,7 +9,7 @@ public:
     GLint i;
   };
   Ui pos, col, texCoord, norm, proj, view, model, lightPos, lightCol, matDifCol,
-      matSpcCol, shiny, camPos;
+      matSpcCol, shiny, camPos, samp;
 
   void set(GLuint program);
 };

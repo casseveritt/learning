@@ -154,18 +154,30 @@ int main(void) {
 
   // Texture begin
   int w, h, n;
-  unsigned char *img;
   GLuint tex;
 
-  img = image_load("check.png", &w, &h, &n);
+  {
+    unsigned char *img;
+    img = image_load("check.png", &w, &h, &n);
 
-  printf("Width: %d\tHeight: %d\tNum Channels: %d\n", w, h, n);
+    printf("Width: %d\tHeight: %d\tNum Channels: %d\n", w, h, n);
 
-  glGenTextures(GLsizei(n), &tex);
-  glBindTexture(GL_TEXTURE_2D, tex);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, img);
+    uint32_t * imgi = new uint32_t[ w * h ];
+    for (int i = 0; i < w * h; i++ ) {
+      imgi[i] = 
+      uint32_t(img[i*3+0]) << 0 | 
+      uint32_t(img[i*3+1]) << 8 | 
+      uint32_t(img[i*3+2]) << 16; 
+    }
 
-  image_free(img);
+    glGenTextures(GLsizei(n), &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgi);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    delete [] imgi;
+    image_free(img);
+  }
+
   // Texture end
 
   // objects init begin
