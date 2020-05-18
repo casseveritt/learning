@@ -162,19 +162,18 @@ int main(void) {
 
     printf("Width: %d\tHeight: %d\tNum Channels: %d\n", w, h, n);
 
-    uint32_t * imgi = new uint32_t[ w * h ];
-    for (int i = 0; i < w * h; i++ ) {
-      imgi[i] = 
-      uint32_t(img[i*3+0]) << 0 | 
-      uint32_t(img[i*3+1]) << 8 | 
-      uint32_t(img[i*3+2]) << 16; 
+    uint32_t *imgi = new uint32_t[w * h];
+    for (int i = 0; i < w * h; i++) {
+      imgi[i] = uint32_t(img[i * 3 + 0]) << 0 | uint32_t(img[i * 3 + 1]) << 8 |
+                uint32_t(img[i * 3 + 2]) << 16;
     }
 
     glGenTextures(GLsizei(n), &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgi);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 imgi);
     glGenerateMipmap(GL_TEXTURE_2D);
-    delete [] imgi;
+    delete[] imgi;
     image_free(img);
   }
 
