@@ -257,6 +257,7 @@ int main(void) {
 
   Geom square;
   square.begin(GL_TRIANGLE_STRIP);
+  square.normal(0, 1, 0);
   square.color(0.0f, 0.0f, 0.0f);
   square.texCoord(0.0f, 0.0f);
   square.position(-sqrDime, 0.0f, -sqrDime);
@@ -267,6 +268,8 @@ int main(void) {
   square.texCoord(sqrSize, sqrSize);
   square.position(sqrDime, 0.0f, sqrDime);
   square.end();
+  square.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
+  square.shiny = 40.0f;
 
   Geom cube;
   makeCube(cube, Matrix4f::Scale(0.375f));
@@ -336,7 +339,7 @@ int main(void) {
       grid.draw(scene, program);
     } else {
       glBindTexture(GL_TEXTURE_2D, check);
-      square.draw(scene, texProgram);
+      square.draw(scene, litTexProgram);
     }
     glBindTexture(GL_TEXTURE_2D, brick);
     cube.draw(scene, litTexProgram);
