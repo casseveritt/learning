@@ -23,17 +23,23 @@ void Torus::build(float rad1, float rad2) {
       Vec3f c0 = q0 * center;
       Vec3f c1 = q1 * center;
       torObj.normal((v00 - c0).Normalized());
+      torObj.texCoord(j/36.0, i/18.0);
       torObj.position(v00);
       torObj.normal((v10 - c0).Normalized());
+      torObj.texCoord(j/36.0, (i+1)/18.0);
       torObj.position(v10);
       torObj.normal((v01 - c1).Normalized());
+      torObj.texCoord((j+1)/36.0, i/18.0);
       torObj.position(v01);
 
       torObj.normal((v01 - c1).Normalized());
+      torObj.texCoord((j+1)/36.0, i/18.0);
       torObj.position(v01);
       torObj.normal((v10 - c0).Normalized());
+      torObj.texCoord(j/36.0, (i+1)/18.0);
       torObj.position(v10);
       torObj.normal((v11 - c1).Normalized());
+      torObj.texCoord((j+1)/36.0, (i+1)/18.0);
       torObj.position(v11);
     }
   }

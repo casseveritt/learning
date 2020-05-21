@@ -26,7 +26,7 @@ bool drag = false;
 Vec2d prevPos;
 Vec2d diffPos;
 bool mode1;
-float rad = 2.0;
+float rad = 2.5;
 float theta = 0.0;
 Scene scene;
 
@@ -150,17 +150,20 @@ int main(void) {
   glUseProgram(texProg);
   Prog texProgram;
   texProgram.set(texProg);
+
+  GLuint coordProg = createProgram("progs/Coord-Vertex.vs", "progs/Coord-Fragment.fs");
+  glUseProgram(coordProg);
+  Prog coordProgram;
+  coordProgram.set(coordProg);
   // programs init end
 
   // Texture begin
   int w, h, n;
-  GLuint tex;
+  GLuint check, brick, stone, wood;
 
   {
     unsigned char *img;
     img = image_load("check.png", &w, &h, &n);
-
-    printf("Width: %d\tHeight: %d\tNum Channels: %d\n", w, h, n);
 
     uint32_t *imgi = new uint32_t[w * h];
     for (int i = 0; i < w * h; i++) {
@@ -168,8 +171,57 @@ int main(void) {
                 uint32_t(img[i * 3 + 2]) << 16;
     }
 
-    glGenTextures(GLsizei(n), &tex);
-    glBindTexture(GL_TEXTURE_2D, tex);
+    glGenTextures(GLsizei(n), &check);
+    glBindTexture(GL_TEXTURE_2D, check);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgi);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    delete[] imgi;
+    image_free(img);
+  }{
+    unsigned char *img;
+    img = image_load("bricks.png", &w, &h, &n);
+
+    uint32_t *imgi = new uint32_t[w * h];
+    for (int i = 0; i < w * h; i++) {
+      imgi[i] = uint32_t(img[i * 3 + 0]) << 0 | uint32_t(img[i * 3 + 1]) << 8 |
+                uint32_t(img[i * 3 + 2]) << 16;
+    }
+
+    glGenTextures(GLsizei(n), &brick);
+    glBindTexture(GL_TEXTURE_2D, brick);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgi);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    delete[] imgi;
+    image_free(img);
+  }{
+    unsigned char *img;
+    img = image_load("stone.png", &w, &h, &n);
+
+    uint32_t *imgi = new uint32_t[w * h];
+    for (int i = 0; i < w * h; i++) {
+      imgi[i] = uint32_t(img[i * 3 + 0]) << 0 | uint32_t(img[i * 3 + 1]) << 8 |
+                uint32_t(img[i * 3 + 2]) << 16;
+    }
+
+    glGenTextures(GLsizei(n), &stone);
+    glBindTexture(GL_TEXTURE_2D, stone);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 imgi);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    delete[] imgi;
+    image_free(img);
+  }{
+    unsigned char *img;
+    img = image_load("wood.png", &w, &h, &n);
+
+    uint32_t *imgi = new uint32_t[w * h];
+    for (int i = 0; i < w * h; i++) {
+      imgi[i] = uint32_t(img[i * 3 + 0]) << 0 | uint32_t(img[i * 3 + 1]) << 8 |
+                uint32_t(img[i * 3 + 2]) << 16;
+    }
+
+    glGenTextures(GLsizei(n), &wood);
+    glBindTexture(GL_TEXTURE_2D, wood);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
                  imgi);
     glGenerateMipmap(GL_TEXTURE_2D);
@@ -219,20 +271,21 @@ int main(void) {
   cube.shiny = 7.5f;
 
   Sphere sph;
-  sph.build(1.0f, 0.0f, -1.0f, 0.5f);
+  sph.build(0.5f);
+  sph.sphObj.modelPose.t = Vec3f( 1.0, 0.5, -1.0);
   sph.sphObj.matDifCol = Vec3f(0.0f, 0.3f, 0.0f);
   sph.sphObj.matSpcCol = Vec3f(0.2f, 1.0f, 0.2f);
   sph.sphObj.shiny = 25.0f;
 
   Torus tor;
-  tor.torObj.modelPose.t = Vec3f(1, 0.25f, 1);
   tor.build(0.5f, 0.25f);
+  tor.torObj.modelPose.t = Vec3f(1, 0.25f, 1);
   tor.torObj.matDifCol = Vec3f(0.0f, 0.0f, 0.5f);
   tor.torObj.matSpcCol = Vec3f(0.3f, 0.3f, 1.0f);
   tor.torObj.shiny = 15.0f;
 
   Sphere light;
-  light.build(0.0f, 0.0f, 0.0f, 0.03125f);
+  light.build(0.03125f);
   // light
   // objects init end
 
@@ -277,11 +330,15 @@ int main(void) {
     if (scene.camPose.t.y <= 0.0f) {
       grid.draw(scene, program);
     } else {
+      glBindTexture(GL_TEXTURE_2D, check);
       square.draw(scene, texProgram);
     }
-    cube.draw(scene, litProgram);
-    sph.draw(scene, litProgram);
-    tor.draw(scene, litProgram);
+    glBindTexture(GL_TEXTURE_2D, brick);
+    cube.draw(scene, texProgram);
+    glBindTexture(GL_TEXTURE_2D, stone);
+    sph.draw(scene, texProgram);
+    glBindTexture(GL_TEXTURE_2D, wood);
+    tor.draw(scene, texProgram);
 
     light.sphObj.modelPose.t = scene.lightPos;
     light.draw(scene, program);

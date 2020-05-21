@@ -3,19 +3,21 @@
 using namespace r3;
 // cube generator
 
-static void appendVert(Geom &obj, const Matrix4f &m, const Vec3f &v) {
+static void appendVert(Geom &obj, const Matrix4f &m, const Vec3f &v, const Vec2f &t) {
   Vec3f xv = m * v;
+  obj.texCoord(t.x, t.y);
+  obj.color(t.x, t.y, 0.0);
   obj.position(xv.x, xv.y, xv.z);
 }
 
 static void appendSquare(Geom &obj, Matrix4f &m) {
-  appendVert(obj, m, Vec3f(-1, -1, 1));
-  appendVert(obj, m, Vec3f(1, -1, 1));
-  appendVert(obj, m, Vec3f(-1, 1, 1));
+  appendVert(obj, m, Vec3f(-1, -1, 1), Vec2f(0, 0));
+  appendVert(obj, m, Vec3f(1, -1, 1) , Vec2f(1, 0));
+  appendVert(obj, m, Vec3f(-1, 1, 1) , Vec2f(0, 1));
 
-  appendVert(obj, m, Vec3f(1, -1, 1));
-  appendVert(obj, m, Vec3f(1, 1, 1));
-  appendVert(obj, m, Vec3f(-1, 1, 1));
+  appendVert(obj, m, Vec3f(1, -1, 1), Vec2f(1, 0));
+  appendVert(obj, m, Vec3f(1, 1, 1) , Vec2f(1, 1));
+  appendVert(obj, m, Vec3f(-1, 1, 1), Vec2f(0, 1));
 }
 
 void makeCube(Geom &obj, const Matrix4f &mbase) {
