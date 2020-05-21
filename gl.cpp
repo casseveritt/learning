@@ -155,6 +155,11 @@ int main(void) {
   glUseProgram(coordProg);
   Prog coordProgram;
   coordProgram.set(coordProg);
+
+  GLuint litTexProg = createProgram("progs/LitTex-Vertex.vs", "progs/LitTex-Fragment.fs");
+  glUseProgram(litTexProg);
+  Prog litTexProgram;
+  litTexProgram.set(litTexProg);
   // programs init end
 
   // Texture begin
@@ -334,11 +339,11 @@ int main(void) {
       square.draw(scene, texProgram);
     }
     glBindTexture(GL_TEXTURE_2D, brick);
-    cube.draw(scene, texProgram);
+    cube.draw(scene, litTexProgram);
     glBindTexture(GL_TEXTURE_2D, stone);
-    sph.draw(scene, texProgram);
+    sph.draw(scene, litTexProgram);
     glBindTexture(GL_TEXTURE_2D, wood);
-    tor.draw(scene, texProgram);
+    tor.draw(scene, litTexProgram);
 
     light.sphObj.modelPose.t = scene.lightPos;
     light.draw(scene, program);
