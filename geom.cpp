@@ -46,7 +46,6 @@ void Geom::position(Vec3f cords) {
 #define OFFSET_OF(v) reinterpret_cast<void *>(v)
 
 void Geom::draw(const Scene &scene, Prog p) {
-  glBindTexture(GL_TEXTURE_2D, tex);
   glUseProgram(p.p);
   Matrix4f viewMat = scene.camPose.Inverted().GetMatrix4();
   glBindBuffer(GL_ARRAY_BUFFER, b);
@@ -65,6 +64,9 @@ void Geom::draw(const Scene &scene, Prog p) {
   if (p.texCoord.i >= 0) {
     glVertexAttribPointer(p.texCoord.u, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(sizeof(Vec3f) * 3));
     glEnableVertexAttribArray(p.texCoord.u);
+  }
+  if (int(tex) >= 0) {
+    glBindTexture(GL_TEXTURE_2D, tex);
   }
 
   Matrix4f modelMat = modelPose.GetMatrix4();
