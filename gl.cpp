@@ -151,12 +151,14 @@ int main(void) {
   Prog texProgram;
   texProgram.set(texProg);
 
-  GLuint coordProg = createProgram("progs/Coord-Vertex.vs", "progs/Coord-Fragment.fs");
+  GLuint coordProg =
+      createProgram("progs/Coord-Vertex.vs", "progs/Coord-Fragment.fs");
   glUseProgram(coordProg);
   Prog coordProgram;
   coordProgram.set(coordProg);
 
-  GLuint litTexProg = createProgram("progs/LitTex-Vertex.vs", "progs/LitTex-Fragment.fs");
+  GLuint litTexProg =
+      createProgram("progs/LitTex-Vertex.vs", "progs/LitTex-Fragment.fs");
   glUseProgram(litTexProg);
   Prog litTexProgram;
   litTexProgram.set(litTexProg);
@@ -178,11 +180,13 @@ int main(void) {
 
     glGenTextures(GLsizei(n), &check);
     glBindTexture(GL_TEXTURE_2D, check);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgi);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 imgi);
     glGenerateMipmap(GL_TEXTURE_2D);
     delete[] imgi;
     image_free(img);
-  }{
+  }
+  {
     unsigned char *img;
     img = image_load("imgs/bricks.png", &w, &h, &n);
 
@@ -194,11 +198,13 @@ int main(void) {
 
     glGenTextures(GLsizei(n), &brick);
     glBindTexture(GL_TEXTURE_2D, brick);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgi);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 imgi);
     glGenerateMipmap(GL_TEXTURE_2D);
     delete[] imgi;
     image_free(img);
-  }{
+  }
+  {
     unsigned char *img;
     img = image_load("imgs/stone.png", &w, &h, &n);
 
@@ -215,7 +221,8 @@ int main(void) {
     glGenerateMipmap(GL_TEXTURE_2D);
     delete[] imgi;
     image_free(img);
-  }{
+  }
+  {
     unsigned char *img;
     img = image_load("imgs/wood.png", &w, &h, &n);
 
@@ -257,6 +264,7 @@ int main(void) {
 
   Geom square;
   square.begin(GL_TRIANGLE_STRIP);
+  square.normal(0, 1, 0);
   square.color(0.0f, 0.0f, 0.0f);
   square.texCoord(0.0f, 0.0f);
   square.position(-sqrDime, 0.0f, -sqrDime);
@@ -268,6 +276,9 @@ int main(void) {
   square.position(sqrDime, 0.0f, sqrDime);
   square.end();
   square.tex = check;
+  
+  square.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
+  square.shiny = 40.0f;
 
   Geom cube;
   makeCube(cube, Matrix4f::Scale(0.375f));
@@ -279,7 +290,7 @@ int main(void) {
 
   Sphere sph;
   sph.build(0.5f);
-  sph.sphObj.modelPose.t = Vec3f( 1.0, 0.5, -1.0);
+  sph.sphObj.modelPose.t = Vec3f(1.0, 0.5, -1.0);
   sph.sphObj.matDifCol = Vec3f(0.0f, 0.3f, 0.0f);
   sph.sphObj.matSpcCol = Vec3f(0.2f, 1.0f, 0.2f);
   sph.sphObj.shiny = 25.0f;
@@ -340,7 +351,7 @@ int main(void) {
       grid.draw(scene, program);
     } else {
       glBindTexture(GL_TEXTURE_2D, check);
-      square.draw(scene, texProgram);
+      square.draw(scene, litTexProgram);
     }
     cube.draw(scene, litTexProgram);
     sph.draw(scene, litTexProgram);

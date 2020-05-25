@@ -21,23 +21,23 @@ void Sphere::build(float radi) {
       Vec3f v10 = q0 * circle[i + 1];
       Vec3f v11 = q1 * circle[i + 1];
       sphObj.normal(v00.Normalized());
-      sphObj.texCoord(j/36.0, i/csz);
+      sphObj.texCoord(j / 36.0, i / csz);
       sphObj.position(v00);
       sphObj.normal(v10.Normalized());
-      sphObj.texCoord(j/36.0, (i+1)/csz);
+      sphObj.texCoord(j / 36.0, (i + 1) / csz);
       sphObj.position(v10);
       sphObj.normal(v01.Normalized());
-      sphObj.texCoord((j+1)/36.0, i/csz);
+      sphObj.texCoord((j + 1) / 36.0, i / csz);
       sphObj.position(v01);
 
       sphObj.normal(v01.Normalized());
-      sphObj.texCoord((j+1)/36.0, i/csz);
+      sphObj.texCoord((j + 1) / 36.0, i / csz);
       sphObj.position(v01);
       sphObj.normal(v10.Normalized());
-      sphObj.texCoord(j/36.0, (i+1)/csz);
+      sphObj.texCoord(j / 36.0, (i + 1) / csz);
       sphObj.position(v10);
       sphObj.normal(v11.Normalized());
-      sphObj.texCoord((j+1)/36.0, (i+1)/csz);
+      sphObj.texCoord((j + 1) / 36.0, (i + 1) / csz);
       sphObj.position(v11);
     }
   }
