@@ -168,7 +168,7 @@ int main(void) {
 
   {
     unsigned char *img;
-    img = image_load("check.png", &w, &h, &n);
+    img = image_load("imgs/check.png", &w, &h, &n);
 
     uint32_t *imgi = new uint32_t[w * h];
     for (int i = 0; i < w * h; i++) {
@@ -184,7 +184,7 @@ int main(void) {
     image_free(img);
   }{
     unsigned char *img;
-    img = image_load("bricks.png", &w, &h, &n);
+    img = image_load("imgs/bricks.png", &w, &h, &n);
 
     uint32_t *imgi = new uint32_t[w * h];
     for (int i = 0; i < w * h; i++) {
@@ -200,7 +200,7 @@ int main(void) {
     image_free(img);
   }{
     unsigned char *img;
-    img = image_load("stone.png", &w, &h, &n);
+    img = image_load("imgs/stone.png", &w, &h, &n);
 
     uint32_t *imgi = new uint32_t[w * h];
     for (int i = 0; i < w * h; i++) {
@@ -217,7 +217,7 @@ int main(void) {
     image_free(img);
   }{
     unsigned char *img;
-    img = image_load("wood.png", &w, &h, &n);
+    img = image_load("imgs/wood.png", &w, &h, &n);
 
     uint32_t *imgi = new uint32_t[w * h];
     for (int i = 0; i < w * h; i++) {
@@ -267,6 +267,7 @@ int main(void) {
   square.texCoord(sqrSize, sqrSize);
   square.position(sqrDime, 0.0f, sqrDime);
   square.end();
+  square.tex = check;
 
   Geom cube;
   makeCube(cube, Matrix4f::Scale(0.375f));
@@ -274,6 +275,7 @@ int main(void) {
   cube.matDifCol = Vec3f(0.7f, 0.0f, 0.0f);
   cube.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
   cube.shiny = 7.5f;
+  cube.tex = brick;
 
   Sphere sph;
   sph.build(0.5f);
@@ -281,6 +283,7 @@ int main(void) {
   sph.sphObj.matDifCol = Vec3f(0.0f, 0.3f, 0.0f);
   sph.sphObj.matSpcCol = Vec3f(0.2f, 1.0f, 0.2f);
   sph.sphObj.shiny = 25.0f;
+  sph.sphObj.tex = stone;
 
   Torus tor;
   tor.build(0.5f, 0.25f);
@@ -288,6 +291,7 @@ int main(void) {
   tor.torObj.matDifCol = Vec3f(0.0f, 0.0f, 0.5f);
   tor.torObj.matSpcCol = Vec3f(0.3f, 0.3f, 1.0f);
   tor.torObj.shiny = 15.0f;
+  tor.torObj.tex = wood;
 
   Sphere light;
   light.build(0.03125f);
@@ -338,11 +342,8 @@ int main(void) {
       glBindTexture(GL_TEXTURE_2D, check);
       square.draw(scene, texProgram);
     }
-    glBindTexture(GL_TEXTURE_2D, brick);
     cube.draw(scene, litTexProgram);
-    glBindTexture(GL_TEXTURE_2D, stone);
     sph.draw(scene, litTexProgram);
-    glBindTexture(GL_TEXTURE_2D, wood);
     tor.draw(scene, litTexProgram);
 
     light.sphObj.modelPose.t = scene.lightPos;

@@ -23,6 +23,7 @@ public:
   r3::Vec3f matSpcCol = r3::Vec3f(0.9f, 0.9f, 0.9f);
   std::vector<Vertex> verts;
   float shiny = 10.0;
+  GLuint tex;
   Vertex v;
 
   Geom();
