@@ -276,17 +276,17 @@ int main(void) {
   square.position(sqrDime, 0.0f, sqrDime);
   square.end();
   square.tex = check;
-  
+
   square.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
   square.shiny = 40.0f;
 
-  Geom cube;
-  makeCube(cube, Matrix4f::Scale(0.375f));
-  cube.modelPose.t = Vec3f(-1, 0.375f, -1);
-  cube.matDifCol = Vec3f(0.7f, 0.0f, 0.0f);
-  cube.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
-  cube.shiny = 7.5f;
-  cube.tex = brick;
+  Cube cube;
+  cube.makeCube(Matrix4f::Scale(0.375f));
+  cube.cubeObj.modelPose.t = Vec3f(-1, 0.375f, -1);
+  cube.cubeObj.matDifCol = Vec3f(0.7f, 0.0f, 0.0f);
+  cube.cubeObj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
+  cube.cubeObj.shiny = 7.5f;
+  cube.cubeObj.tex = brick;
 
   Sphere sph;
   sph.build(0.5f);
@@ -353,7 +353,7 @@ int main(void) {
       glBindTexture(GL_TEXTURE_2D, check);
       square.draw(scene, litTexProgram);
     }
-    cube.draw(scene, litTexProgram);
+    cube.cubeObj.draw(scene, litTexProgram);
     sph.draw(scene, litTexProgram);
     tor.draw(scene, litTexProgram);
 
