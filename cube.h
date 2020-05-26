@@ -7,7 +7,7 @@ class Cube {
 
 public:
   //Matrix4f mbase;
-  Geom cubeObj;
+  Geom obj;
 
   void appendVert(Matrix4f m, const Vec3f &v, const Vec2f &t);
 

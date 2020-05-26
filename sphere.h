@@ -11,7 +11,7 @@ public:
     Vec3f norm;
     Vec3f pos;
   };
-  Geom sphObj;
+  Geom obj;
 
   void build(float radi = 0.5);
 

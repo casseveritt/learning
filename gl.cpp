@@ -282,27 +282,27 @@ int main(void) {
 
   Cube cube;
   cube.build(Matrix4f::Scale(0.375f));
-  cube.cubeObj.modelPose.t = Vec3f(-1, 0.375f, -1);
-  cube.cubeObj.matDifCol = Vec3f(0.7f, 0.0f, 0.0f);
-  cube.cubeObj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
-  cube.cubeObj.shiny = 7.5f;
-  cube.cubeObj.tex = brick;
+  cube.obj.modelPose.t = Vec3f(-1, 0.375f, -1);
+  cube.obj.matDifCol = Vec3f(0.7f, 0.0f, 0.0f);
+  cube.obj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
+  cube.obj.shiny = 7.5f;
+  cube.obj.tex = brick;
 
   Sphere sph;
   sph.build(0.5f);
-  sph.sphObj.modelPose.t = Vec3f(1.0, 0.5, -1.0);
-  sph.sphObj.matDifCol = Vec3f(0.0f, 0.3f, 0.0f);
-  sph.sphObj.matSpcCol = Vec3f(0.2f, 1.0f, 0.2f);
-  sph.sphObj.shiny = 25.0f;
-  sph.sphObj.tex = stone;
+  sph.obj.modelPose.t = Vec3f(1.0, 0.5, -1.0);
+  sph.obj.matDifCol = Vec3f(0.0f, 0.3f, 0.0f);
+  sph.obj.matSpcCol = Vec3f(0.2f, 1.0f, 0.2f);
+  sph.obj.shiny = 25.0f;
+  sph.obj.tex = stone;
 
   Torus tor;
   tor.build(0.5f, 0.25f);
-  tor.torObj.modelPose.t = Vec3f(1, 0.25f, 1);
-  tor.torObj.matDifCol = Vec3f(0.0f, 0.0f, 0.5f);
-  tor.torObj.matSpcCol = Vec3f(0.3f, 0.3f, 1.0f);
-  tor.torObj.shiny = 15.0f;
-  tor.torObj.tex = wood;
+  tor.obj.modelPose.t = Vec3f(1, 0.25f, 1);
+  tor.obj.matDifCol = Vec3f(0.0f, 0.0f, 0.5f);
+  tor.obj.matSpcCol = Vec3f(0.3f, 0.3f, 1.0f);
+  tor.obj.shiny = 15.0f;
+  tor.obj.tex = wood;
 
   Sphere light;
   light.build(0.03125f);
@@ -356,7 +356,7 @@ int main(void) {
     sph.draw(scene, litTexProgram);
     tor.draw(scene, litTexProgram);
 
-    light.sphObj.modelPose.t = scene.lightPos;
+    light.obj.modelPose.t = scene.lightPos;
     light.draw(scene, program);
 
     glfwSwapBuffers(window);

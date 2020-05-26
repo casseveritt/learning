@@ -10,7 +10,7 @@ public:
     r3::Vec3f col;
     r3::Vec3f pos;
   };
-  Geom torObj;
+  Geom obj;
 
   void build(float rad1 = 0.5, float rad2 = 0.25);
 
