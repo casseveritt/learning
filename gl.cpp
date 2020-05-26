@@ -281,7 +281,7 @@ int main(void) {
   square.shiny = 40.0f;
 
   Cube cube;
-  cube.makeCube(Matrix4f::Scale(0.375f));
+  cube.build(Matrix4f::Scale(0.375f));
   cube.cubeObj.modelPose.t = Vec3f(-1, 0.375f, -1);
   cube.cubeObj.matDifCol = Vec3f(0.7f, 0.0f, 0.0f);
   cube.cubeObj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
@@ -350,10 +350,9 @@ int main(void) {
     if (scene.camPose.t.y <= 0.0f) {
       grid.draw(scene, program);
     } else {
-      glBindTexture(GL_TEXTURE_2D, check);
       square.draw(scene, litTexProgram);
     }
-    cube.cubeObj.draw(scene, litTexProgram);
+    cube.draw(scene, litTexProgram);
     sph.draw(scene, litTexProgram);
     tor.draw(scene, litTexProgram);
 

@@ -1,14 +1,19 @@
 #pragma once
 #include "geom.h"
 
-class Cube{
+using namespace r3;
+
+class Cube {
+
 public:
-	Geom cubeObj;
-	const r3::Matrix4f &mbase;
+  //Matrix4f mbase;
+  Geom cubeObj;
 
-	void appendVert(const Matrix4f &m, const Vec3f &v, const Vec2f &t);
+  void appendVert(Matrix4f m, const Vec3f &v, const Vec2f &t);
 
-	void appendSquare(Matrix4f &m);
+  void appendSquare(Matrix4f m);
 
-	void makeCube(const Matrix4f &mbase);
-}
+  void build(Matrix4f m);
+
+  void draw(const Scene &scene, Prog p);
+};

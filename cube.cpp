@@ -3,14 +3,13 @@
 using namespace r3;
 // cube generator
 
-void Cube::appendVert(const Matrix4f &m, const Vec3f &v, const Vec2f &t) {
+void Cube::appendVert(Matrix4f m, const Vec3f &v, const Vec2f &t) {
   Vec3f xv = m * v;
   cubeObj.texCoord(t.x, t.y);
-  cubeObj.color(t.x, t.y, 0.0);
   cubeObj.position(xv.x, xv.y, xv.z);
 }
 
-void Cube::appendSquare(Matrix4f &m) {
+void Cube::appendSquare(Matrix4f m) {
   appendVert(m, Vec3f(-1, -1, 1), Vec2f(0, 0));
   appendVert(m, Vec3f(1, -1, 1), Vec2f(1, 0));
   appendVert(m, Vec3f(-1, 1, 1), Vec2f(0, 1));
@@ -20,9 +19,8 @@ void Cube::appendSquare(Matrix4f &m) {
   appendVert(m, Vec3f(-1, 1, 1), Vec2f(0, 1));
 }
 
-void Cube::makeCube(const Matrix4f &mbase) {
+void Cube::build(Matrix4f m) {
 
-  Matrix4f m = mbase;
   Posef p;
 
   cubeObj.begin(GL_TRIANGLES);
@@ -62,3 +60,5 @@ void Cube::makeCube(const Matrix4f &mbase) {
 
   cubeObj.end();
 }
+
+void Cube::draw(const Scene &scene, Prog p){ cubeObj.draw(scene, p); }
