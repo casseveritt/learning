@@ -133,34 +133,30 @@ int main(void) {
   glBindVertexArray(defaultVab);
 
   // programs init begin
-  GLuint prog =
-      createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
-  glUseProgram(prog);
+  
   Prog program;
+  GLuint prog = program.createProgram("progs/Vertex-Shader.vs", "progs/Fragment-Shader.fs");
+  glUseProgram(prog);
   program.set(prog);
 
-  GLuint litProg =
-      createProgram("progs/Lit-Vertex.vs", "progs/Lit-Fragment.fs");
-  glUseProgram(litProg);
   Prog litProgram;
+  GLuint litProg = litProgram.createProgram("progs/Lit-Vertex.vs", "progs/Lit-Fragment.fs");
+  glUseProgram(litProg);
   litProgram.set(litProg);
 
-  GLuint texProg =
-      createProgram("progs/Tex-Vertex.vs", "progs/Tex-Fragment.fs");
-  glUseProgram(texProg);
   Prog texProgram;
+  GLuint texProg = texProgram.createProgram("progs/Tex-Vertex.vs", "progs/Tex-Fragment.fs");
+  glUseProgram(texProg);
   texProgram.set(texProg);
 
-  GLuint coordProg =
-      createProgram("progs/Coord-Vertex.vs", "progs/Coord-Fragment.fs");
-  glUseProgram(coordProg);
   Prog coordProgram;
+  GLuint coordProg = coordProgram.createProgram("progs/Coord-Vertex.vs", "progs/Coord-Fragment.fs");
+  glUseProgram(coordProg);
   coordProgram.set(coordProg);
 
-  GLuint litTexProg =
-      createProgram("progs/LitTex-Vertex.vs", "progs/LitTex-Fragment.fs");
-  glUseProgram(litTexProg);
   Prog litTexProgram;
+  GLuint litTexProg = litTexProgram.createProgram("progs/LitTex-Vertex.vs", "progs/LitTex-Fragment.fs");
+  glUseProgram(litTexProg);
   litTexProgram.set(litTexProg);
   // programs init end
 
