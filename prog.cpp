@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-char* Prog::getFileContents(const char *filename) {
+char *Prog::getFileContents(const char *filename) {
   FILE *fp = fopen(filename, "r");
   if (fp == nullptr) {
     printf("Failed to open file: %s\n", filename);
@@ -26,7 +26,7 @@ char* Prog::getFileContents(const char *filename) {
   return data;
 }
 
-char* Prog::concatenate(const char *a, const char *b) {
+char *Prog::concatenate(const char *a, const char *b) {
   int alen = strlen(a);
   int blen = strlen(b);
   char *c = new char[alen + blen + 1];
@@ -36,7 +36,7 @@ char* Prog::concatenate(const char *a, const char *b) {
 }
 
 GLuint Prog::createProgram(const char *vertexShaderFilename,
-                     const char *fragmentShaderFilename) {
+                           const char *fragmentShaderFilename) {
   GLuint vertex_shader, fragment_shader;
   vertex_shader = glCreateShader(GL_VERTEX_SHADER);
   char *vertex_shader_src = nullptr;

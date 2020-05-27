@@ -2,4 +2,5 @@
 
 #include "learning.h"
 
-GLuint createProgram(const char *vertexShaderFilename, const char *fragmentShaderFilename);
+GLuint createProgram(const char *vertexShaderFilename,
+                     const char *fragmentShaderFilename);

@@ -5,7 +5,7 @@ using namespace r3;
 
 void Cube::appendVert(Matrix4f m, const Vec3f &v, const Vec2f &t) {
   Vec3f xv = m * v;
-  obj.texCoord(t.x, t.y); 
+  obj.texCoord(t.x, t.y);
   obj.position(xv.x, xv.y, xv.z);
 }
 
@@ -61,4 +61,4 @@ void Cube::build(Matrix4f m) {
   obj.end();
 }
 
-void Cube::draw(const Scene &scene, Prog p){ obj.draw(scene, p); }
+void Cube::draw(const Scene &scene, Prog p) { obj.draw(scene, p); }
