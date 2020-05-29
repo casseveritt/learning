@@ -1,5 +1,6 @@
 #pragma once
 #include "learning.h"
+#include "scene.h"
 
 class Prog {
 public:
@@ -11,12 +12,17 @@ public:
   Ui pos, col, texCoord, norm, proj, view, model, lightPos, lightCol, matDifCol,
       matSpcCol, shiny, camPos, samp;
 
-  char *getFileContents(const char *filename);
+  Prog() {}
 
-  char *concatenate(const char *a, const char *b);
+  Prog(const char *baseShaderName) { create(baseShaderName); }
 
-  GLuint createProgram(const char *vertexShaderFilename,
-                       const char *fragmentShaderFilename);
+  Prog(const char *vertexShaderFilename, const char *fragmentShaderFilename) {
+    create(vertexShaderFilename, fragmentShaderFilename);
+  }
 
-  void set(GLuint program);
+  void create(const char *vertexShaderFilename,
+              const char *fragmentShaderFilename);
+  void create(const char *baseShaderName);
+
+  void load(const Scene &scene);
 };

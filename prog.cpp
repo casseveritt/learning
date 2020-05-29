@@ -6,7 +6,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-char *Prog::getFileContents(const char *filename) {
+namespace {
+
+char *getFileContents(const char *filename) {
   FILE *fp = fopen(filename, "r");
   if (fp == nullptr) {
     printf("Failed to open file: %s\n", filename);
@@ -26,7 +28,7 @@ char *Prog::getFileContents(const char *filename) {
   return data;
 }
 
-char *Prog::concatenate(const char *a, const char *b) {
+char *concatenate(const char *a, const char *b) {
   int alen = strlen(a);
   int blen = strlen(b);
   char *c = new char[alen + blen + 1];
@@ -35,8 +37,27 @@ char *Prog::concatenate(const char *a, const char *b) {
   return c;
 }
 
-GLuint Prog::createProgram(const char *vertexShaderFilename,
-                           const char *fragmentShaderFilename) {
+} // namespace
+
+void Prog::create(const char *baseShaderName) {
+  const char *pr = "progs/";
+  const char *fs = "-Fragment.fs";
+  const char *vs = "-Vertex.vs";
+  char *bsfs = new char[strlen(pr) + strlen(baseShaderName) + strlen(fs) + 1];
+  char *bsvs = new char[strlen(pr) + strlen(baseShaderName) + strlen(vs) + 1];
+  strcpy(bsfs, pr);
+  strcpy(bsvs, pr);
+  strcat(bsfs, baseShaderName);
+  strcat(bsvs, baseShaderName);
+  strcat(bsfs, fs);
+  strcat(bsvs, vs);
+  create(bsvs, bsfs);
+  delete[] bsvs;
+  delete[] bsfs;
+}
+
+void Prog::create(const char *vertexShaderFilename,
+                  const char *fragmentShaderFilename) {
   GLuint vertex_shader, fragment_shader;
   vertex_shader = glCreateShader(GL_VERTEX_SHADER);
   char *vertex_shader_src = nullptr;
@@ -90,11 +111,8 @@ GLuint Prog::createProgram(const char *vertexShaderFilename,
     glGetProgramInfoLog(program, sizeof(infoLog), &len, infoLog);
     printf("infoLog: %s\n", static_cast<const char *>(infoLog));
   }
-  return program;
-}
-
-void Prog::set(GLuint program) {
   p = program;
+  glUseProgram(p);
   pos.i = glGetAttribLocation(program, "pos");
   col.i = glGetAttribLocation(program, "col");
   texCoord.i = glGetAttribLocation(program, "texCoord");
@@ -109,4 +127,11 @@ void Prog::set(GLuint program) {
   shiny.i = glGetUniformLocation(program, "shiny");
   camPos.i = glGetUniformLocation(program, "camPos");
   samp.i = glGetUniformLocation(program, "samp");
+}
+
+void Prog::load(const Scene &scene) {
+  glUniform3fv(lightPos.i, 1, &scene.lightPos.x);
+  glUniform3fv(lightCol.i, 1, &scene.lightCol.x);
+  glUniform3fv(camPos.i, 1, &scene.camPos.x);
+  glUniform1i(samp.i, 0);
 }
