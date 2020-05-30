@@ -8,6 +8,7 @@
 #include "sphere.h"
 #include "stb.h"
 #include "torus.h"
+#include <cstring>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -92,6 +93,47 @@ static void mouse_button_callback(GLFWwindow *window, int button, int action,
   }
 }
 
+static GLuint load_image(const char *imgName) {
+
+  int w, h, n;
+
+  const char *im = "imgs/";
+  char *imgLocation = new char[strlen(im) + strlen(imgName) + 1];
+  strcpy(imgLocation, im);
+  strcat(imgLocation, imgName);
+
+  GLuint out;
+  unsigned char *img;
+
+  img = image_load(imgLocation, &w, &h, &n);
+
+  delete[] imgLocation;
+
+  uint32_t *imgi = new uint32_t[w * h];
+
+  for (int i = 0; i < w * h; i++) {
+    imgi[i] = uint32_t(img[i * 3 + 0]) << 0 | uint32_t(img[i * 3 + 1]) << 8 |
+              uint32_t(img[i * 3 + 2]) << 16;
+  }
+
+  glGenTextures(GLsizei(n), &out);
+  glBindTexture(GL_TEXTURE_2D, out);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+               imgi);
+  glGenerateMipmap(GL_TEXTURE_2D);
+  delete[] imgi;
+  image_free(img);
+  return out;
+}
+
+static Vec3f evalBezier(const std::vector<Vec3f> &p, float t) {
+  float t2 = t * t;
+  float t3 = t * t * t;
+  float w[4] = {-1 * t3 + 3 * t2 - 3 * t + 1, 3 * t3 - 6 * t2 + 3 * t,
+                -3 * t3 + 3 * t2, t3};
+  return p[0] * w[0] + p[1] * w[1] + p[2] * w[2] + p[3] * w[3];
+}
+
 int main(void) {
 
   scene.camPose.t.z = 2.0;
@@ -109,7 +151,7 @@ int main(void) {
   make_hints();
   glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
 
-  window = glfwCreateWindow(640, 480, "Learning", NULL, NULL);
+  window = glfwCreateWindow(1280, 960, "Learning", NULL, NULL);
   if (!window) {
     glfwTerminate();
     exit(EXIT_FAILURE);
@@ -133,7 +175,6 @@ int main(void) {
   glBindVertexArray(defaultVab);
 
   // programs init begin
-
   Prog program("Unlit");
   Prog litProgram("Lit");
   Prog texProgram("Tex");
@@ -142,82 +183,12 @@ int main(void) {
   // programs init end
 
   // Texture begin
-  int w, h, n;
   GLuint check, brick, stone, wood;
 
-  {
-    unsigned char *img;
-    img = image_load("imgs/check.png", &w, &h, &n);
-
-    uint32_t *imgi = new uint32_t[w * h];
-    for (int i = 0; i < w * h; i++) {
-      imgi[i] = uint32_t(img[i * 3 + 0]) << 0 | uint32_t(img[i * 3 + 1]) << 8 |
-                uint32_t(img[i * 3 + 2]) << 16;
-    }
-
-    glGenTextures(GLsizei(n), &check);
-    glBindTexture(GL_TEXTURE_2D, check);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                 imgi);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    delete[] imgi;
-    image_free(img);
-  }
-  {
-    unsigned char *img;
-    img = image_load("imgs/bricks.png", &w, &h, &n);
-
-    uint32_t *imgi = new uint32_t[w * h];
-    for (int i = 0; i < w * h; i++) {
-      imgi[i] = uint32_t(img[i * 3 + 0]) << 0 | uint32_t(img[i * 3 + 1]) << 8 |
-                uint32_t(img[i * 3 + 2]) << 16;
-    }
-
-    glGenTextures(GLsizei(n), &brick);
-    glBindTexture(GL_TEXTURE_2D, brick);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                 imgi);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    delete[] imgi;
-    image_free(img);
-  }
-  {
-    unsigned char *img;
-    img = image_load("imgs/stone.png", &w, &h, &n);
-
-    uint32_t *imgi = new uint32_t[w * h];
-    for (int i = 0; i < w * h; i++) {
-      imgi[i] = uint32_t(img[i * 3 + 0]) << 0 | uint32_t(img[i * 3 + 1]) << 8 |
-                uint32_t(img[i * 3 + 2]) << 16;
-    }
-
-    glGenTextures(GLsizei(n), &stone);
-    glBindTexture(GL_TEXTURE_2D, stone);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                 imgi);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    delete[] imgi;
-    image_free(img);
-  }
-  {
-    unsigned char *img;
-    img = image_load("imgs/wood.png", &w, &h, &n);
-
-    uint32_t *imgi = new uint32_t[w * h];
-    for (int i = 0; i < w * h; i++) {
-      imgi[i] = uint32_t(img[i * 3 + 0]) << 0 | uint32_t(img[i * 3 + 1]) << 8 |
-                uint32_t(img[i * 3 + 2]) << 16;
-    }
-
-    glGenTextures(GLsizei(n), &wood);
-    glBindTexture(GL_TEXTURE_2D, wood);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                 imgi);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    delete[] imgi;
-    image_free(img);
-  }
-
+  check = load_image("check.png");
+  brick = load_image("bricks.png");
+  stone = load_image("stone.png");
+  wood = load_image("wood.png");
   // Texture end
 
   // objects init begin
@@ -281,9 +252,30 @@ int main(void) {
   tor.obj.shiny = 15.0f;
   tor.obj.tex = wood;
 
-  Sphere light;
+  Sphere light; // light
   light.build(0.03125f);
-  // light
+
+  std::vector<Vec3f> points;
+  points.push_back(Vec3f(-1.0f, 0.0f, 1.0f));
+  points.push_back(Vec3f(-1.0f, 1.0f, 1.0f));
+  points.push_back(Vec3f(0.0f, 1.0f, 1.0f));
+  points.push_back(Vec3f(0.0f, 0.0f, 1.0f));
+  Geom hull;
+  hull.begin(GL_LINE_STRIP);
+  hull.color(0.0f, 0.0f, 0.0f);
+  for (auto v : points) {
+    hull.position(v);
+  }
+  hull.end();
+
+  Geom curve;
+  curve.begin(GL_LINE_STRIP);
+  curve.color(1.0f, 0.0f, 0.5f);
+  for (int i = 0; i < 100; i++) {
+    curve.position(evalBezier(points, i / 99.0f));
+  }
+  curve.end();
+
   // objects init end
 
   while (!glfwWindowShouldClose(window)) {
@@ -335,6 +327,9 @@ int main(void) {
 
     light.obj.modelPose.t = scene.lightPos;
     light.draw(scene, program);
+
+    hull.draw(scene, program);
+    curve.draw(scene, program);
 
     glfwSwapBuffers(window);
     glfwPollEvents();

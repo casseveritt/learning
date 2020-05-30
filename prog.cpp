@@ -28,6 +28,7 @@ char *getFileContents(const char *filename) {
   return data;
 }
 
+
 char *concatenate(const char *a, const char *b) {
   int alen = strlen(a);
   int blen = strlen(b);
