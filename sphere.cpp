@@ -4,7 +4,7 @@ using namespace r3;
 
 void Sphere::build(float radi) {
   std::vector<Vec3f> circle;
-  for (int i = 0; i < 19; i++) { // Degrees
+  for (int i = 0; i < 19; i++) {  // Degrees
     float tr = ToRadians(i * 10.0f - 90.0f);
     circle.push_back(Vec3f(cos(tr) * radi, sin(tr) * radi, 0.0));
   }
@@ -44,4 +44,6 @@ void Sphere::build(float radi) {
   obj.end();
 }
 
-void Sphere::draw(const Scene &scene, Prog p) { obj.draw(scene, p); }
+void Sphere::draw(const Scene& scene, Prog p) {
+  obj.draw(scene, p);
+}

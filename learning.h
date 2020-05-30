@@ -12,7 +12,6 @@
 #include <GLFW/glfw3.h>
 
 inline void make_hints() {
-
 #if defined(__APPLE__)
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);

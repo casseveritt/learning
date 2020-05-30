@@ -33,10 +33,10 @@ stb.o: stb.cpp
 format: format_h format_cpp
 
 format_h: $(H)
-	for h in $^; do clang-format -style=file $$h > tmp.h; mv tmp.h $$h; done
+	for h in $^; do clang-format -style=file -i $$h; done
 
 format_cpp: $(SRC)
-	for cpp in $^; do clang-format -style=file $$cpp > tmp.cpp; mv tmp.cpp $$cpp; done
+	for cpp in $^; do clang-format -style=file -i $$cpp; done
 
 clean:
 	rm -f *.o

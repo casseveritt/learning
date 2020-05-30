@@ -1,13 +1,12 @@
 #pragma once
+#include <vector>
 #include "learning.h"
 #include "linear.h"
 #include "prog.h"
 #include "scene.h"
-#include <vector>
 
 class Geom {
-
-public:
+ public:
   GLuint b;
   GLint pos_loc, col_loc, proj_loc, view_loc, model_loc, norm_loc;
   r3::Posef modelPose;
@@ -44,5 +43,5 @@ public:
 
   void position(r3::Vec3f cords);
 
-  void draw(const Scene &scene, Prog p);
+  void draw(const Scene& scene, Prog p);
 };

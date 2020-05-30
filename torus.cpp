@@ -4,7 +4,7 @@ using namespace r3;
 
 void Torus::build(float rad1, float rad2) {
   std::vector<Vec3f> torus;
-  for (int i = 0; i < 37; i++) { // Degrees
+  for (int i = 0; i < 37; i++) {  // Degrees
     float tr = ToRadians(i * 10.0f);
     torus.push_back(Vec3f(sin(tr) * rad2 + rad1, cos(tr) * rad2, 0.0));
   }
@@ -46,4 +46,6 @@ void Torus::build(float rad1, float rad2) {
   obj.end();
 }
 
-void Torus::draw(const Scene &scene, Prog p) { obj.draw(scene, p); }
+void Torus::draw(const Scene& scene, Prog p) {
+  obj.draw(scene, p);
+}

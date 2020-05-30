@@ -1,3 +1,7 @@
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <cstring>
 #include "cube.h"
 #include "geom.h"
 #include "glprog.h"
@@ -8,10 +12,6 @@
 #include "sphere.h"
 #include "stb.h"
 #include "torus.h"
-#include <cstring>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 using namespace r3;
 
@@ -31,113 +31,106 @@ float rad = 2.5;
 float theta = 0.0;
 Scene scene;
 
-static void error_callback(int error, const char *description) {
+static void error_callback(int error, const char* description) {
   fprintf(stderr, "Error: %d: %s\n", error, description);
 }
 
-static void key_callback(GLFWwindow *window, int key, int /*scancode*/,
-                         int action, int /*mods*/) {
+static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/) {
   if (action == GLFW_PRESS) {
     frame = 0;
     switch (key) {
-    case GLFW_KEY_ESCAPE:
-      glfwSetWindowShouldClose(window, GLFW_TRUE);
-      break;
-    case GLFW_KEY_W:
-      modelPose.t.z -= 0.1;
-      break;
-    case GLFW_KEY_A:
-      modelPose.t.x -= 0.1;
-      break;
-    case GLFW_KEY_S:
-      modelPose.t.z += 0.1;
-      break;
-    case GLFW_KEY_D:
-      modelPose.t.x += 0.1;
-      break;
-    case GLFW_KEY_UP:
-      rad -= 0.25;
-      break;
-    case GLFW_KEY_DOWN:
-      rad += 0.25;
-      break;
-    case GLFW_KEY_LEFT:
-      theta -= 0.0125f;
-      break;
-    case GLFW_KEY_RIGHT:
-      theta += 0.0125f;
-      break;
-    case GLFW_KEY_I:
-      fovy -= 1.0;
-      break;
-    case GLFW_KEY_O:
-      fovy += 1.0;
-      break;
-    case GLFW_KEY_Z:
-      if (mode1)
-        mode1 = false;
-      else
-        mode1 = true;
-      break;
-    default:
-      break;
+      case GLFW_KEY_ESCAPE:
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+        break;
+      case GLFW_KEY_W:
+        modelPose.t.z -= 0.1;
+        break;
+      case GLFW_KEY_A:
+        modelPose.t.x -= 0.1;
+        break;
+      case GLFW_KEY_S:
+        modelPose.t.z += 0.1;
+        break;
+      case GLFW_KEY_D:
+        modelPose.t.x += 0.1;
+        break;
+      case GLFW_KEY_UP:
+        rad -= 0.25;
+        break;
+      case GLFW_KEY_DOWN:
+        rad += 0.25;
+        break;
+      case GLFW_KEY_LEFT:
+        theta -= 0.0125f;
+        break;
+      case GLFW_KEY_RIGHT:
+        theta += 0.0125f;
+        break;
+      case GLFW_KEY_I:
+        fovy -= 1.0;
+        break;
+      case GLFW_KEY_O:
+        fovy += 1.0;
+        break;
+      case GLFW_KEY_Z:
+        if (mode1)
+          mode1 = false;
+        else
+          mode1 = true;
+        break;
+      default:
+        break;
     }
   }
 }
 
-static void mouse_button_callback(GLFWwindow *window, int button, int action,
-                                  int /*mods*/) {
+static void mouse_button_callback(GLFWwindow* window, int button, int action, int /*mods*/) {
   if (button == GLFW_MOUSE_BUTTON_LEFT) {
     drag = (action == GLFW_PRESS);
     glfwGetCursorPos(window, &prevPos.x, &prevPos.y);
   }
 }
 
-static GLuint load_image(const char *imgName) {
-
+static GLuint load_image(const char* imgName) {
   int w, h, n;
 
-  const char *im = "imgs/";
-  char *imgLocation = new char[strlen(im) + strlen(imgName) + 1];
+  const char* im = "imgs/";
+  char* imgLocation = new char[strlen(im) + strlen(imgName) + 1];
   strcpy(imgLocation, im);
   strcat(imgLocation, imgName);
 
   GLuint out;
-  unsigned char *img;
+  unsigned char* img;
 
   img = image_load(imgLocation, &w, &h, &n);
 
   delete[] imgLocation;
 
-  uint32_t *imgi = new uint32_t[w * h];
+  uint32_t* imgi = new uint32_t[w * h];
 
   for (int i = 0; i < w * h; i++) {
-    imgi[i] = uint32_t(img[i * 3 + 0]) << 0 | uint32_t(img[i * 3 + 1]) << 8 |
-              uint32_t(img[i * 3 + 2]) << 16;
+    imgi[i] = uint32_t(img[i * 3 + 0]) << 0 | uint32_t(img[i * 3 + 1]) << 8 | uint32_t(img[i * 3 + 2]) << 16;
   }
 
   glGenTextures(GLsizei(n), &out);
   glBindTexture(GL_TEXTURE_2D, out);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-               imgi);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgi);
   glGenerateMipmap(GL_TEXTURE_2D);
   delete[] imgi;
   image_free(img);
   return out;
 }
 
-static Vec3f evalBezier(const std::vector<Vec3f> &p, float t) {
+static Vec3f evalBezier(const std::vector<Vec3f>& p, float t) {
   float t2 = t * t;
   float t3 = t * t * t;
-  float w[4] = {-1 * t3 + 3 * t2 - 3 * t + 1, 3 * t3 - 6 * t2 + 3 * t,
-                -3 * t3 + 3 * t2, t3};
+  float w[4] = {-1 * t3 + 3 * t2 - 3 * t + 1, 3 * t3 - 6 * t2 + 3 * t, -3 * t3 + 3 * t2, t3};
   return p[0] * w[0] + p[1] * w[1] + p[2] * w[2] + p[3] * w[3];
 }
 
 int main(void) {
-
   scene.camPose.t.z = 2.0;
-  GLFWwindow *window;
+  GLFWwindow* window;
 
   scene.lightPos = Vec3f(0, 1, 0);
   scene.lightCol = Vec3f(1, 1, 1);
@@ -160,8 +153,7 @@ int main(void) {
   glfwSetKeyCallback(window, key_callback);
   glfwSetMouseButtonCallback(window, mouse_button_callback);
 
-  glfwMakeContextCurrent(
-      window); // This is the point when you can make gl calls
+  glfwMakeContextCurrent(window);  // This is the point when you can make gl calls
   glfwSwapInterval(1);
 
   GLint version_maj = 0;
@@ -195,8 +187,8 @@ int main(void) {
   Geom grid;
   grid.begin(GL_LINES);
   grid.color(0.90f, 0.90f, 0.90f);
-  static const int gridsize = 17; // vertical or horizontal size odd
-  static const float s = 0.25f;   // spacing of lines
+  static const int gridsize = 17;  // vertical or horizontal size odd
+  static const float s = 0.25f;    // spacing of lines
   for (int i = 0; i < gridsize; i++) {
     float shift = (gridsize / 2) * -1 * s + i * s;
     float move = (gridsize / 2) * s;
@@ -252,7 +244,7 @@ int main(void) {
   tor.obj.shiny = 15.0f;
   tor.obj.tex = wood;
 
-  Sphere light; // light
+  Sphere light;  // light
   light.build(0.03125f);
 
   std::vector<Vec3f> points;
@@ -279,7 +271,6 @@ int main(void) {
   // objects init end
 
   while (!glfwWindowShouldClose(window)) {
-
     if (drag) {
       Vec2d currPos;
       glfwGetCursorPos(window, &currPos.x, &currPos.y);
@@ -300,8 +291,7 @@ int main(void) {
       scene.camPos = scene.camPose.t;
     }
 
-    scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t,
-                             Vec3f(0, 1, 0));
+    scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t, Vec3f(0, 1, 0));
     scene.camPos = scene.camPose.t;
 
     int width, height;

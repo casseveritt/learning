@@ -1,15 +1,15 @@
 #include "prog.h"
 
-#include "learning.h"
-#include "stb.h"
-#include <cstring>
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstring>
+#include "learning.h"
+#include "stb.h"
 
 namespace {
 
-char *getFileContents(const char *filename) {
-  FILE *fp = fopen(filename, "r");
+char* getFileContents(const char* filename) {
+  FILE* fp = fopen(filename, "r");
   if (fp == nullptr) {
     printf("Failed to open file: %s\n", filename);
     exit(1);
@@ -17,7 +17,7 @@ char *getFileContents(const char *filename) {
   fseek(fp, 0, SEEK_END);
   long size = ftell(fp);
   fseek(fp, 0, SEEK_SET);
-  char *data = new char[size + 1];
+  char* data = new char[size + 1];
   size_t numRead = fread(data, 1, size_t(size), fp);
   if (size_t(size) != numRead) {
     printf("Failed to read all %s\n", filename);
@@ -28,24 +28,23 @@ char *getFileContents(const char *filename) {
   return data;
 }
 
-
-char *concatenate(const char *a, const char *b) {
+char* concatenate(const char* a, const char* b) {
   int alen = strlen(a);
   int blen = strlen(b);
-  char *c = new char[alen + blen + 1];
+  char* c = new char[alen + blen + 1];
   strcpy(c, a);
   strcat(c, b);
   return c;
 }
 
-} // namespace
+}  // namespace
 
-void Prog::create(const char *baseShaderName) {
-  const char *pr = "progs/";
-  const char *fs = "-Fragment.fs";
-  const char *vs = "-Vertex.vs";
-  char *bsfs = new char[strlen(pr) + strlen(baseShaderName) + strlen(fs) + 1];
-  char *bsvs = new char[strlen(pr) + strlen(baseShaderName) + strlen(vs) + 1];
+void Prog::create(const char* baseShaderName) {
+  const char* pr = "progs/";
+  const char* fs = "-Fragment.fs";
+  const char* vs = "-Vertex.vs";
+  char* bsfs = new char[strlen(pr) + strlen(baseShaderName) + strlen(fs) + 1];
+  char* bsvs = new char[strlen(pr) + strlen(baseShaderName) + strlen(vs) + 1];
   strcpy(bsfs, pr);
   strcpy(bsvs, pr);
   strcat(bsfs, baseShaderName);
@@ -57,13 +56,12 @@ void Prog::create(const char *baseShaderName) {
   delete[] bsfs;
 }
 
-void Prog::create(const char *vertexShaderFilename,
-                  const char *fragmentShaderFilename) {
+void Prog::create(const char* vertexShaderFilename, const char* fragmentShaderFilename) {
   GLuint vertex_shader, fragment_shader;
   vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-  char *vertex_shader_src = nullptr;
+  char* vertex_shader_src = nullptr;
   {
-    char *f = getFileContents(vertexShaderFilename);
+    char* f = getFileContents(vertexShaderFilename);
     vertex_shader_src = concatenate(GLSL_VERSION, f);
     delete[] f;
   }
@@ -76,14 +74,14 @@ void Prog::create(const char *vertexShaderFilename,
     GLchar infoLog[4096];
     GLsizei len = 0;
     glGetShaderInfoLog(vertex_shader, sizeof(infoLog), &len, infoLog);
-    printf("infoLog: %s\n", static_cast<const char *>(infoLog));
+    printf("infoLog: %s\n", static_cast<const char*>(infoLog));
   }
   delete[] vertex_shader_src;
 
   fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-  char *fragment_shader_src = nullptr;
+  char* fragment_shader_src = nullptr;
   {
-    char *f = getFileContents(fragmentShaderFilename);
+    char* f = getFileContents(fragmentShaderFilename);
     fragment_shader_src = concatenate(GLSL_VERSION, f);
     delete[] f;
   }
@@ -95,7 +93,7 @@ void Prog::create(const char *vertexShaderFilename,
     GLchar infoLog[4096];
     GLsizei len = 0;
     glGetShaderInfoLog(fragment_shader, sizeof(infoLog), &len, infoLog);
-    printf("infoLog: %s\n", static_cast<const char *>(infoLog));
+    printf("infoLog: %s\n", static_cast<const char*>(infoLog));
   }
   delete[] fragment_shader_src;
 
@@ -110,7 +108,7 @@ void Prog::create(const char *vertexShaderFilename,
     GLchar infoLog[4096];
     GLsizei len = 0;
     glGetProgramInfoLog(program, sizeof(infoLog), &len, infoLog);
-    printf("infoLog: %s\n", static_cast<const char *>(infoLog));
+    printf("infoLog: %s\n", static_cast<const char*>(infoLog));
   }
   p = program;
   glUseProgram(p);
@@ -130,7 +128,7 @@ void Prog::create(const char *vertexShaderFilename,
   samp.i = glGetUniformLocation(program, "samp");
 }
 
-void Prog::load(const Scene &scene) {
+void Prog::load(const Scene& scene) {
   glUniform3fv(lightPos.i, 1, &scene.lightPos.x);
   glUniform3fv(lightCol.i, 1, &scene.lightCol.x);
   glUniform3fv(camPos.i, 1, &scene.camPos.x);

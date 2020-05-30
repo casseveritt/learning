@@ -4,8 +4,7 @@
 using namespace r3;
 
 class Sphere {
-
-public:
+ public:
   struct Vert {
     Vec3f col;
     Vec3f norm;
@@ -15,5 +14,5 @@ public:
 
   void build(float radi = 0.5);
 
-  void draw(const Scene &scene, Prog p);
+  void draw(const Scene& scene, Prog p);
 };
