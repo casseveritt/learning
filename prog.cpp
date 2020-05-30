@@ -97,35 +97,42 @@ void Prog::create(const char* vertexShaderFilename, const char* fragmentShaderFi
   }
   delete[] fragment_shader_src;
 
-  GLuint program = glCreateProgram();
+  p = glCreateProgram();
 
-  glAttachShader(program, vertex_shader);
-  glAttachShader(program, fragment_shader);
-  glLinkProgram(program);
-  glGetProgramiv(program, GL_LINK_STATUS, &stat);
+  glAttachShader(p, vertex_shader);
+  glAttachShader(p, fragment_shader);
+  glLinkProgram(p);
+  glGetProgramiv(p, GL_LINK_STATUS, &stat);
   if (stat == GL_FALSE) {
     printf("Program link failed: %s\n", vertexShaderFilename);
     GLchar infoLog[4096];
     GLsizei len = 0;
-    glGetProgramInfoLog(program, sizeof(infoLog), &len, infoLog);
+    glGetProgramInfoLog(p, sizeof(infoLog), &len, infoLog);
     printf("infoLog: %s\n", static_cast<const char*>(infoLog));
   }
-  p = program;
+
   glUseProgram(p);
-  pos.i = glGetAttribLocation(program, "pos");
-  col.i = glGetAttribLocation(program, "col");
-  texCoord.i = glGetAttribLocation(program, "texCoord");
-  norm.i = glGetAttribLocation(program, "norm");
-  proj.i = glGetUniformLocation(program, "proj");
-  view.i = glGetUniformLocation(program, "view");
-  model.i = glGetUniformLocation(program, "model");
-  lightPos.i = glGetUniformLocation(program, "lightPos");
-  lightCol.i = glGetUniformLocation(program, "lightCol");
-  matDifCol.i = glGetUniformLocation(program, "matDifCol");
-  matSpcCol.i = glGetUniformLocation(program, "matSpcCol");
-  shiny.i = glGetUniformLocation(program, "shiny");
-  camPos.i = glGetUniformLocation(program, "camPos");
-  samp.i = glGetUniformLocation(program, "samp");
+  for (auto v : programVars) {
+    if (v.inputType == InAttrib) {
+      locs[v.varName].i = glGetAttribLocation(p, v.varName);
+    } else if (v.inputType == InAttrib) {
+      locs[v.varName].i = glGetUniformLocation(p, v.varName);
+    }
+  }
+  pos.i = glGetAttribLocation(p, "pos");
+  col.i = glGetAttribLocation(p, "col");
+  texCoord.i = glGetAttribLocation(p, "texCoord");
+  norm.i = glGetAttribLocation(p, "norm");
+  proj.i = glGetUniformLocation(p, "proj");
+  view.i = glGetUniformLocation(p, "view");
+  model.i = glGetUniformLocation(p, "model");
+  lightPos.i = glGetUniformLocation(p, "lightPos");
+  lightCol.i = glGetUniformLocation(p, "lightCol");
+  matDifCol.i = glGetUniformLocation(p, "matDifCol");
+  matSpcCol.i = glGetUniformLocation(p, "matSpcCol");
+  shiny.i = glGetUniformLocation(p, "shiny");
+  camPos.i = glGetUniformLocation(p, "camPos");
+  samp.i = glGetUniformLocation(p, "samp");
 }
 
 void Prog::load(const Scene& scene) {
