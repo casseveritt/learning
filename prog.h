@@ -40,7 +40,7 @@ class Prog {
 
   GLuint p;
   std::unordered_map<std::string, Ui> locs;
-  Ui pos, col, texCoord, norm, proj, view, model, lightPos, lightCol, matDifCol, matSpcCol, shiny, camPos, samp;
+  // Ui pos, col, texCoord, norm, proj, view, model, lightPos, lightCol, matDifCol, matSpcCol, shiny, camPos, samp;
 
   Prog() {}
 
@@ -56,4 +56,6 @@ class Prog {
   void create(const char* baseShaderName);
 
   void load(const Scene& scene);
+
+  Ui loc(const std::string& var) const;
 };

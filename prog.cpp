@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstring>
+#include <string>
 #include "learning.h"
 #include "stb.h"
 
@@ -113,31 +114,32 @@ void Prog::create(const char* vertexShaderFilename, const char* fragmentShaderFi
 
   glUseProgram(p);
   for (auto v : programVars) {
-    if (v.inputType == InAttrib) {
-      locs[v.varName].i = glGetAttribLocation(p, v.varName);
-    } else if (v.inputType == InAttrib) {
-      locs[v.varName].i = glGetUniformLocation(p, v.varName);
+    switch (v.inputType) {
+      case InAttrib:
+        locs[v.varName].i = glGetAttribLocation(p, v.varName);
+        break;
+      case InUniform:
+        locs[v.varName].i = glGetUniformLocation(p, v.varName);
+        break;
+      default:
+        break;
     }
   }
-  pos.i = glGetAttribLocation(p, "pos");
-  col.i = glGetAttribLocation(p, "col");
-  texCoord.i = glGetAttribLocation(p, "texCoord");
-  norm.i = glGetAttribLocation(p, "norm");
-  proj.i = glGetUniformLocation(p, "proj");
-  view.i = glGetUniformLocation(p, "view");
-  model.i = glGetUniformLocation(p, "model");
-  lightPos.i = glGetUniformLocation(p, "lightPos");
-  lightCol.i = glGetUniformLocation(p, "lightCol");
-  matDifCol.i = glGetUniformLocation(p, "matDifCol");
-  matSpcCol.i = glGetUniformLocation(p, "matSpcCol");
-  shiny.i = glGetUniformLocation(p, "shiny");
-  camPos.i = glGetUniformLocation(p, "camPos");
-  samp.i = glGetUniformLocation(p, "samp");
+}
+
+Prog::Ui Prog::loc(const std::string& str) const {
+  auto it = locs.find(str);
+  if (it == locs.end()) {
+    Ui ui;
+    ui.i = -1;
+    return ui;
+  }
+  return it->second;
 }
 
 void Prog::load(const Scene& scene) {
-  glUniform3fv(lightPos.i, 1, &scene.lightPos.x);
-  glUniform3fv(lightCol.i, 1, &scene.lightCol.x);
-  glUniform3fv(camPos.i, 1, &scene.camPos.x);
-  glUniform1i(samp.i, 0);
+  glUniform3fv(loc("lightPos").i, 1, &scene.lightPos.x);
+  glUniform3fv(loc("lightCol").i, 1, &scene.lightCol.x);
+  glUniform3fv(loc("camPos").i, 1, &scene.camPos.x);
+  glUniform1i(loc("samp").i, 0);
 }

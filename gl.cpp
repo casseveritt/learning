@@ -4,7 +4,6 @@
 #include <cstring>
 #include "cube.h"
 #include "geom.h"
-#include "glprog.h"
 #include "learning.h"
 #include "linear.h"
 #include "prog.h"

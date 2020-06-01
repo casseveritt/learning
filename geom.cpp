@@ -57,43 +57,43 @@ void Geom::draw(const Scene& scene, Prog p) {
   glUseProgram(p.p);
   Matrix4f viewMat = scene.camPose.Inverted().GetMatrix4();
   glBindBuffer(GL_ARRAY_BUFFER, b);
-  if (p.col.i >= 0) {
-    glVertexAttribPointer(p.col.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(0));
-    glEnableVertexAttribArray(p.col.u);
+  if (p.loc("col").i >= 0) {
+    glVertexAttribPointer(p.loc("col").u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(0));
+    glEnableVertexAttribArray(p.loc("col").u);
   }
-  if (p.norm.i >= 0) {
-    glVertexAttribPointer(p.norm.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(sizeof(Vec3f)));
-    glEnableVertexAttribArray(p.norm.u);
+  if (p.loc("norm").i >= 0) {
+    glVertexAttribPointer(p.loc("norm").u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(sizeof(Vec3f)));
+    glEnableVertexAttribArray(p.loc("norm").u);
   }
-  if (p.pos.i >= 0) {
-    glVertexAttribPointer(p.pos.u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(sizeof(Vec3f) * 2));
-    glEnableVertexAttribArray(p.pos.u);
+  if (p.loc("pos").i >= 0) {
+    glVertexAttribPointer(p.loc("pos").u, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(sizeof(Vec3f) * 2));
+    glEnableVertexAttribArray(p.loc("pos").u);
   }
-  if (p.texCoord.i >= 0) {
-    glVertexAttribPointer(p.texCoord.u, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(sizeof(Vec3f) * 3));
-    glEnableVertexAttribArray(p.texCoord.u);
+  if (p.loc("texCoord").i >= 0) {
+    glVertexAttribPointer(p.loc("texCoord").u, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), OFFSET_OF(sizeof(Vec3f) * 3));
+    glEnableVertexAttribArray(p.loc("texCoord").u);
   }
   if (int(tex) >= 0) {
     glBindTexture(GL_TEXTURE_2D, tex);
   }
 
   Matrix4f modelMat = modelPose.GetMatrix4();
-  glUniformMatrix4fv(p.proj.i, 1, GL_FALSE, scene.projMat.GetValue());
-  glUniformMatrix4fv(p.model.i, 1, GL_FALSE, modelMat.GetValue());
-  glUniformMatrix4fv(p.view.i, 1, GL_FALSE, viewMat.GetValue());
-  // glUniform3fv(p.lightPos.i, 1, &scene.lightPos.x);
-  // glUniform3fv(p.lightCol.i, 1, &scene.lightCol.x);
-  glUniform3fv(p.matDifCol.i, 1, &matDifCol.x);
-  glUniform3fv(p.matSpcCol.i, 1, &matSpcCol.x);
-  // glUniform3fv(p.camPos.i, 1, &scene.camPos.x);
-  glUniform1f(p.shiny.i, shiny);
-  // glUniform1i(p.samp.i, 0);
+  glUniformMatrix4fv(p.loc("proj").i, 1, GL_FALSE, scene.projMat.GetValue());
+  glUniformMatrix4fv(p.loc("model").i, 1, GL_FALSE, modelMat.GetValue());
+  glUniformMatrix4fv(p.loc("view").i, 1, GL_FALSE, viewMat.GetValue());
+  // glUniform3fv(p.loc("lightPos").i, 1, &scene.lightPos.x);
+  // glUniform3fv(p.loc("lightCol").i, 1, &scene.lightCol.x);
+  glUniform3fv(p.loc("matDifCol").i, 1, &matDifCol.x);
+  glUniform3fv(p.loc("matSpcCol").i, 1, &matSpcCol.x);
+  // glUniform3fv(p.loc("camPos").i, 1, &scene.camPos.x);
+  glUniform1f(p.loc("shiny").i, shiny);
+  // glUniform1i(p.loc("samp").i, 0);
   p.load(scene);
   glDrawArrays(primType, 0, verts.size());
 
-  if (p.col.i >= 0) glDisableVertexAttribArray(p.pos.u);
-  if (p.norm.i >= 0) glDisableVertexAttribArray(p.norm.u);
-  if (p.pos.i >= 0) glDisableVertexAttribArray(p.col.u);
+  if (p.loc("col").i >= 0) glDisableVertexAttribArray(p.loc("pos").u);
+  if (p.loc("norm").i >= 0) glDisableVertexAttribArray(p.loc("norm").u);
+  if (p.loc("pos").i >= 0) glDisableVertexAttribArray(p.loc("col").u);
   glBindBuffer(GL_ARRAY_BUFFER, dummy_buffer);
   glUseProgram(dummy_program);
 }
