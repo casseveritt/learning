@@ -128,6 +128,18 @@ static Vec3f evalBezier(const std::vector<Vec3f>& p, float t) {
   return p[0] * w[0] + p[1] * w[1] + p[2] * w[2] + p[3] * w[3];
 }
 
+static Vec3f evalDeCast(const std::vector<Vec3f>& p, float t) {
+  if (p.size() == 1) {
+    return p[0];
+  }
+
+  std::vector<Vec3f> k;
+  for (size_t j = 0; j < p.size() - 1; j++) {
+    k.push_back(p[j] + ((p[j + 1] - p[j]) * t));
+  }
+  return evalDeCast(k, t);
+}
+
 int main(void) {
   scene.camPose.t.z = 2.0;
   GLFWwindow* window;
@@ -268,6 +280,28 @@ int main(void) {
   }
   curve.end();
 
+  std::vector<Vec3f> points1;
+  points1.push_back(Vec3f(-1.0f, 0.0f, 0.5f));
+  points1.push_back(Vec3f(-1.0f, 1.0f, 0.5f));
+  points1.push_back(Vec3f(0.0f, 1.0f, 0.5f));
+  points1.push_back(Vec3f(0.0f, 0.0f, 0.5f));
+  Geom hull1;
+  hull1.begin(GL_LINE_STRIP);
+  hull1.color(0.0f, 0.0f, 0.0f);
+  for (auto v : points1) {
+    hull1.position(v);
+  }
+  hull1.end();
+
+  Geom curve1;
+  curve1.begin(GL_LINE_STRIP);
+  curve1.color(0.0f, 1.0f, 1.0f);
+  for (int i = 0; i < 100; i++) {
+    curve1.position(evalDeCast(points1, i / 99.0f));
+  }
+  curve1.end();
+
+  glLineWidth(3);
   // objects init end
 
   while (!glfwWindowShouldClose(window)) {
@@ -320,6 +354,9 @@ int main(void) {
 
     hull.draw(scene, program);
     curve.draw(scene, program);
+
+    hull1.draw(scene, program);
+    curve1.draw(scene, program);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
