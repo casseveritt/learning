@@ -138,7 +138,9 @@ Prog::Ui Prog::loc(const std::string& str) const {
 }
 
 void Prog::load(const Scene& scene) {
-  glUniform3fv(loc("lightPos").i, 1, &scene.lightPos.x);
+  glUniform3fv(loc("lightPos").i, 1, &scene.lightPose.t.x);
+  glUniformMatrix4fv(loc("lightFromWorld").i, 1, GL_FALSE, scene.lightPose.Inverted().GetMatrix4().m);
+  glUniformMatrix4fv(loc("worldFromLight").i, 1, GL_FALSE, scene.lightPose.GetMatrix4().m);
   glUniform3fv(loc("lightCol").i, 1, &scene.lightCol.x);
   glUniform3fv(loc("camPos").i, 1, &scene.camPos.x);
   glUniform1i(loc("samp").i, 0);

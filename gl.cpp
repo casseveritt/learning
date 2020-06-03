@@ -143,7 +143,8 @@ int main(void) {
   scene.camPose.t.z = 2.0;
   GLFWwindow* window;
 
-  scene.lightPos = Vec3f(0, 1, 0);
+  scene.lightPose.r = Quaternionf(Vec3f(1, 0, 0), ToRadians(-90.0f));
+  scene.lightPose.t = Vec3f(0, 1, 0);
   scene.lightCol = Vec3f(1, 1, 1);
 
   glfwSetErrorCallback(error_callback);
@@ -183,6 +184,7 @@ int main(void) {
   Prog texProgram("Tex");
   Prog coordProgram("Coord");
   Prog litTexProgram("LitTex");
+  Prog spotProgram("Spot");
   // programs init end
 
   // Texture begin
@@ -342,13 +344,13 @@ int main(void) {
     if (scene.camPose.t.y <= 0.0f) {
       grid.draw(scene, program);
     } else {
-      square.draw(scene, litTexProgram);
+      square.draw(scene, spotProgram);
     }
     cube.draw(scene, litTexProgram);
     sph.draw(scene, litTexProgram);
-    tor.draw(scene, litTexProgram);
+    tor.draw(scene, spotProgram);
 
-    light.obj.modelPose.t = scene.lightPos;
+    light.obj.modelPose.t = scene.lightPose.t;
     light.draw(scene, program);
 
     hull.draw(scene, program);

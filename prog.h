@@ -22,14 +22,22 @@ struct Var {
   int numComponents;
 };
 
-const std::vector<Var> programVars = {
-    {"pos", InAttrib, GL_FLOAT, StVector, 3},        {"col", InAttrib, GL_FLOAT, StVector, 3},
-    {"texCoord", InAttrib, GL_FLOAT, StVector, 2},   {"norm", InAttrib, GL_FLOAT, StVector, 3},
-    {"proj", InUniform, GL_FLOAT, StMatrix, 4},      {"view", InUniform, GL_FLOAT, StMatrix, 4},
-    {"model", InUniform, GL_FLOAT, StMatrix, 4},     {"lightPos", InUniform, GL_FLOAT, StVector, 3},
-    {"lightCol", InUniform, GL_FLOAT, StVector, 3},  {"matDifCol", InUniform, GL_FLOAT, StVector, 3},
-    {"matSpcCol", InUniform, GL_FLOAT, StVector, 3}, {"shiny", InUniform, GL_FLOAT, StScalar, 1},
-    {"camPos", InUniform, GL_FLOAT, StVector, 3},    {"samp", InUniform, GL_INT, StScalar, 1}};
+const std::vector<Var> programVars = {{"pos", InAttrib, GL_FLOAT, StVector, 3},
+                                      {"col", InAttrib, GL_FLOAT, StVector, 3},
+                                      {"texCoord", InAttrib, GL_FLOAT, StVector, 2},
+                                      {"norm", InAttrib, GL_FLOAT, StVector, 3},
+                                      {"proj", InUniform, GL_FLOAT, StMatrix, 4},
+                                      {"view", InUniform, GL_FLOAT, StMatrix, 4},
+                                      {"model", InUniform, GL_FLOAT, StMatrix, 4},
+                                      {"lightPos", InUniform, GL_FLOAT, StVector, 3},
+                                      {"lightCol", InUniform, GL_FLOAT, StVector, 3},
+                                      {"matDifCol", InUniform, GL_FLOAT, StVector, 3},
+                                      {"matSpcCol", InUniform, GL_FLOAT, StVector, 3},
+                                      {"shiny", InUniform, GL_FLOAT, StScalar, 1},
+                                      {"camPos", InUniform, GL_FLOAT, StVector, 3},
+                                      {"samp", InUniform, GL_INT, StScalar, 1},
+                                      {"lightFromWorld", InUniform, GL_FLOAT, StMatrix, 4},
+                                      {"worldFromLight", InUniform, GL_FLOAT, StMatrix, 4}};
 
 class Prog {
  public:
