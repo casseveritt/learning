@@ -25,7 +25,7 @@ int frame = 0;
 bool drag = false;
 Vec2d prevPos;
 Vec2d diffPos;
-bool mode1;
+bool mode1, clickRay;
 float rad = 2.5;
 float theta = 0.0;
 Scene scene;
@@ -76,6 +76,12 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
           mode1 = false;
         else
           mode1 = true;
+        break;
+      case GLFW_KEY_X:
+        if (mode1)
+          clickRay = false;
+        else
+          clickRay = true;
         break;
       default:
         break;
@@ -277,33 +283,14 @@ int main(void) {
   curve.begin(GL_LINE_STRIP);
   curve.color(1.0f, 0.0f, 0.5f);
   for (int i = 0; i < 100; i++) {
-    curve.position(evalBezier(points, i / 99.0f));
+    curve.position(evalDeCast(points, i / 99.0f));
   }
   curve.end();
-
-  std::vector<Vec3f> points1;
-  points1.push_back(Vec3f(-1.0f, 0.0f, 0.5f));
-  points1.push_back(Vec3f(-1.0f, 1.0f, 0.5f));
-  points1.push_back(Vec3f(0.0f, 1.0f, 0.5f));
-  points1.push_back(Vec3f(0.0f, 0.0f, 0.5f));
-  Geom hull1;
-  hull1.begin(GL_LINE_STRIP);
-  hull1.color(0.0f, 0.0f, 0.0f);
-  for (auto v : points1) {
-    hull1.position(v);
-  }
-  hull1.end();
-
-  Geom curve1;
-  curve1.begin(GL_LINE_STRIP);
-  curve1.color(0.0f, 1.0f, 1.0f);
-  for (int i = 0; i < 100; i++) {
-    curve1.position(evalDeCast(points1, i / 99.0f));
-  }
-  curve1.end();
+  // objects init end
 
   glLineWidth(3);
-  // objects init end
+
+  Geom ray;
 
   while (!glfwWindowShouldClose(window)) {
     if (drag) {
@@ -334,30 +321,55 @@ int main(void) {
 
     glViewport(0, 0, width, height);
 
-    glClearColor(0.25f, 0.25f, 0.25f, 0);
+    glClearColor(0.05f, 0.05f, 0.05f, 0);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
 
     float aspect = float(width) / float(height);
     scene.projMat = Perspective(fovy, aspect, 0.1f, 100.0f);
 
+    if (clickRay) {
+      Vec2d currPos;
+      glfwGetCursorPos(window, &currPos.x, &currPos.y);
+      currPos.y = (height - 1) - currPos.y;
+      currPos.y = (currPos.y / (height - 1)) * 2 - 1;
+      currPos.x = (currPos.x / (width - 1)) * 2 - 1;
+      Vec4f nearInClip = Vec4f(currPos.x, currPos.y, -1.0, 1.0);
+      Vec4f nearInCam = scene.projMat.Inverted() * nearInClip;
+      nearInCam /= nearInCam.w;
+      Vec4f farInClip = Vec4f(currPos.x, currPos.y, 1.0, 1.0);
+      Vec4f farInCam = scene.projMat.Inverted() * farInClip;
+      farInCam /= farInCam.w;
+      Vec4f nearInWorld = scene.camPose.GetMatrix4() * nearInCam;
+      Vec4f farInWorld = scene.camPose.GetMatrix4() * farInCam;
+      ray.begin(GL_LINES);
+      ray.color(0.0f, 0.0f, 1.0f);
+      ray.position(nearInWorld.x, nearInWorld.y, nearInWorld.z);
+      ray.color(1.0f, 1.0f, 0.0f);
+      ray.position(farInWorld.x, farInWorld.y, farInWorld.z);
+      ray.end();
+      printf("Near Coords: x;%f\ty;%f\tz;%f\n", nearInWorld.x, nearInWorld.y, nearInWorld.z);
+      printf("Far  Coords: x;%f\ty;%f\tz;%f\n", farInWorld.x, farInWorld.y, farInWorld.z);
+
+      clickRay = false;
+    }
+
+    ray.draw(scene, program);
+
     if (scene.camPose.t.y <= 0.0f) {
       grid.draw(scene, program);
     } else {
-      square.draw(scene, spotProgram);
+      square.draw(scene, litTexProgram);
     }
     cube.draw(scene, litTexProgram);
     sph.draw(scene, litTexProgram);
-    tor.draw(scene, spotProgram);
+    tor.draw(scene, litTexProgram);
 
     light.obj.modelPose.t = scene.lightPose.t;
     light.draw(scene, program);
 
     hull.draw(scene, program);
     curve.draw(scene, program);
-
-    hull1.draw(scene, program);
-    curve1.draw(scene, program);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
