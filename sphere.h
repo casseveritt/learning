@@ -11,8 +11,11 @@ class Sphere {
     Vec3f pos;
   };
   Geom obj;
+  float r;
 
   void build(float radi = 0.5);
 
   void draw(const Scene& scene, Prog p);
+
+  bool sphereInter(Vec3f rayOrigin, Vec3f rayEnd);
 };

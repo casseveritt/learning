@@ -4,6 +4,7 @@ using namespace r3;
 
 void Sphere::build(float radi) {
   std::vector<Vec3f> circle;
+  r = radi;
   for (int i = 0; i < 19; i++) {  // Degrees
     float tr = ToRadians(i * 10.0f - 90.0f);
     circle.push_back(Vec3f(cos(tr) * radi, sin(tr) * radi, 0.0));
@@ -46,4 +47,43 @@ void Sphere::build(float radi) {
 
 void Sphere::draw(const Scene& scene, Prog p) {
   obj.draw(scene, p);
+}
+
+bool Sphere::sphereInter(Vec3f rayOrigin, Vec3f rayEnd) {
+  Vec3f rayDir = (rayEnd - rayOrigin).Normalized();
+  Vec3f ce = obj.modelPose.t;
+  Vec3f oc = rayOrigin - ce;
+  float a = Dot(rayDir, rayDir);
+  float b = 2 * Dot(rayDir, oc);
+  float c = Dot(oc, oc) - r * r;
+  float discr = b * b - 4 * a * c;
+  ;
+  if (discr >= 0.0f) {
+    /*float s;
+    {
+      if ( discr < 0 ){ s = -1; }
+      float rt_discr = std::sqrt( discr );
+      if ( ( -b - rt_discr ) > min_soln ){
+        s = ( -b - rt_discr ) / ( 2 * a );
+      }
+      else if ( ( -b + rt_discr ) > min_soln ){
+        s = ( -b + rt_discr ) / ( 2 * a );
+      }
+      s = -1;
+    }
+    if ( s < s_min ){
+      return false;
+    }
+    else{
+        //hit.s = s;
+        //hit.p = ray.At( s );
+        //hit.n = ( hit.p - c ) / r;
+        //hit.uv = UvFromHitPoint( hit.n );
+        //hit.mat = mat;
+      return true;
+    }*/
+    return true;
+  } else {
+    return false;
+  }
 }

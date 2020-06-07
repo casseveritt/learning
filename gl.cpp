@@ -348,9 +348,18 @@ int main(void) {
       ray.color(1.0f, 1.0f, 0.0f);
       ray.position(farInWorld.x, farInWorld.y, farInWorld.z);
       ray.end();
-      printf("Near Coords: x;%f\ty;%f\tz;%f\n", nearInWorld.x, nearInWorld.y, nearInWorld.z);
-      printf("Far  Coords: x;%f\ty;%f\tz;%f\n", farInWorld.x, farInWorld.y, farInWorld.z);
-
+      // printf("Near Coords: x;%f\ty;%f\tz;%f\n", nearInWorld.x, nearInWorld.y, nearInWorld.z);
+      // printf("Far  Coords: x;%f\ty;%f\tz;%f\n", farInWorld.x, farInWorld.y, farInWorld.z);
+      Vec3f nearInWorld3 = Vec3f(&nearInWorld.x);
+      Vec3f farInWorld3 = Vec3f(&farInWorld.x);
+      bool lInter = light.sphereInter(nearInWorld3, farInWorld3);
+      bool sInter = sph.sphereInter(nearInWorld3, farInWorld3);
+      if (lInter) {
+        printf("Intersected light\n");
+      }
+      if (sInter) {
+        printf("Intersected sphere\n");
+      }
       clickRay = false;
     }
 
