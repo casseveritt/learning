@@ -821,7 +821,7 @@ class Line {
   void SetValue(const Vec3<T>& p0, const Vec3<T>& p1) {
     position = p0;
     direction = p1 - p0;
-    direction.normalize();
+    direction.Normalize();
   }
 
   bool GetClosestPoints(const Line& line2, Vec3<T>& pointOnThis, Vec3<T>& pointOnThat) {

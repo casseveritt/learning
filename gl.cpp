@@ -9,6 +9,7 @@
 #include "prog.h"
 #include "scene.h"
 #include "sphere.h"
+#include "square.h"
 #include "stb.h"
 #include "torus.h"
 
@@ -221,23 +222,16 @@ int main(void) {
   float sqrDime = float(gridsize / 2) * s;
   float sqrSize = float((gridsize - 1) / 2);
 
-  Geom square;
-  square.begin(GL_TRIANGLE_STRIP);
-  square.normal(0, 1, 0);
-  square.color(0.0f, 0.0f, 0.0f);
-  square.texCoord(0.0f, 0.0f);
-  square.position(-sqrDime, 0.0f, -sqrDime);
-  square.texCoord(0.0f, sqrSize);
-  square.position(-sqrDime, 0.0f, sqrDime);
-  square.texCoord(sqrSize, 0.0f);
-  square.position(sqrDime, 0.0f, -sqrDime);
-  square.texCoord(sqrSize, sqrSize);
-  square.position(sqrDime, 0.0f, sqrDime);
-  square.end();
-  square.tex = check;
+  Square squ;
+  squ.build(sqrDime, sqrSize);
+  squ.obj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
+  squ.obj.shiny = 40.0f;
+  squ.obj.tex = check;
+  squ.obj.modelPose.r = Quaternionf(Vec3f(1, 0, 0), ToRadians(45.0f));
 
-  square.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
-  square.shiny = 40.0f;
+  Planef ground(Vec3f(0, 1, 0), 0.0f);
+  Planef groundInWorld = ground;
+  groundInWorld.Transform(squ.obj.modelPose.GetMatrix4());
 
   Cube cube;
   cube.build(Matrix4f::Scale(0.375f));
@@ -291,6 +285,8 @@ int main(void) {
   glLineWidth(3);
 
   Geom ray;
+  Sphere intPoint;
+  intPoint.build(0.005f);
 
   while (!glfwWindowShouldClose(window)) {
     if (drag) {
@@ -360,15 +356,23 @@ int main(void) {
       if (sInter) {
         printf("Intersected sphere\n");
       }
+      Linef pointLine(nearInWorld3, farInWorld3);
+      Vec3f intLoc;
+      groundInWorld.Intersect(pointLine, intLoc);
+      intPoint.obj.modelPose.t = intLoc;
       clickRay = false;
+      float* f = &groundInWorld.planenormal.x;
+      printf("Plane normal: %.3f, %.3f, %.3f \t Distance: %.3f\n", f[0], f[1], f[2], f[3]);
+      printf("intLoc: %.3f, %.3f, %.3f\n", intLoc.x, intLoc.y, intLoc.z);
     }
 
     ray.draw(scene, program);
+    intPoint.draw(scene, program);
 
     if (scene.camPose.t.y <= 0.0f) {
       grid.draw(scene, program);
     } else {
-      square.draw(scene, litTexProgram);
+      squ.draw(scene, litTexProgram);
     }
     cube.draw(scene, litTexProgram);
     sph.draw(scene, litTexProgram);
