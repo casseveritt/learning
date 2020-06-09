@@ -13,7 +13,7 @@ class Sphere {
   Geom obj;
   float r;
 
-  void build(float radi = 0.5);
+  void build(float radi = 0.5, Vec3f col = Vec3f(0.9f, 0.9f, 0.9f));
 
   void draw(const Scene& scene, Prog p);
 

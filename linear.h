@@ -1998,40 +1998,26 @@ class Plane {
     planedistance += d;
   }
 
-  bool Intersect(const Line<T>& l, Vec3<T>& intersection) const {
-    Vec3<T> pos, dir;
-    Vec3<T> pn = planenormal;
-    T pd = planedistance;
-
-    pos = l.GetPosition();
-    dir = l.GetDirection();
-
-    if (dir.Dot(pn) == 0.0) return 0;
-    pos -= pn * pd;
-    // now we're talking about a Plane passing through the origin
-    if (pos.Dot(pn) < 0.0) pn.Negate();
-    if (dir.Dot(pn) > 0.0) dir.Negate();
-    Vec3<T> ppos = pn * pos.Dot(pn);
-    pos = (ppos.Length() / dir.Dot(-pn)) * dir;
-    intersection = l.GetPosition();
-    intersection += pos;
-    return 1;
+  bool Intersect(const Line<T>& line, Vec3<T>& intersection) const {
+    Vec3<T> n = planenormal.Normalized();
+    Vec3<T> l0 = line.GetPosition();
+    Vec3<T> l = line.GetDirection();
+    Vec3<T> p0 = n * planedistance;
+    float ndotl = n.Dot(l);
+    if (ndotl == 0.0) {
+      return false;
+    }
+    float d = n.Dot(p0 - l0) / n.Dot(l);
+    intersection = l0 + l * d;
+    return true;
   }
 
   void Transform(const Matrix4<T>& matrix) {
-    Matrix4<T> invtr = matrix.Inverted();
-    invtr = invtr.Transpose();
-
-    Vec3<T> pntOnPlane = planenormal * planedistance;
-    Vec3<T> newPntOnPlane;
-    Vec3<T> newnormal;
-
-    invtr.MultDirMatrix(planenormal, newnormal);
-    matrix.MultVecMatrix(pntOnPlane, newPntOnPlane);
-
-    newnormal.Normalize();
-    planenormal = newnormal;
-    planedistance = newPntOnPlane.Dot(planenormal);
+    Vec4<T> pl(planenormal.x, planenormal.y, planenormal.z, -planedistance);
+    Matrix4<T> invtr = matrix.Inverted().Transpose();
+    Vec4<T> pl2 = invtr * pl;
+    planenormal = Vec3<T>(pl2.x, pl2.y, pl2.z).Normalized();
+    planedistance = -pl2.w;
   }
 
   bool IsInHalfSpace(const Vec3<T>& point) const {

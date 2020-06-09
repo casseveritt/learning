@@ -32,6 +32,9 @@ class Geom {
   void end();
 
   void color(float r, float g, float bl);
+  void color(r3::Vec3f col) {
+    color(col.x, col.y, col.z);
+  }
 
   void texCoord(float s, float t);
 

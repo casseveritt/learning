@@ -2,7 +2,7 @@
 
 using namespace r3;
 
-void Sphere::build(float radi) {
+void Sphere::build(float radi, Vec3f col) {
   std::vector<Vec3f> circle;
   r = radi;
   for (int i = 0; i < 19; i++) {  // Degrees
@@ -11,7 +11,7 @@ void Sphere::build(float radi) {
   }
 
   obj.begin(GL_TRIANGLES);
-  obj.color(0.9f, 0.9f, 0.9f);
+  obj.color(col);
   const float csz = float(circle.size());
   for (int j = 0; j < 36; j++) {
     Quaternionf q0(Vec3f(0, 1, 0), ToRadians(j * 10.0f));

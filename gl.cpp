@@ -230,8 +230,6 @@ int main(void) {
   squ.obj.modelPose.r = Quaternionf(Vec3f(1, 0, 0), ToRadians(45.0f));
 
   Planef ground(Vec3f(0, 1, 0), 0.0f);
-  Planef groundInWorld = ground;
-  groundInWorld.Transform(squ.obj.modelPose.GetMatrix4());
 
   Cube cube;
   cube.build(Matrix4f::Scale(0.375f));
@@ -286,7 +284,7 @@ int main(void) {
 
   Geom ray;
   Sphere intPoint;
-  intPoint.build(0.005f);
+  intPoint.build(0.005f, Vec3f(0.9, 0.0, 0.7));
 
   while (!glfwWindowShouldClose(window)) {
     if (drag) {
@@ -356,6 +354,8 @@ int main(void) {
       if (sInter) {
         printf("Intersected sphere\n");
       }
+      Planef groundInWorld = ground;
+      groundInWorld.Transform(squ.obj.modelPose.GetMatrix4());
       Linef pointLine(nearInWorld3, farInWorld3);
       Vec3f intLoc;
       groundInWorld.Intersect(pointLine, intLoc);
