@@ -207,7 +207,7 @@ int main(void) {
   Geom grid;
   grid.begin(GL_LINES);
   grid.color(0.90f, 0.90f, 0.90f);
-  static const int gridsize = 17;  // vertical or horizontal size odd
+  static const int gridsize = 17;  // vertical or horizontal size *odd*
   static const float s = 0.25f;    // spacing of lines
   for (int i = 0; i < gridsize; i++) {
     float shift = (gridsize / 2) * -1 * s + i * s;
@@ -221,13 +221,13 @@ int main(void) {
 
   float sqrDime = float(gridsize / 2) * s;
   float sqrSize = float((gridsize - 1) / 2);
+  float side = float((gridsize - 1) * s);
 
   Square squ;
-  squ.build(sqrDime, sqrSize);
+  squ.build(sqrDime, sqrSize, side);
   squ.obj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
   squ.obj.shiny = 40.0f;
   squ.obj.tex = check;
-  squ.obj.modelPose.r = Quaternionf(Vec3f(1, 0, 0), ToRadians(45.0f));
 
   Planef ground(Vec3f(0, 1, 0), 0.0f);
 
@@ -284,7 +284,7 @@ int main(void) {
 
   Geom ray;
   Sphere intPoint;
-  intPoint.build(0.005f, Vec3f(0.9, 0.0, 0.7));
+  intPoint.build(0.015f, Vec3f(0.9, 0.0, 0.7));
 
   while (!glfwWindowShouldClose(window)) {
     if (drag) {
@@ -342,8 +342,6 @@ int main(void) {
       ray.color(1.0f, 1.0f, 0.0f);
       ray.position(farInWorld.x, farInWorld.y, farInWorld.z);
       ray.end();
-      // printf("Near Coords: x;%f\ty;%f\tz;%f\n", nearInWorld.x, nearInWorld.y, nearInWorld.z);
-      // printf("Far  Coords: x;%f\ty;%f\tz;%f\n", farInWorld.x, farInWorld.y, farInWorld.z);
       Vec3f nearInWorld3 = Vec3f(&nearInWorld.x);
       Vec3f farInWorld3 = Vec3f(&farInWorld.x);
       bool lInter = light.sphereInter(nearInWorld3, farInWorld3);
@@ -354,16 +352,16 @@ int main(void) {
       if (sInter) {
         printf("Intersected sphere\n");
       }
-      Planef groundInWorld = ground;
-      groundInWorld.Transform(squ.obj.modelPose.GetMatrix4());
-      Linef pointLine(nearInWorld3, farInWorld3);
       Vec3f intLoc;
-      groundInWorld.Intersect(pointLine, intLoc);
-      intPoint.obj.modelPose.t = intLoc;
+      bool hit = squ.intersect(nearInWorld3, farInWorld3, intLoc);
+      if (hit) {
+        intPoint.obj.modelPose.t = intLoc;
+        printf("intLoc: %.3f, %.3f, %.3f\n", intLoc.x, intLoc.y, intLoc.z);
+      }
       clickRay = false;
-      float* f = &groundInWorld.planenormal.x;
-      printf("Plane normal: %.3f, %.3f, %.3f \t Distance: %.3f\n", f[0], f[1], f[2], f[3]);
-      printf("intLoc: %.3f, %.3f, %.3f\n", intLoc.x, intLoc.y, intLoc.z);
+      // float* f = &groundInWorld.planenormal.x;
+      // printf("Plane normal: %.3f, %.3f, %.3f \t Distance: %.3f\n", f[0], f[1], f[2], f[3]);
+      // printf("intLoc: %.3f, %.3f, %.3f\n", intLoc.x, intLoc.y, intLoc.z);
     }
 
     ray.draw(scene, program);
