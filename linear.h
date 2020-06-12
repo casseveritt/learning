@@ -2026,7 +2026,9 @@ class Plane {
   }
 
   T Distance(const Vec3<T>& point) const {
-    return planenormal.Dot(point - planenormal * planedistance);
+    Vec4<T> pl(planenormal.x, planenormal.y, planenormal.z, -planedistance);
+    Vec4<T> pt(point.x, point.y, point.z, 1.0f);
+    return pl.Dot(pt);
   }
 
   const Vec3<T>& GetNormal() const {

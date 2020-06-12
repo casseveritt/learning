@@ -20,6 +20,7 @@ void Cube::appendSquare(Matrix4f m) {
 }
 
 void Cube::build(Matrix4f m) {
+  scale = m;
   Posef p;
 
   obj.begin(GL_TRIANGLES);
@@ -62,4 +63,57 @@ void Cube::build(Matrix4f m) {
 
 void Cube::draw(const Scene& scene, Prog p) {
   obj.draw(scene, p);
+}
+
+bool Cube::intersect(Vec3f p0, Vec3f p1) {
+  Matrix4f worldFromObj = obj.modelPose.GetMatrix4() * scale;
+  Matrix4f objFromWorld = worldFromObj.Inverted();
+  p0 = objFromWorld * p0;
+  p1 = objFromWorld * p1;
+  Planef x0(Vec3f(-1, 0, 0), -1.0f);
+  Planef x1(Vec3f(1, 0, 0), -1.0f);
+  Planef y0(Vec3f(0, -1, 0), -1.0f);
+  Planef y1(Vec3f(0, 1, 0), -1.0f);
+  Planef z0(Vec3f(0, 0, -1), -1.0f);  // All Pointed In
+  Planef z1(Vec3f(0, 0, 1), -1.0f);
+  Planef planes[] = {x0, x1, y0, y1, z0, z1};
+  bool success = true;
+  for (int i = 0; success && i < 6; i++) {
+    Planef& plane = planes[i];
+    // printf( "p0 = (%.3f, %.3f, %.3f)\n", p0.x, p0.y, p0.z);
+    // printf( "p1 = (%.3f, %.3f, %.3f)\n", p1.x, p1.y, p1.z);
+    float d0 = plane.Distance(p0);
+    float d1 = plane.Distance(p1);
+    // printf("Before d0: %.3f\td1: %.3f\n", d0, d1);
+    if (d0 < 0 && d1 < 0) {
+      success = false;
+      break;
+    } else if (d0 > 0 && d1 > 0) {
+      // printf("\n");
+      continue;
+    }
+    bool swapped = (d1 < 0);
+    if (swapped) {
+      std::swap(d0, d1);
+      std::swap(p0, p1);
+    }
+    float f = d1 / (d1 - d0);
+    Vec3f p = p0 * f + p1 * (1.0 - f);
+    p0 = p;
+    if (swapped) {
+      std::swap(d0, d1);
+      std::swap(p0, p1);
+    }
+    // printf( "p0 = (%.3f, %.3f, %.3f)\n", p0.x, p0.y, p0.z);
+    // printf( "p1 = (%.3f, %.3f, %.3f)\n", p1.x, p1.y, p1.z);
+    d0 = plane.Distance(p0);
+    d1 = plane.Distance(p1);
+    // printf("After d0: %.3f\td1: %.3f\n\n", d0, d1);
+  }
+
+  if (success) {
+    printf("p0 = (%.3f, %.3f, %.3f)\n", p0.x, p0.y, p0.z);
+    printf("p1 = (%.3f, %.3f, %.3f)\n", p1.x, p1.y, p1.z);
+  }
+  return success;
 }

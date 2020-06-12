@@ -358,6 +358,11 @@ int main(void) {
         intPoint.obj.modelPose.t = intLoc;
         printf("intLoc: %.3f, %.3f, %.3f\n", intLoc.x, intLoc.y, intLoc.z);
       }
+      hit = false;
+      hit = cube.intersect(nearInWorld3, farInWorld3);
+      if (hit) {
+        printf("Hit\n");
+      }
       clickRay = false;
       // float* f = &groundInWorld.planenormal.x;
       // printf("Plane normal: %.3f, %.3f, %.3f \t Distance: %.3f\n", f[0], f[1], f[2], f[3]);
