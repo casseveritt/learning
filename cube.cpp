@@ -80,16 +80,12 @@ bool Cube::intersect(Vec3f p0, Vec3f p1) {
   bool success = true;
   for (int i = 0; success && i < 6; i++) {
     Planef& plane = planes[i];
-    // printf( "p0 = (%.3f, %.3f, %.3f)\n", p0.x, p0.y, p0.z);
-    // printf( "p1 = (%.3f, %.3f, %.3f)\n", p1.x, p1.y, p1.z);
     float d0 = plane.Distance(p0);
     float d1 = plane.Distance(p1);
-    // printf("Before d0: %.3f\td1: %.3f\n", d0, d1);
     if (d0 < 0 && d1 < 0) {
       success = false;
       break;
     } else if (d0 > 0 && d1 > 0) {
-      // printf("\n");
       continue;
     }
     bool swapped = (d1 < 0);
@@ -104,16 +100,8 @@ bool Cube::intersect(Vec3f p0, Vec3f p1) {
       std::swap(d0, d1);
       std::swap(p0, p1);
     }
-    // printf( "p0 = (%.3f, %.3f, %.3f)\n", p0.x, p0.y, p0.z);
-    // printf( "p1 = (%.3f, %.3f, %.3f)\n", p1.x, p1.y, p1.z);
     d0 = plane.Distance(p0);
     d1 = plane.Distance(p1);
-    // printf("After d0: %.3f\td1: %.3f\n\n", d0, d1);
-  }
-
-  if (success) {
-    printf("p0 = (%.3f, %.3f, %.3f)\n", p0.x, p0.y, p0.z);
-    printf("p1 = (%.3f, %.3f, %.3f)\n", p1.x, p1.y, p1.z);
   }
   return success;
 }

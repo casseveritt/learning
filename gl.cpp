@@ -285,6 +285,7 @@ int main(void) {
   Geom ray;
   Sphere intPoint;
   intPoint.build(0.015f, Vec3f(0.9, 0.0, 0.7));
+  bool planeIntersect = false;
 
   while (!glfwWindowShouldClose(window)) {
     if (drag) {
@@ -344,24 +345,27 @@ int main(void) {
       ray.end();
       Vec3f nearInWorld3 = Vec3f(&nearInWorld.x);
       Vec3f farInWorld3 = Vec3f(&farInWorld.x);
-      bool lInter = light.sphereInter(nearInWorld3, farInWorld3);
-      bool sInter = sph.sphereInter(nearInWorld3, farInWorld3);
-      if (lInter) {
+      if (light.sphereInter(nearInWorld3, farInWorld3)) {
         printf("Intersected light\n");
       }
-      if (sInter) {
+      if (sph.sphereInter(nearInWorld3, farInWorld3)) {
         printf("Intersected sphere\n");
       }
       Vec3f intLoc;
-      bool hit = squ.intersect(nearInWorld3, farInWorld3, intLoc);
-      if (hit) {
+      if (squ.intersect(nearInWorld3, farInWorld3, intLoc)) {
+        planeIntersect = true;
         intPoint.obj.modelPose.t = intLoc;
-        printf("intLoc: %.3f, %.3f, %.3f\n", intLoc.x, intLoc.y, intLoc.z);
+        // printf("intLoc: %.3f, %.3f, %.3f\n", intLoc.x, intLoc.y, intLoc.z);
+      } else {
+        planeIntersect = false;
       }
-      hit = false;
-      hit = cube.intersect(nearInWorld3, farInWorld3);
-      if (hit) {
+      if (cube.intersect(nearInWorld3, farInWorld3)) {
+        printf("Intersected cube\n");
+      }
+      if (tor.intersect(nearInWorld3, farInWorld3)) {
         printf("Hit\n");
+      } else {
+        printf("No Hit\n");
       }
       clickRay = false;
       // float* f = &groundInWorld.planenormal.x;
@@ -370,12 +374,14 @@ int main(void) {
     }
 
     ray.draw(scene, program);
-    intPoint.draw(scene, program);
 
     if (scene.camPose.t.y <= 0.0f) {
       grid.draw(scene, program);
     } else {
       squ.draw(scene, litTexProgram);
+    }
+    if (planeIntersect) {
+      intPoint.draw(scene, program);
     }
     cube.draw(scene, litTexProgram);
     sph.draw(scene, litTexProgram);

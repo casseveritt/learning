@@ -4,6 +4,8 @@ using namespace r3;
 
 void Torus::build(float rad1, float rad2) {
   std::vector<Vec3f> torus;
+  bigr = rad1;
+  littler = rad2;
   for (int i = 0; i < 37; i++) {  // Degrees
     float tr = ToRadians(i * 10.0f);
     torus.push_back(Vec3f(sin(tr) * rad2 + rad1, cos(tr) * rad2, 0.0));
@@ -48,4 +50,42 @@ void Torus::build(float rad1, float rad2) {
 
 void Torus::draw(const Scene& scene, Prog p) {
   obj.draw(scene, p);
+}
+
+float Torus::eval(Vec3f p0) {
+  Matrix4f objFromWorld = obj.modelPose.GetMatrix4().Inverted();
+  p0 = objFromWorld * p0;
+  float brSqr = bigr * bigr;
+  float lrSqr = littler * littler;
+  float x2 = p0.x * p0.x;
+  float y2 = p0.y * p0.y;
+  float z2 = p0.z * p0.z;
+  float a = x2 + y2 + z2 + brSqr - lrSqr;
+  float b = 4 * brSqr * (x2 + z2);
+  float c = a * a - b;
+  return c;
+}
+
+bool Torus::intersect(Vec3f p0, Vec3f p1) {
+  Vec3f rayDir = (p1 - p0).Normalized();
+  float t = 0;
+  float prev_f = 0.0f;
+  for (int i = 0; i < 50; i++) {
+    float f = eval(p0 + t * rayDir);
+    const float epsilon = 0.01f;
+    float f1 = eval(p0 + (rayDir * (t + epsilon)));
+    float dfdt = (f1 - f) / epsilon;
+    if (i == 0) {
+      prev_f = f;
+    }
+    // printf("f(%.3f): %.3f\tdfdt: %.3f\n", t, f, dfdt);
+    t += (f / 2) / -dfdt;
+    if (fabs(f) <= 0.001f) {
+      return true;
+    }
+    if (prev_f < f) {
+      break;
+    }
+  }
+  return false;
 }
