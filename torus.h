@@ -21,5 +21,5 @@ class Torus {
 
   bool intersect(Vec3f p0, Vec3f p1);
 
-  bool directIntersect(Vec3f p0, Vec3f p1);
+  bool directIntersect(Vec3f p0, Vec3f p1, Vec3f& intersection);
 };

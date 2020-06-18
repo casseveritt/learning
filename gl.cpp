@@ -285,7 +285,7 @@ int main(void) {
   Geom ray;
   Sphere intPoint;
   intPoint.build(0.015f, Vec3f(0.9, 0.0, 0.7));
-  bool planeIntersect = false;
+  bool intersect = false;
 
   while (!glfwWindowShouldClose(window)) {
     if (drag) {
@@ -338,9 +338,9 @@ int main(void) {
       Vec4f nearInWorld = scene.camPose.GetMatrix4() * nearInCam;
       Vec4f farInWorld = scene.camPose.GetMatrix4() * farInCam;
       ray.begin(GL_LINES);
-      ray.color(0.0f, 0.0f, 1.0f);
+      ray.color(0.0f, 1.0f, 0.0f);
       ray.position(nearInWorld.x, nearInWorld.y, nearInWorld.z);
-      ray.color(1.0f, 1.0f, 0.0f);
+      ray.color(0.0f, 1.0f, 0.0f);
       ray.position(farInWorld.x, farInWorld.y, farInWorld.z);
       ray.end();
       Vec3f nearInWorld3 = Vec3f(&nearInWorld.x);
@@ -353,26 +353,23 @@ int main(void) {
       }
       Vec3f intLoc;
       if (squ.intersect(nearInWorld3, farInWorld3, intLoc)) {
-        planeIntersect = true;
-        intPoint.obj.modelPose.t = intLoc;
         // printf("intLoc: %.3f, %.3f, %.3f\n", intLoc.x, intLoc.y, intLoc.z);
-      } else {
-        planeIntersect = false;
       }
       if (cube.intersect(nearInWorld3, farInWorld3)) {
         printf("Intersected cube\n");
       }
-      if (tor.intersect(nearInWorld3, farInWorld3)) {
+      /*if (tor.intersect(nearInWorld3, farInWorld3)) {
         printf("Intersected torus\n");
-      }
-      if (tor.directIntersect(nearInWorld3, farInWorld3)) {
+      }*/
+      if (tor.directIntersect(nearInWorld3, farInWorld3, intLoc)) {
+        intersect = true;
+        intPoint.obj.modelPose.t = intLoc;
         printf("Directly intersected torus\n");
+      } else {
+        intersect = false;
       }
 
       clickRay = false;
-      // float* f = &groundInWorld.planenormal.x;
-      // printf("Plane normal: %.3f, %.3f, %.3f \t Distance: %.3f\n", f[0], f[1], f[2], f[3]);
-      // printf("intLoc: %.3f, %.3f, %.3f\n", intLoc.x, intLoc.y, intLoc.z);
     }
 
     ray.draw(scene, program);
@@ -382,7 +379,7 @@ int main(void) {
     } else {
       squ.draw(scene, litTexProgram);
     }
-    if (planeIntersect) {
+    if (intersect) {
       intPoint.draw(scene, program);
     }
     cube.draw(scene, litTexProgram);

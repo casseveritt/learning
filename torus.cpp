@@ -90,52 +90,94 @@ bool Torus::intersect(Vec3f p0, Vec3f p1) {
   return false;
 }
 
-bool Torus::directIntersect(Vec3f p0, Vec3f p1) {
+bool Torus::directIntersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
   bool out;
   Matrix4f objFromWorld = obj.modelPose.GetMatrix4().Inverted();
   p0 = objFromWorld * p0;
   p1 = objFromWorld * p1;
   Vec3f l = (p1 - p0).Normalized();
-  float R = bigr;
-  float r = littler;
-  float g = Dot(l, l);
-  float h = 2 * Dot(l, p0);
-  float k = Dot(p0, p0) + (R * R) - (r * r);
+  double R = bigr;
+  double r = littler;
+  double g = Dot(l, l);
+  double h = 2 * Dot(l, p0);
+  double k = Dot(p0, p0) + (R * R) - (r * r);
   // Coefficients
-  float a = g * g;
-  float b = 2 * g * h;
-  float c = (2 * g * k) + (h * h);
-  float d = 2 * h * k;
-  float e = k * k;
+  double a = g * g;
+  double b = 2 * g * h;
+  double c = (2 * g * k) + (h * h);
+  double d = 2 * h * k;
+  double e = k * k;
 
   Vec3f l2 = Vec3f(l.x, 0.0f, l.z);
   Vec3f p2 = Vec3f(p0.x, 0.0f, p0.z);
 
-  float m = Dot(l2, l2);
-  float n = 2 * Dot(l2, p2);
-  float p = Dot(p2, p2);
+  double m = Dot(l2, l2);
+  double n = 2 * Dot(l2, p2);
+  double p = Dot(p2, p2);
 
   c += m * -4 * R * R;
   d += n * -4 * R * R;
   e += p * -4 * R * R;
 
-  // printf("%.3fx^4 + %.3fx^3 + %.3fx^2 + %.3fx + %.3f from x = 0 to 10\n", a, b, c, d, e);
+  printf("%.3lfx^4 + %.3lfx^3 + %.3lfx^2 + %.3lfx + %.3lf from x = 0 to 10\n", a, b, c, d, e);
 
-  float delta =
-      256 * a * a * a * e * e * e - 192 * a * a * b * d * e * e - 128 * a * a * c * c * e * e + 144 * a * a * c * d * d * e;
-  delta += -27 * a * a * d * d * d * d + 144 * a * b * b * c * e * e - 6 * a * b * b * d * d * e - 80 * a * b * c * c * d * e;
-  delta += 18 * a * b * c * d * d * d + 16 * a * c * c * c * c * e - 4 * a * c * c * c * d * d - 27 * b * b * b * b * e * e;
-  delta += 18 * b * b * b * c * d * e - 4 * b * b * b * d * d * d - 4 * b * b * c * c * c * e + b * b * c * c * d * d;
-  float P = 8 * a * c - 3 * b * b;
-  R = b * b * b + 8 * d * a * a - 4 * a * b * c;
-  float delta0 = c * c - 3 * b * d + 12 * a * e;
-  float D = 64 * a * a * a * e - 16 * a * a * c * c + 16 * a * b * b * c - 16 * a * a * b * d - 3 * b * b * b * b;
+  double a3 = a * a * a;
+  double a2 = a * a;
+  double b4 = b * b * b * b;
+  double b3 = b * b * b;
+  double b2 = b * b;
+  double c4 = c * c * c * c;
+  double c3 = c * c * c;
+  double c2 = c * c;
+  double d4 = d * d * d * d;
+  double d3 = d * d * d;
+  double d2 = d * d;
+  double e3 = e * e * e;
+  double e2 = e * e;
+
+  double delta = 256 * a3 * e3 - 192 * a2 * b * d * e2 - 128 * a2 * c2 * e2 + 144 * a2 * c * d2 * e;
+  delta += -27 * a2 * d4 + 144 * a * b2 * c * e2 - 6 * a * b2 * d2 * e - 80 * a * b * c2 * d * e;
+  delta += 18 * a * b * c * d3 + 16 * a * c4 * e - 4 * a * c3 * d2 - 27 * b4 * e2;
+  delta += 18 * b3 * c * d * e - 4 * b3 * d3 - 4 * b2 * c3 * e + b2 * c2 * d2;
+  double P = 8 * a * c - 3 * b2;
+  R = b3 + 8 * d * a2 - 4 * a * b * c;
+  double delta0 = c2 - 3.0 * b * d + 12.0 * a * e;
+  double delta1 = 2.0 * c3 - 9.0 * b * c * d + 27.0 * b2 * e + 27.0 * a * d2 - 72.0 * a * c * e;
+  double D = 64 * a3 * e - 16 * a2 * c2 + 16 * a * b2 * c - 16 * a2 * b * d - 3 * b4;
+  p = (P / (8 * a2));
+  double q = (R / (8 * a3));
+  double y = (delta1 * delta1 - 4 * delta0 * delta0 * delta0);
+  y = fabs(y);
+  double qrt = pow(y, 0.5f);
+  double Q = pow(((delta1 + qrt) / 2.0), 1.0 / 3);
+  double S = 0.5 * pow((-2.0 / 3.0) * p + (1.0 / (3.0 * a)) * (Q + delta0 / Q), 0.5);
+  double rt0 = pow(-4 * S * S - 2 * p + (q / S), 0.5);
+  double rt1 = pow(-4 * S * S - 2 * p - (q / S), 0.5);
+  double z0 = -(b / (4 * a)) - S + 0.5 * rt0;
+  double z1 = -(b / (4 * a)) - S - 0.5 * rt0;
+  double z2 = -(b / (4 * a)) + S + 0.5 * rt1;
+  double z3 = -(b / (4 * a)) + S - 0.5 * rt1;
+
+  printf("\n");
+
+  printf("y: %lf\n", y);
+
+  printf("Delta1: %lf\tDelta0: %lf\n", delta1, delta0);
+
+  printf("qrt: %lf\n", qrt);
+
+  printf("Roots: %lf, %lf, %lf, %lf\n", z0, z1, z2, z3);
+
+  printf("Delta: %lf\tP: %lf\tD: %lf\n", delta, P, D);
+
+  printf("y/-27: %lf\n", y / -27);
 
   if (delta < 0) {
     out = true;
   }
   if (delta > 0) {
     if (P < 0 && D < 0) {
+      printf("Expect 4 Real Distinct Roots\n");
       out = true;
     } else {
       out = false;
