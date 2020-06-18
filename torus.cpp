@@ -91,6 +91,7 @@ bool Torus::intersect(Vec3f p0, Vec3f p1) {
 }
 
 bool Torus::directIntersect(Vec3f p0, Vec3f p1) {
+  bool out;
   Matrix4f objFromWorld = obj.modelPose.GetMatrix4().Inverted();
   p0 = objFromWorld * p0;
   p1 = objFromWorld * p1;
@@ -118,6 +119,50 @@ bool Torus::directIntersect(Vec3f p0, Vec3f p1) {
   d += n * -4 * R * R;
   e += p * -4 * R * R;
 
-  printf("%.3fx^4 + %.3fx^3 + %.3fx^2 + %.3fx + %.3f from x = 0 to 10\n", a, b, c, d, e);
-  return true;
+  // printf("%.3fx^4 + %.3fx^3 + %.3fx^2 + %.3fx + %.3f from x = 0 to 10\n", a, b, c, d, e);
+
+  float delta =
+      256 * a * a * a * e * e * e - 192 * a * a * b * d * e * e - 128 * a * a * c * c * e * e + 144 * a * a * c * d * d * e;
+  delta += -27 * a * a * d * d * d * d + 144 * a * b * b * c * e * e - 6 * a * b * b * d * d * e - 80 * a * b * c * c * d * e;
+  delta += 18 * a * b * c * d * d * d + 16 * a * c * c * c * c * e - 4 * a * c * c * c * d * d - 27 * b * b * b * b * e * e;
+  delta += 18 * b * b * b * c * d * e - 4 * b * b * b * d * d * d - 4 * b * b * c * c * c * e + b * b * c * c * d * d;
+  float P = 8 * a * c - 3 * b * b;
+  R = b * b * b + 8 * d * a * a - 4 * a * b * c;
+  float delta0 = c * c - 3 * b * d + 12 * a * e;
+  float D = 64 * a * a * a * e - 16 * a * a * c * c + 16 * a * b * b * c - 16 * a * a * b * d - 3 * b * b * b * b;
+
+  if (delta < 0) {
+    out = true;
+  }
+  if (delta > 0) {
+    if (P < 0 && D < 0) {
+      out = true;
+    } else {
+      out = false;
+    }
+  }
+  if (delta == 0) {
+    if (P < 0 && D < 0 && delta0 != 0) {
+      out = true;
+    }
+    if (D > 0 || (P > 0 && (D != 0 || R != 0))) {
+      out = true;
+    }
+    if (delta0 == 0 && D != 0) {
+      out = true;
+    }
+    if (D == 0) {
+      if (P < 0) {
+        out = true;
+      }
+      if (P > 0 && R == 0) {
+        out = true;
+      }
+      if (delta0 == 0) {
+        out = true;
+      }
+    }
+  }
+
+  return out;
 }

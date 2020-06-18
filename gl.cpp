@@ -362,9 +362,11 @@ int main(void) {
       if (cube.intersect(nearInWorld3, farInWorld3)) {
         printf("Intersected cube\n");
       }
-      tor.directIntersect(nearInWorld3, farInWorld3);
       if (tor.intersect(nearInWorld3, farInWorld3)) {
         printf("Intersected torus\n");
+      }
+      if (tor.directIntersect(nearInWorld3, farInWorld3)) {
+        printf("Directly intersected torus\n");
       }
 
       clickRay = false;
