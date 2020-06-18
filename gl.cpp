@@ -362,9 +362,11 @@ int main(void) {
       if (cube.intersect(nearInWorld3, farInWorld3)) {
         printf("Intersected cube\n");
       }
+      tor.directIntersect(nearInWorld3, farInWorld3);
       if (tor.intersect(nearInWorld3, farInWorld3)) {
         printf("Intersected torus\n");
       }
+
       clickRay = false;
       // float* f = &groundInWorld.planenormal.x;
       // printf("Plane normal: %.3f, %.3f, %.3f \t Distance: %.3f\n", f[0], f[1], f[2], f[3]);

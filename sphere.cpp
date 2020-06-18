@@ -52,7 +52,7 @@ void Sphere::draw(const Scene& scene, Prog p) {
 bool Sphere::sphereInter(Vec3f rayOrigin, Vec3f rayEnd) {
   Vec3f rayDir = (rayEnd - rayOrigin).Normalized();
   Vec3f ce = obj.modelPose.t;
-  Vec3f oc = rayOrigin - ce;
+  Vec3f oc = rayOrigin - ce;  // ray origin in object space
   float a = Dot(rayDir, rayDir);
   float b = 2 * Dot(rayDir, oc);
   float c = Dot(oc, oc) - r * r;

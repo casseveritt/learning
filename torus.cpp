@@ -79,7 +79,6 @@ bool Torus::intersect(Vec3f p0, Vec3f p1) {
     if (i == 0) {
       prev_f = f;
     }
-    // printf("f(%.3f): %.3f\tdfdt: %.3f\n", t, f, dfdt);
     t += (f / 2) / -dfdt;
     if (fabs(f) <= 0.001f) {
       return true;
@@ -89,4 +88,36 @@ bool Torus::intersect(Vec3f p0, Vec3f p1) {
     }
   }
   return false;
+}
+
+bool Torus::directIntersect(Vec3f p0, Vec3f p1) {
+  Matrix4f objFromWorld = obj.modelPose.GetMatrix4().Inverted();
+  p0 = objFromWorld * p0;
+  p1 = objFromWorld * p1;
+  Vec3f l = (p1 - p0).Normalized();
+  float R = bigr;
+  float r = littler;
+  float g = Dot(l, l);
+  float h = 2 * Dot(l, p0);
+  float k = Dot(p0, p0) + (R * R) - (r * r);
+  // Coefficients
+  float a = g * g;
+  float b = 2 * g * h;
+  float c = (2 * g * k) + (h * h);
+  float d = 2 * h * k;
+  float e = k * k;
+
+  Vec3f l2 = Vec3f(l.x, 0.0f, l.z);
+  Vec3f p2 = Vec3f(p0.x, 0.0f, p0.z);
+
+  float m = Dot(l2, l2);
+  float n = 2 * Dot(l2, p2);
+  float p = Dot(p2, p2);
+
+  c += m * -4 * R * R;
+  d += n * -4 * R * R;
+  e += p * -4 * R * R;
+
+  printf("%.3fx^4 + %.3fx^3 + %.3fx^2 + %.3fx + %.3f from x = 0 to 10\n", a, b, c, d, e);
+  return true;
 }
