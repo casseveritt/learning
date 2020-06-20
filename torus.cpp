@@ -119,7 +119,7 @@ bool Torus::directIntersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
   d += n * -4 * R * R;
   e += p * -4 * R * R;
 
-  printf("%.3lfx^4 + %.3lfx^3 + %.3lfx^2 + %.3lfx + %.3lf from x = 0 to 10\n", a, b, c, d, e);
+  // printf("%.3lfx^4 + %.3lfx^3 + %.3lfx^2 + %.3lfx + %.3lf from x = 0 to 10\n", a, b, c, d, e);
 
   double a3 = a * a * a;
   double a2 = a * a;
@@ -135,10 +135,10 @@ bool Torus::directIntersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
   double e3 = e * e * e;
   double e2 = e * e;
 
-  double delta = 256 * a3 * e3 - 192 * a2 * b * d * e2 - 128 * a2 * c2 * e2 + 144 * a2 * c * d2 * e;
+  double delta; /*= 256 * a3 * e3 - 192 * a2 * b * d * e2 - 128 * a2 * c2 * e2 + 144 * a2 * c * d2 * e;
   delta += -27 * a2 * d4 + 144 * a * b2 * c * e2 - 6 * a * b2 * d2 * e - 80 * a * b * c2 * d * e;
   delta += 18 * a * b * c * d3 + 16 * a * c4 * e - 4 * a * c3 * d2 - 27 * b4 * e2;
-  delta += 18 * b3 * c * d * e - 4 * b3 * d3 - 4 * b2 * c3 * e + b2 * c2 * d2;
+  delta += 18 * b3 * c * d * e - 4 * b3 * d3 - 4 * b2 * c3 * e + b2 * c2 * d2;*/
   double P = 8 * a * c - 3 * b2;
   R = b3 + 8 * d * a2 - 4 * a * b * c;
   double delta0 = c2 - 3.0 * b * d + 12.0 * a * e;
@@ -147,37 +147,49 @@ bool Torus::directIntersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
   p = (P / (8 * a2));
   double q = (R / (8 * a3));
   double y = (delta1 * delta1 - 4 * delta0 * delta0 * delta0);
-  y = fabs(y);
+  delta = y / -27;
   double qrt = pow(y, 0.5f);
   double Q = pow(((delta1 + qrt) / 2.0), 1.0 / 3);
-  double S = 0.5 * pow((-2.0 / 3.0) * p + (1.0 / (3.0 * a)) * (Q + delta0 / Q), 0.5);
+  double S;
+  if (delta > 0) {
+    double fi = acos((delta1) / (2 * sqrt(delta0 * delta0 * delta0)));
+    S = 0.5f * sqrt(-(2.0f / 3.0f) * p + (2.0f / (3.0f * a)) * sqrt(delta0) * cos(fi / 3.0f));
+  } else {
+    S = 0.5 * pow((-2.0 / 3.0) * p + (1.0 / (3.0 * a)) * (Q + delta0 / Q), 0.5);
+  }
   double rt0 = pow(-4 * S * S - 2 * p + (q / S), 0.5);
   double rt1 = pow(-4 * S * S - 2 * p - (q / S), 0.5);
   double z0 = -(b / (4 * a)) - S + 0.5 * rt0;
   double z1 = -(b / (4 * a)) - S - 0.5 * rt0;
   double z2 = -(b / (4 * a)) + S + 0.5 * rt1;
   double z3 = -(b / (4 * a)) + S - 0.5 * rt1;
+  double z = 1000.0f;
+  if (z0 <= z) {
+    z = z0;
+  }
+  if (z1 <= z) {
+    z = z1;
+  }
+  if (z2 <= z) {
+    z = z2;
+  }
+  if (z3 <= z) {
+    z = z3;
+  }
 
-  printf("\n");
+  // printf("Roots: %lf, %lf, %lf, %lf\n", z0, z1, z2, z3);
 
-  printf("y: %lf\n", y);
-
-  printf("Delta1: %lf\tDelta0: %lf\n", delta1, delta0);
-
-  printf("qrt: %lf\n", qrt);
-
-  printf("Roots: %lf, %lf, %lf, %lf\n", z0, z1, z2, z3);
-
-  printf("Delta: %lf\tP: %lf\tD: %lf\n", delta, P, D);
-
-  printf("y/-27: %lf\n", y / -27);
+  if (z == 0.0f) {
+    printf("No closest root\n");
+  } else {
+    printf("Closest root: %lf\n", z);
+  }
 
   if (delta < 0) {
     out = true;
   }
   if (delta > 0) {
     if (P < 0 && D < 0) {
-      printf("Expect 4 Real Distinct Roots\n");
       out = true;
     } else {
       out = false;
