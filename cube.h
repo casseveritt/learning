@@ -17,5 +17,5 @@ class Cube {
 
   void draw(const Scene& scene, Prog p);
 
-  bool intersect(Vec3f p0, Vec3f p1);
+  bool intersect(Vec3f p0, Vec3f p1, Vec3f& intersection);
 };

@@ -49,7 +49,7 @@ void Sphere::draw(const Scene& scene, Prog p) {
   obj.draw(scene, p);
 }
 
-bool Sphere::sphereInter(Vec3f rayOrigin, Vec3f rayEnd) {
+bool Sphere::sphereInter(Vec3f rayOrigin, Vec3f rayEnd, Vec3f& intersection) {
   Vec3f rayDir = (rayEnd - rayOrigin).Normalized();
   Vec3f ce = obj.modelPose.t;
   Vec3f oc = rayOrigin - ce;  // ray origin in object space
@@ -57,7 +57,18 @@ bool Sphere::sphereInter(Vec3f rayOrigin, Vec3f rayEnd) {
   float b = 2 * Dot(rayDir, oc);
   float c = Dot(oc, oc) - r * r;
   float discr = b * b - 4 * a * c;
+  float r1 = (-b - sqrt(discr)) / (2 * a);
+  float r2 = (-b + sqrt(discr)) / (2 * a);
+  float r = 1000.0f;
+  if (r1 < r) {
+    r = r1;
+  }
+  if (r2 < r) {
+    r = r2;
+  }
   if (discr >= 0.0f) {
+    intersection = rayOrigin + rayDir * r;
+    // intersection = obj.modelPose.GetMatrix4() * intersection;
     return true;
   } else {
     return false;

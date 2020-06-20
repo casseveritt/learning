@@ -345,26 +345,53 @@ int main(void) {
       ray.end();
       Vec3f nearInWorld3 = Vec3f(&nearInWorld.x);
       Vec3f farInWorld3 = Vec3f(&farInWorld.x);
-      if (light.sphereInter(nearInWorld3, farInWorld3)) {
-        printf("Intersected light\n");
-      }
-      if (sph.sphereInter(nearInWorld3, farInWorld3)) {
-        printf("Intersected sphere\n");
-      }
       Vec3f intLoc;
-      if (squ.intersect(nearInWorld3, farInWorld3, intLoc)) {
-        // printf("intLoc: %.3f, %.3f, %.3f\n", intLoc.x, intLoc.y, intLoc.z);
+      Vec3f sphIntLoc;
+      Vec3f ligIntLoc;
+      Vec3f squIntLoc;
+      Vec3f cubeIntLoc;
+      Vec3f torIntLoc;
+
+      float distance = (farInWorld3 - nearInWorld3).Length();
+
+      if (light.sphereInter(nearInWorld3, farInWorld3, ligIntLoc)) {
+        if ((ligIntLoc - nearInWorld3).Length() < distance) {
+          distance = (ligIntLoc - nearInWorld3).Length();
+          intLoc = ligIntLoc;
+        }
       }
-      if (cube.intersect(nearInWorld3, farInWorld3)) {
-        printf("Intersected cube\n");
+      if (sph.sphereInter(nearInWorld3, farInWorld3, sphIntLoc)) {
+        if ((sphIntLoc - nearInWorld3).Length() < distance) {
+          distance = (sphIntLoc - nearInWorld3).Length();
+          intLoc = sphIntLoc;
+        }
+      }
+      if (squ.intersect(nearInWorld3, farInWorld3, squIntLoc)) {
+        if ((squIntLoc - nearInWorld3).Length() < distance) {
+          distance = (squIntLoc - nearInWorld3).Length();
+          intLoc = squIntLoc;
+        }
+      }
+      if (cube.intersect(nearInWorld3, farInWorld3, cubeIntLoc)) {
+        if ((cubeIntLoc - nearInWorld3).Length() < distance) {
+          distance = (cubeIntLoc - nearInWorld3).Length();
+          intLoc = cubeIntLoc;
+        }
       }
       /*if (tor.intersect(nearInWorld3, farInWorld3)) {
         printf("Intersected torus\n");
       }*/
-      if (tor.directIntersect(nearInWorld3, farInWorld3, intLoc)) {
+      if (tor.directIntersect(nearInWorld3, farInWorld3, torIntLoc)) {
+        if ((torIntLoc - nearInWorld3).Length() < distance) {
+          distance = (torIntLoc - nearInWorld3).Length();
+          intLoc = torIntLoc;
+        }
+      }
+
+      if (distance != (farInWorld3 - nearInWorld3).Length()) {
         intersect = true;
         intPoint.obj.modelPose.t = intLoc;
-        printf("Directly intersected torus\n");
+        printf("intLoc: %.3f, %.3f, %.3f\n", intLoc.x, intLoc.y, intLoc.z);
       } else {
         intersect = false;
       }

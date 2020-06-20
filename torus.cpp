@@ -126,14 +126,14 @@ bool Torus::directIntersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
   double b4 = b * b * b * b;
   double b3 = b * b * b;
   double b2 = b * b;
-  double c4 = c * c * c * c;
+  // double c4 = c * c * c * c;
   double c3 = c * c * c;
   double c2 = c * c;
-  double d4 = d * d * d * d;
-  double d3 = d * d * d;
+  // double d4 = d * d * d * d;
+  // double d3 = d * d * d;
   double d2 = d * d;
-  double e3 = e * e * e;
-  double e2 = e * e;
+  // double e3 = e * e * e;
+  // double e2 = e * e;
 
   double delta; /*= 256 * a3 * e3 - 192 * a2 * b * d * e2 - 128 * a2 * c2 * e2 + 144 * a2 * c * d2 * e;
   delta += -27 * a2 * d4 + 144 * a * b2 * c * e2 - 6 * a * b2 * d2 * e - 80 * a * b * c2 * d * e;
@@ -163,7 +163,7 @@ bool Torus::directIntersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
   double z1 = -(b / (4 * a)) - S - 0.5 * rt0;
   double z2 = -(b / (4 * a)) + S + 0.5 * rt1;
   double z3 = -(b / (4 * a)) + S - 0.5 * rt1;
-  double z = 1000.0f;
+  double z = 1000.0;
   if (z0 <= z) {
     z = z0;
   }
@@ -179,22 +179,26 @@ bool Torus::directIntersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
 
   // printf("Roots: %lf, %lf, %lf, %lf\n", z0, z1, z2, z3);
 
-  if (z == 0.0f) {
-    printf("No closest root\n");
-  } else {
+  if (z != 1000.0) {
     printf("Closest root: %lf\n", z);
   }
 
   if (delta < 0) {
+    intersection = p0 + l * z;
+    intersection = obj.modelPose.GetMatrix4() * intersection;
     out = true;
   }
   if (delta > 0) {
     if (P < 0 && D < 0) {
+      intersection = p0 + l * z;
+      intersection = obj.modelPose.GetMatrix4() * intersection;
       out = true;
     } else {
       out = false;
     }
   }
+  intersection = p0 + l * z;
+  intersection = obj.modelPose.GetMatrix4() * intersection;
   if (delta == 0) {
     if (P < 0 && D < 0 && delta0 != 0) {
       out = true;
