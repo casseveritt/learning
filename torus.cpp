@@ -64,7 +64,7 @@ float Torus::eval(Vec3f p0) {
   return c;
 }
 
-bool Torus::intersect(Vec3f p0, Vec3f p1) {
+/*bool Torus::intersect(Vec3f p0, Vec3f p1) {
   Vec3f rayDir = (p1 - p0).Normalized();
   Matrix4f objFromWorld = obj.modelPose.GetMatrix4().Inverted();
   p0 = objFromWorld * p0;
@@ -88,9 +88,9 @@ bool Torus::intersect(Vec3f p0, Vec3f p1) {
     }
   }
   return false;
-}
+}*/
 
-bool Torus::directIntersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
+bool Torus::intersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
   bool out;
   Matrix4f objFromWorld = obj.modelPose.GetMatrix4().Inverted();
   p0 = objFromWorld * p0;

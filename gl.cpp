@@ -29,6 +29,7 @@ Vec2d diffPos;
 bool mode1, clickRay;
 float rad = 2.5;
 float theta = 0.0;
+bool intersect = false;
 Scene scene;
 
 static void error_callback(int error, const char* description) {
@@ -83,6 +84,9 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
           clickRay = false;
         else
           clickRay = true;
+        break;
+      case GLFW_KEY_C:
+        intersect = false;
         break;
       default:
         break;
@@ -257,6 +261,7 @@ int main(void) {
 
   Sphere light;  // light
   light.build(0.03125f);
+  light.obj.modelPose.t = Vec3f(0.0f, 1.0f, 0.0f);
 
   std::vector<Vec3f> points;
   points.push_back(Vec3f(-1.0f, 0.0f, 1.0f));
@@ -285,7 +290,7 @@ int main(void) {
   Geom ray;
   Sphere intPoint;
   intPoint.build(0.015f, Vec3f(0.9, 0.0, 0.7));
-  bool intersect = false;
+  int hitID = 0;
 
   while (!glfwWindowShouldClose(window)) {
     if (drag) {
@@ -301,6 +306,28 @@ int main(void) {
     if (mode1) {
       rad += diffPos.x * 0.0125f;
       rad += diffPos.y * 0.0125f;
+    }
+    if (intersect) {
+      if (hitID == 1) {
+        light.obj.modelPose.t.x += diffPos.x * 0.0125f;
+        light.obj.modelPose.t.z += diffPos.y * 0.0125f;
+      }
+      if (hitID == 2) {
+        sph.obj.modelPose.t.x += diffPos.x * 0.0125f;
+        sph.obj.modelPose.t.z += diffPos.y * 0.0125f;
+      }
+      if (hitID == 3) {
+        squ.obj.modelPose.t.x += diffPos.x * 0.0125f;
+        squ.obj.modelPose.t.z += diffPos.y * 0.0125f;
+      }
+      if (hitID == 4) {
+        cube.obj.modelPose.t.x += diffPos.x * 0.0125f;
+        cube.obj.modelPose.t.z += diffPos.y * 0.0125f;
+      }
+      if (hitID == 5) {
+        tor.obj.modelPose.t.x += diffPos.x * 0.0125f;
+        tor.obj.modelPose.t.z += diffPos.y * 0.0125f;
+      }
     } else {
       scene.camPose.t.x = sin(theta) * rad;
       scene.camPose.t.z = cos(theta) * rad;
@@ -346,45 +373,43 @@ int main(void) {
       Vec3f nearInWorld3 = Vec3f(&nearInWorld.x);
       Vec3f farInWorld3 = Vec3f(&farInWorld.x);
       Vec3f intLoc;
-      Vec3f sphIntLoc;
-      Vec3f ligIntLoc;
-      Vec3f squIntLoc;
-      Vec3f cubeIntLoc;
-      Vec3f torIntLoc;
+      Vec3f objIntLoc;
 
       float distance = (farInWorld3 - nearInWorld3).Length();
 
-      if (light.sphereInter(nearInWorld3, farInWorld3, ligIntLoc)) {
-        if ((ligIntLoc - nearInWorld3).Length() < distance) {
-          distance = (ligIntLoc - nearInWorld3).Length();
-          intLoc = ligIntLoc;
+      if (light.sphereInter(nearInWorld3, farInWorld3, objIntLoc)) {
+        if ((objIntLoc - nearInWorld3).Length() < distance) {
+          distance = (objIntLoc - nearInWorld3).Length();
+          intLoc = objIntLoc;
+          hitID = 1;
         }
       }
-      if (sph.sphereInter(nearInWorld3, farInWorld3, sphIntLoc)) {
-        if ((sphIntLoc - nearInWorld3).Length() < distance) {
-          distance = (sphIntLoc - nearInWorld3).Length();
-          intLoc = sphIntLoc;
+      if (sph.sphereInter(nearInWorld3, farInWorld3, objIntLoc)) {
+        if ((objIntLoc - nearInWorld3).Length() < distance) {
+          distance = (objIntLoc - nearInWorld3).Length();
+          intLoc = objIntLoc;
+          hitID = 2;
         }
       }
-      if (squ.intersect(nearInWorld3, farInWorld3, squIntLoc)) {
-        if ((squIntLoc - nearInWorld3).Length() < distance) {
-          distance = (squIntLoc - nearInWorld3).Length();
-          intLoc = squIntLoc;
+      if (squ.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
+        if ((objIntLoc - nearInWorld3).Length() < distance) {
+          distance = (objIntLoc - nearInWorld3).Length();
+          intLoc = objIntLoc;
+          hitID = 3;
         }
       }
-      if (cube.intersect(nearInWorld3, farInWorld3, cubeIntLoc)) {
-        if ((cubeIntLoc - nearInWorld3).Length() < distance) {
-          distance = (cubeIntLoc - nearInWorld3).Length();
-          intLoc = cubeIntLoc;
+      if (cube.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
+        if ((objIntLoc - nearInWorld3).Length() < distance) {
+          distance = (objIntLoc - nearInWorld3).Length();
+          intLoc = objIntLoc;
+          hitID = 4;
         }
       }
-      /*if (tor.intersect(nearInWorld3, farInWorld3)) {
-        printf("Intersected torus\n");
-      }*/
-      if (tor.directIntersect(nearInWorld3, farInWorld3, torIntLoc)) {
-        if ((torIntLoc - nearInWorld3).Length() < distance) {
-          distance = (torIntLoc - nearInWorld3).Length();
-          intLoc = torIntLoc;
+      if (tor.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
+        if ((objIntLoc - nearInWorld3).Length() < distance) {
+          distance = (objIntLoc - nearInWorld3).Length();
+          intLoc = objIntLoc;
+          hitID = 5;
         }
       }
 
@@ -413,7 +438,7 @@ int main(void) {
     sph.draw(scene, litTexProgram);
     tor.draw(scene, litTexProgram);
 
-    light.obj.modelPose.t = scene.lightPose.t;
+    scene.lightPose.t = light.obj.modelPose.t;
     light.draw(scene, program);
 
     hull.draw(scene, program);
