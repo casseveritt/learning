@@ -119,8 +119,6 @@ bool Torus::intersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
   d += n * -4 * R * R;
   e += p * -4 * R * R;
 
-  // printf("%.3lfx^4 + %.3lfx^3 + %.3lfx^2 + %.3lfx + %.3lf from x = 0 to 10\n", a, b, c, d, e);
-
   double a3 = a * a * a;
   double a2 = a * a;
   double b4 = b * b * b * b;
@@ -176,8 +174,6 @@ bool Torus::intersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
   if (z3 <= z) {
     z = z3;
   }
-
-  // printf("Roots: %lf, %lf, %lf, %lf\n", z0, z1, z2, z3);
 
   if (z != 1000.0) {
     printf("Closest root: %lf\n", z);

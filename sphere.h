@@ -17,5 +17,5 @@ class Sphere {
 
   void draw(const Scene& scene, Prog p);
 
-  bool sphereInter(Vec3f rayOrigin, Vec3f rayEnd, Vec3f& intersection);
+  bool intersect(Vec3f rayOrigin, Vec3f rayEnd, Vec3f& intersection);
 };

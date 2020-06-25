@@ -290,7 +290,7 @@ int main(void) {
   Geom ray;
   Sphere intPoint;
   intPoint.build(0.015f, Vec3f(0.9, 0.0, 0.7));
-  int hitID = 0;
+  int hitID = -1;
 
   while (!glfwWindowShouldClose(window)) {
     if (drag) {
@@ -308,23 +308,24 @@ int main(void) {
       rad += diffPos.y * 0.0125f;
     }
     if (intersect) {
-      if (hitID == 1) {
+      if (hitID == 0) {
         light.obj.modelPose.t.x += diffPos.x * 0.0125f;
         light.obj.modelPose.t.z += diffPos.y * 0.0125f;
       }
-      if (hitID == 2) {
+      if (hitID == 1) {
         sph.obj.modelPose.t.x += diffPos.x * 0.0125f;
         sph.obj.modelPose.t.z += diffPos.y * 0.0125f;
       }
-      if (hitID == 3) {
+      if (hitID == 2) {
         squ.obj.modelPose.t.x += diffPos.x * 0.0125f;
         squ.obj.modelPose.t.z += diffPos.y * 0.0125f;
+        grid.modelPose.t = squ.obj.modelPose.t;
       }
-      if (hitID == 4) {
+      if (hitID == 3) {
         cube.obj.modelPose.t.x += diffPos.x * 0.0125f;
         cube.obj.modelPose.t.z += diffPos.y * 0.0125f;
       }
-      if (hitID == 5) {
+      if (hitID == 4) {
         tor.obj.modelPose.t.x += diffPos.x * 0.0125f;
         tor.obj.modelPose.t.z += diffPos.y * 0.0125f;
       }
@@ -377,39 +378,39 @@ int main(void) {
 
       float distance = (farInWorld3 - nearInWorld3).Length();
 
-      if (light.sphereInter(nearInWorld3, farInWorld3, objIntLoc)) {
+      if (light.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
+        if ((objIntLoc - nearInWorld3).Length() < distance) {
+          distance = (objIntLoc - nearInWorld3).Length();
+          intLoc = objIntLoc;
+          hitID = 0;
+        }
+      }
+      if (sph.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
         if ((objIntLoc - nearInWorld3).Length() < distance) {
           distance = (objIntLoc - nearInWorld3).Length();
           intLoc = objIntLoc;
           hitID = 1;
         }
       }
-      if (sph.sphereInter(nearInWorld3, farInWorld3, objIntLoc)) {
+      if (squ.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
         if ((objIntLoc - nearInWorld3).Length() < distance) {
           distance = (objIntLoc - nearInWorld3).Length();
           intLoc = objIntLoc;
           hitID = 2;
         }
       }
-      if (squ.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
+      if (cube.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
         if ((objIntLoc - nearInWorld3).Length() < distance) {
           distance = (objIntLoc - nearInWorld3).Length();
           intLoc = objIntLoc;
           hitID = 3;
         }
       }
-      if (cube.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
-        if ((objIntLoc - nearInWorld3).Length() < distance) {
-          distance = (objIntLoc - nearInWorld3).Length();
-          intLoc = objIntLoc;
-          hitID = 4;
-        }
-      }
       if (tor.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
         if ((objIntLoc - nearInWorld3).Length() < distance) {
           distance = (objIntLoc - nearInWorld3).Length();
           intLoc = objIntLoc;
-          hitID = 5;
+          hitID = 4;
         }
       }
 
