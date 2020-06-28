@@ -291,6 +291,7 @@ int main(void) {
   Sphere intPoint;
   intPoint.build(0.015f, Vec3f(0.9, 0.0, 0.7));
   int hitID = -1;
+  Vec3f intObjLoc;
 
   while (!glfwWindowShouldClose(window)) {
     if (drag) {
@@ -307,40 +308,60 @@ int main(void) {
       rad += diffPos.x * 0.0125f;
       rad += diffPos.y * 0.0125f;
     }
-    if (intersect) {
-      if (hitID == 0) {
-        light.obj.modelPose.t.x += diffPos.x * 0.0125f;
-        light.obj.modelPose.t.z += diffPos.y * 0.0125f;
-      }
-      if (hitID == 1) {
-        sph.obj.modelPose.t.x += diffPos.x * 0.0125f;
-        sph.obj.modelPose.t.z += diffPos.y * 0.0125f;
-      }
-      if (hitID == 2) {
-        squ.obj.modelPose.t.x += diffPos.x * 0.0125f;
-        squ.obj.modelPose.t.z += diffPos.y * 0.0125f;
-        grid.modelPose.t = squ.obj.modelPose.t;
-      }
-      if (hitID == 3) {
-        cube.obj.modelPose.t.x += diffPos.x * 0.0125f;
-        cube.obj.modelPose.t.z += diffPos.y * 0.0125f;
-      }
-      if (hitID == 4) {
-        tor.obj.modelPose.t.x += diffPos.x * 0.0125f;
-        tor.obj.modelPose.t.z += diffPos.y * 0.0125f;
-      }
-    } else {
-      scene.camPose.t.x = sin(theta) * rad;
-      scene.camPose.t.z = cos(theta) * rad;
-      scene.camPose.t.y -= diffPos.y * 0.0125f;
-      scene.camPos = scene.camPose.t;
-    }
+
+    scene.camPose.t.x = sin(theta) * rad;
+    scene.camPose.t.z = cos(theta) * rad;
+    scene.camPose.t.y -= diffPos.y * 0.0125f;
+    scene.camPos = scene.camPose.t;
 
     scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t, Vec3f(0, 1, 0));
-    scene.camPos = scene.camPose.t;
+    scene.camPos = scene.camPose.t;  // Look into why I need this
 
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
+
+    if (intersect) {
+      Vec2d currPos;
+      glfwGetCursorPos(window, &currPos.x, &currPos.y);
+      currPos.y = (height - 1) - currPos.y;
+      currPos.y = (currPos.y / (height - 1)) * 2 - 1;
+      currPos.x = (currPos.x / (width - 1)) * 2 - 1;
+      Vec4f nearInClip = Vec4f(currPos.x, currPos.y, -1.0, 1.0);
+      Vec4f nearInCam = scene.projMat.Inverted() * nearInClip;
+      nearInCam /= nearInCam.w;
+      Vec4f farInClip = Vec4f(currPos.x, currPos.y, 1.0, 1.0);
+      Vec4f farInCam = scene.projMat.Inverted() * farInClip;
+      farInCam /= farInCam.w;
+      Vec4f nearInWorld = scene.camPose.GetMatrix4() * nearInCam;
+      Vec4f farInWorld = scene.camPose.GetMatrix4() * farInCam;
+      Vec3f nearInWorld3 = Vec3f(&nearInWorld.x);
+      Vec3f farInWorld3 = Vec3f(&farInWorld.x);
+      Vec3f i;
+      Planef plane(Vec3f(0, 1, 0), intPoint.obj.modelPose.t.y);
+      Linef line(nearInWorld3, farInWorld3);
+      bool hit = plane.Intersect(line, i);
+      if (hitID == 0) {
+        light.obj.modelPose.t.x += (i.x - light.obj.modelPose.t.x + intObjLoc.x);
+        light.obj.modelPose.t.z += (i.z - light.obj.modelPose.t.z + intObjLoc.x);
+      }
+      if (hitID == 1) {
+        sph.obj.modelPose.t.x += (i.x - sph.obj.modelPose.t.x + intObjLoc.x);
+        sph.obj.modelPose.t.z += (i.z - sph.obj.modelPose.t.z + intObjLoc.x);
+      }
+      if (hitID == 2) {
+        squ.obj.modelPose.t.x += (i.x - squ.obj.modelPose.t.x + intObjLoc.x);
+        squ.obj.modelPose.t.z += (i.z - squ.obj.modelPose.t.z + intObjLoc.x);
+        grid.modelPose.t = squ.obj.modelPose.t;
+      }
+      if (hitID == 3) {
+        cube.obj.modelPose.t.x += (i.x - cube.obj.modelPose.t.x + intObjLoc.x);
+        cube.obj.modelPose.t.z += (i.z - cube.obj.modelPose.t.z + intObjLoc.x);
+      }
+      if (hitID == 4) {
+        tor.obj.modelPose.t.x += (i.x - tor.obj.modelPose.t.x + intObjLoc.x);
+        tor.obj.modelPose.t.z += (i.z - tor.obj.modelPose.t.z + intObjLoc.x);
+      }
+    }
 
     glViewport(0, 0, width, height);
 
@@ -381,6 +402,7 @@ int main(void) {
       if (light.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
         if ((objIntLoc - nearInWorld3).Length() < distance) {
           distance = (objIntLoc - nearInWorld3).Length();
+          intObjLoc = light.obj.modelPose.t - objIntLoc;
           intLoc = objIntLoc;
           hitID = 0;
         }
@@ -388,6 +410,7 @@ int main(void) {
       if (sph.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
         if ((objIntLoc - nearInWorld3).Length() < distance) {
           distance = (objIntLoc - nearInWorld3).Length();
+          intObjLoc = sph.obj.modelPose.t - objIntLoc;
           intLoc = objIntLoc;
           hitID = 1;
         }
@@ -395,6 +418,7 @@ int main(void) {
       if (squ.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
         if ((objIntLoc - nearInWorld3).Length() < distance) {
           distance = (objIntLoc - nearInWorld3).Length();
+          intObjLoc = squ.obj.modelPose.t - objIntLoc;
           intLoc = objIntLoc;
           hitID = 2;
         }
@@ -402,6 +426,7 @@ int main(void) {
       if (cube.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
         if ((objIntLoc - nearInWorld3).Length() < distance) {
           distance = (objIntLoc - nearInWorld3).Length();
+          intObjLoc = cube.obj.modelPose.t - objIntLoc;
           intLoc = objIntLoc;
           hitID = 3;
         }
@@ -409,6 +434,7 @@ int main(void) {
       if (tor.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
         if ((objIntLoc - nearInWorld3).Length() < distance) {
           distance = (objIntLoc - nearInWorld3).Length();
+          intObjLoc = tor.obj.modelPose.t - objIntLoc;
           intLoc = objIntLoc;
           hitID = 4;
         }
@@ -417,6 +443,7 @@ int main(void) {
       if (distance != (farInWorld3 - nearInWorld3).Length()) {
         intersect = true;
         intPoint.obj.modelPose.t = intLoc;
+        // intObjLoc = intLoc;
         printf("intLoc: %.3f, %.3f, %.3f\n", intLoc.x, intLoc.y, intLoc.z);
       } else {
         intersect = false;
