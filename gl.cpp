@@ -11,6 +11,7 @@
 #include "sphere.h"
 #include "square.h"
 #include "stb.h"
+#include "tetra.h"
 #include "torus.h"
 
 using namespace r3;
@@ -283,6 +284,10 @@ int main(void) {
     curve.position(evalDeCast(points, i / 99.0f));
   }
   curve.end();
+
+  Tetra dots;
+  dots.build(4);
+  dots.move(Vec3f(-0.75, 0.5, 0.75));
   // objects init end
 
   glLineWidth(3);
@@ -471,6 +476,8 @@ int main(void) {
 
     hull.draw(scene, program);
     curve.draw(scene, program);
+
+    dots.draw(scene, litProgram);
 
     glfwSwapBuffers(window);
     glfwPollEvents();

@@ -17,7 +17,7 @@ class Torus {
 
   void draw(const Scene& scene, Prog p);
 
-  float eval(Vec3f p0);
+  // float eval(Vec3f p0);
 
   // bool intersect(Vec3f p0, Vec3f p1);
 

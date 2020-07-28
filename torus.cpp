@@ -52,7 +52,7 @@ void Torus::draw(const Scene& scene, Prog p) {
   obj.draw(scene, p);
 }
 
-float Torus::eval(Vec3f p0) {
+/*float Torus::eval(Vec3f p0) {
   float brSqr = bigr * bigr;
   float lrSqr = littler * littler;
   float x2 = p0.x * p0.x;
@@ -64,7 +64,7 @@ float Torus::eval(Vec3f p0) {
   return c;
 }
 
-/*bool Torus::intersect(Vec3f p0, Vec3f p1) {
+bool Torus::intersect(Vec3f p0, Vec3f p1) {
   Vec3f rayDir = (p1 - p0).Normalized();
   Matrix4f objFromWorld = obj.modelPose.GetMatrix4().Inverted();
   p0 = objFromWorld * p0;
@@ -147,7 +147,7 @@ bool Torus::intersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
   double y = (delta1 * delta1 - 4 * delta0 * delta0 * delta0);
   delta = y / -27;
   double qrt = pow(y, 0.5f);
-  double Q = pow(((delta1 + qrt) / 2.0), 1.0 / 3);
+  double Q = cbrt(((delta1 + qrt) / 2.0));
   double S;
   if (delta > 0) {
     double fi = acos((delta1) / (2 * sqrt(delta0 * delta0 * delta0)));
