@@ -6,6 +6,7 @@ using namespace r3;
 
 void Tetra::build(int np) {
   numPoints = np;
+  delete[] points;
   points = new Vec3f[numPoints];
   points[0] = Vec3f(0.0, 1.0, 0.0);
   for (int i = 1; i < numPoints; i++) {
@@ -27,6 +28,7 @@ void Tetra::build(int np) {
       points[i].Normalize();
     }
   }*/
+  delete[] dots;
   dots = new Sphere[numPoints];
   for (int i = 0; i < numPoints; i++) {
     dots[i].build(1.0 / (numPoints * 1.25));

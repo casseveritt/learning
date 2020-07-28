@@ -39,7 +39,7 @@ static void error_callback(int error, const char* description) {
   fprintf(stderr, "Error: %d: %s\n", error, description);
 }
 
-static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/) {
+static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int mods) {
   if (action == GLFW_PRESS) {
     frame = 0;
     switch (key) {
@@ -92,13 +92,21 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
         intersect = false;
         break;
       case GLFW_KEY_V:
-        if (iterate == 0)
-          iterate = 1;
-        else
-          iterate = 0;
+        iterate++;
+        iterate &= 1;
         break;
       case GLFW_KEY_R:
         dots.reset();
+        break;
+      case GLFW_KEY_P:
+        {
+          int np = dots.numPoints + ((mods & GLFW_MOD_SHIFT) ? -1 : +1);
+          printf( "cass: new numPoints=%d\n", np);
+          if( np > 0 && np < 100) {
+            dots.build(np);
+            dots.reset();
+          }
+        }
         break;
       default:
         break;
