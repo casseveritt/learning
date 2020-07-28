@@ -32,6 +32,8 @@ float rad = 2.5;
 float theta = 0.0;
 bool intersect = false;
 Scene scene;
+Tetra dots;
+int iterate = 0;
 
 static void error_callback(int error, const char* description) {
   fprintf(stderr, "Error: %d: %s\n", error, description);
@@ -88,6 +90,15 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
         break;
       case GLFW_KEY_C:
         intersect = false;
+        break;
+      case GLFW_KEY_V:
+        if (iterate == 0)
+          iterate = 1;
+        else
+          iterate = 0;
+        break;
+      case GLFW_KEY_R:
+        dots.reset();
         break;
       default:
         break;
@@ -285,8 +296,8 @@ int main(void) {
   }
   curve.end();
 
-  Tetra dots;
-  dots.build(4);
+  // Tetra dots;
+  dots.build(50);
   dots.move(Vec3f(-0.75, 0.5, 0.75));
   // objects init end
 
@@ -477,7 +488,7 @@ int main(void) {
     hull.draw(scene, program);
     curve.draw(scene, program);
 
-    dots.draw(scene, litProgram);
+    dots.draw(scene, litProgram, iterate);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
