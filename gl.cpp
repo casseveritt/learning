@@ -14,6 +14,8 @@
 #include "tetra.h"
 #include "torus.h"
 
+#include "render.h"
+
 using namespace r3;
 
 /*
@@ -21,105 +23,60 @@ using namespace r3;
   sudo apt install libgles2-mesa-dev libglfw3-dev
 */
 
-float fovy = 60.0f;
-Posef modelPose;
-int frame = 0;
-bool drag = false;
-Vec2d prevPos;
-Vec2d diffPos;
-bool mode1, clickRay;
-float rad = 2.5;
-float theta = 0.0;
-bool intersect = false;
-Scene scene;
-Tetra dots;
-int iterate = 0;
+struct RendererImpl : public Renderer {
 
-static void error_callback(int error, const char* description) {
-  fprintf(stderr, "Error: %d: %s\n", error, description);
-}
+  RendererImpl() {}
 
-static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int mods) {
-  if (action == GLFW_PRESS) {
-    frame = 0;
-    switch (key) {
-      case GLFW_KEY_ESCAPE:
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-        break;
-      case GLFW_KEY_W:
-        modelPose.t.z -= 0.1;
-        break;
-      case GLFW_KEY_A:
-        modelPose.t.x -= 0.1;
-        break;
-      case GLFW_KEY_S:
-        modelPose.t.z += 0.1;
-        break;
-      case GLFW_KEY_D:
-        modelPose.t.x += 0.1;
-        break;
-      case GLFW_KEY_UP:
-        rad -= 0.25;
-        break;
-      case GLFW_KEY_DOWN:
-        rad += 0.25;
-        break;
-      case GLFW_KEY_LEFT:
-        theta -= 0.0125f;
-        break;
-      case GLFW_KEY_RIGHT:
-        theta += 0.0125f;
-        break;
-      case GLFW_KEY_I:
-        fovy -= 1.0;
-        break;
-      case GLFW_KEY_O:
-        fovy += 1.0;
-        break;
-      case GLFW_KEY_Z:
-        if (mode1)
-          mode1 = false;
-        else
-          mode1 = true;
-        break;
-      case GLFW_KEY_X:
-        if (mode1)
-          clickRay = false;
-        else
-          clickRay = true;
-        break;
-      case GLFW_KEY_C:
-        intersect = false;
-        break;
-      case GLFW_KEY_V:
-        iterate++;
-        iterate &= 1;
-        break;
-      case GLFW_KEY_R:
-        dots.reset();
-        break;
-      case GLFW_KEY_P:
-        {
-          int np = dots.numPoints + ((mods & GLFW_MOD_SHIFT) ? -1 : +1);
-          printf( "cass: new numPoints=%d\n", np);
-          if( np > 0 && np < 100) {
-            dots.build(np);
-            dots.reset();
-          }
-        }
-        break;
-      default:
-        break;
-    }
-  }
-}
+  void Init() override;
+  void Draw() override;
+  void SetWindowSize(int w, int h) override;
+  void SetCursorPos(Vec2d cursorPos) override;
+  void ResetSim() override;
 
-static void mouse_button_callback(GLFWwindow* window, int button, int action, int /*mods*/) {
-  if (button == GLFW_MOUSE_BUTTON_LEFT) {
-    drag = (action == GLFW_PRESS);
-    glfwGetCursorPos(window, &prevPos.x, &prevPos.y);
-  }
-}
+  Scene scene;
+  Tetra dots;
+  GLuint defaultVab;
+
+  // programs init begin
+  Prog program;
+  Prog litProgram;
+  Prog texProgram;
+  Prog coordProgram;
+  Prog litTexProgram;
+  Prog spotProgram;
+
+  // Texture begin
+  GLuint check, brick, stone, wood;
+
+  // objects init begin
+  Geom grid;
+  Square squ;
+  Planef ground;
+
+  Cube cube;
+
+  Sphere sph;
+
+  Torus tor;
+
+  Sphere light;
+
+  std::vector<Vec3f> points;
+
+  Geom hull;
+
+  Geom curve;
+
+  Geom ray;
+  Sphere intPoint;
+  int hitID;
+  Vec3f intObjLoc;
+
+  int width;
+  int height;
+
+  Vec2d currPos;
+};
 
 static GLuint load_image(const char* imgName) {
   int w, h, n;
@@ -170,34 +127,12 @@ static Vec3f evalDeCast(const std::vector<Vec3f>& p, float t) {
   return evalDeCast(k, t);
 }
 
-int main(void) {
+void RendererImpl::Init() {
   scene.camPose.t.z = 2.0;
-  GLFWwindow* window;
 
   scene.lightPose.r = Quaternionf(Vec3f(1, 0, 0), ToRadians(-90.0f));
   scene.lightPose.t = Vec3f(0, 1, 0);
   scene.lightCol = Vec3f(1, 1, 1);
-
-  glfwSetErrorCallback(error_callback);
-
-  if (!glfwInit()) {
-    exit(EXIT_FAILURE);
-  }
-
-  make_hints();
-  glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
-
-  window = glfwCreateWindow(1280, 960, "Learning", NULL, NULL);
-  if (!window) {
-    glfwTerminate();
-    exit(EXIT_FAILURE);
-  }
-
-  glfwSetKeyCallback(window, key_callback);
-  glfwSetMouseButtonCallback(window, mouse_button_callback);
-
-  glfwMakeContextCurrent(window);  // This is the point when you can make gl calls
-  glfwSwapInterval(1);
 
   GLint version_maj = 0;
   GLint version_min = 0;
@@ -205,21 +140,16 @@ int main(void) {
   glGetIntegerv(GL_MINOR_VERSION, &version_min);
   printf("GL Version: %d.%d\n", version_maj, version_min);
 
-  GLuint defaultVab;
   glGenVertexArrays(1, &defaultVab);
   glBindVertexArray(defaultVab);
 
   // programs init begin
-  Prog program("Unlit");
-  Prog litProgram("Lit");
-  Prog texProgram("Tex");
-  Prog coordProgram("Coord");
-  Prog litTexProgram("LitTex");
-  Prog spotProgram("Spot");
-  // programs init end
-
-  // Texture begin
-  GLuint check, brick, stone, wood;
+  program = Prog("Unlit");
+  litProgram = Prog("Lit");
+  texProgram = Prog("Tex");
+  coordProgram = Prog("Coord");
+  litTexProgram = Prog("LitTex");
+  spotProgram = Prog("Spot");
 
   check = load_image("check.png");
   brick = load_image("bricks.png");
@@ -228,7 +158,6 @@ int main(void) {
   // Texture end
 
   // objects init begin
-  Geom grid;
   grid.begin(GL_LINES);
   grid.color(0.90f, 0.90f, 0.90f);
   static const int gridsize = 17;  // vertical or horizontal size *odd*
@@ -247,15 +176,13 @@ int main(void) {
   float sqrSize = float((gridsize - 1) / 2);
   float side = float((gridsize - 1) * s);
 
-  Square squ;
   squ.build(sqrDime, sqrSize, side);
   squ.obj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
   squ.obj.shiny = 40.0f;
   squ.obj.tex = check;
 
-  Planef ground(Vec3f(0, 1, 0), 0.0f);
+  ground = Planef(Vec3f(0, 1, 0), 0.0f);
 
-  Cube cube;
   cube.build(Matrix4f::Scale(0.375f));
   cube.obj.modelPose.t = Vec3f(-1, 0.375f, -1);
   cube.obj.matDifCol = Vec3f(0.7f, 0.0f, 0.0f);
@@ -263,7 +190,6 @@ int main(void) {
   cube.obj.shiny = 7.5f;
   cube.obj.tex = brick;
 
-  Sphere sph;
   sph.build(0.5f);
   sph.obj.modelPose.t = Vec3f(1.0, 0.5, -1.0);
   sph.obj.matDifCol = Vec3f(0.0f, 0.3f, 0.0f);
@@ -271,7 +197,6 @@ int main(void) {
   sph.obj.shiny = 25.0f;
   sph.obj.tex = stone;
 
-  Torus tor;
   tor.build(0.5f, 0.25f);
   tor.obj.modelPose.t = Vec3f(1, 0.25f, 1);
   tor.obj.matDifCol = Vec3f(0.0f, 0.0f, 0.5f);
@@ -279,16 +204,14 @@ int main(void) {
   tor.obj.shiny = 15.0f;
   tor.obj.tex = wood;
 
-  Sphere light;  // light
   light.build(0.03125f);
   light.obj.modelPose.t = Vec3f(0.0f, 1.0f, 0.0f);
 
-  std::vector<Vec3f> points;
   points.push_back(Vec3f(-1.0f, 0.0f, 1.0f));
   points.push_back(Vec3f(-1.0f, 1.0f, 1.0f));
   points.push_back(Vec3f(0.0f, 1.0f, 1.0f));
   points.push_back(Vec3f(0.0f, 0.0f, 1.0f));
-  Geom hull;
+
   hull.begin(GL_LINE_STRIP);
   hull.color(0.0f, 0.0f, 0.0f);
   for (auto v : points) {
@@ -296,7 +219,6 @@ int main(void) {
   }
   hull.end();
 
-  Geom curve;
   curve.begin(GL_LINE_STRIP);
   curve.color(1.0f, 0.0f, 0.5f);
   for (int i = 0; i < 100; i++) {
@@ -304,207 +226,186 @@ int main(void) {
   }
   curve.end();
 
-  // Tetra dots;
   dots.build(50);
   dots.move(Vec3f(-0.75, 0.5, 0.75));
-  // objects init end
 
   glLineWidth(3);
 
-  Geom ray;
-  Sphere intPoint;
   intPoint.build(0.015f, Vec3f(0.9, 0.0, 0.7));
-  int hitID = -1;
-  Vec3f intObjLoc;
+  hitID = -1;
+}
 
-  while (!glfwWindowShouldClose(window)) {
-    if (drag) {
-      Vec2d currPos;
-      glfwGetCursorPos(window, &currPos.x, &currPos.y);
-      diffPos = currPos - prevPos;
-      prevPos = currPos;
-      theta += diffPos.x * 0.0125f;
-    } else {
-      diffPos = Vec2d();
+void RendererImpl::SetWindowSize(int w, int h){
+  width = w;
+  height = h;
+}
+
+void RendererImpl::SetCursorPos(Vec2d cursorPos){
+  currPos = cursorPos;
+}
+
+void RendererImpl::ResetSim(){
+  dots.reset();
+}
+
+void RendererImpl::Draw() {
+
+  scene.camPose.t.x = sin(theta) * rad;
+  scene.camPose.t.z = cos(theta) * rad;
+  scene.camPose.t.y -= diffPos.y * 0.0125f;
+  scene.camPos = scene.camPose.t;
+
+  scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t, Vec3f(0, 1, 0));
+  scene.camPos = scene.camPose.t;  // Look into why I need this
+
+
+  if (intersect) {
+    currPos.y = (height - 1) - currPos.y;
+    currPos.y = (currPos.y / (height - 1)) * 2 - 1;
+    currPos.x = (currPos.x / (width - 1)) * 2 - 1;
+    Vec4f nearInClip = Vec4f(currPos.x, currPos.y, -1.0, 1.0);
+    Vec4f nearInCam = scene.projMat.Inverted() * nearInClip;
+    nearInCam /= nearInCam.w;
+    Vec4f farInClip = Vec4f(currPos.x, currPos.y, 1.0, 1.0);
+    Vec4f farInCam = scene.projMat.Inverted() * farInClip;
+    farInCam /= farInCam.w;
+    Vec4f nearInWorld = scene.camPose.GetMatrix4() * nearInCam;
+    Vec4f farInWorld = scene.camPose.GetMatrix4() * farInCam;
+    Vec3f nearInWorld3 = Vec3f(&nearInWorld.x);
+    Vec3f farInWorld3 = Vec3f(&farInWorld.x);
+    Vec3f i;
+    Planef plane(Vec3f(0, 1, 0), intPoint.obj.modelPose.t.y);
+    Linef line(nearInWorld3, farInWorld3);
+    bool hit = plane.Intersect(line, i);
+    if (hitID == 0) {
+      light.obj.modelPose.t.x += (i.x - light.obj.modelPose.t.x + intObjLoc.x);
+      light.obj.modelPose.t.z += (i.z - light.obj.modelPose.t.z + intObjLoc.x);
     }
-
-    if (mode1) {
-      rad += diffPos.x * 0.0125f;
-      rad += diffPos.y * 0.0125f;
+    if (hitID == 1) {
+      sph.obj.modelPose.t.x += (i.x - sph.obj.modelPose.t.x + intObjLoc.x);
+      sph.obj.modelPose.t.z += (i.z - sph.obj.modelPose.t.z + intObjLoc.x);
     }
-
-    scene.camPose.t.x = sin(theta) * rad;
-    scene.camPose.t.z = cos(theta) * rad;
-    scene.camPose.t.y -= diffPos.y * 0.0125f;
-    scene.camPos = scene.camPose.t;
-
-    scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t, Vec3f(0, 1, 0));
-    scene.camPos = scene.camPose.t;  // Look into why I need this
-
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-
-    if (intersect) {
-      Vec2d currPos;
-      glfwGetCursorPos(window, &currPos.x, &currPos.y);
-      currPos.y = (height - 1) - currPos.y;
-      currPos.y = (currPos.y / (height - 1)) * 2 - 1;
-      currPos.x = (currPos.x / (width - 1)) * 2 - 1;
-      Vec4f nearInClip = Vec4f(currPos.x, currPos.y, -1.0, 1.0);
-      Vec4f nearInCam = scene.projMat.Inverted() * nearInClip;
-      nearInCam /= nearInCam.w;
-      Vec4f farInClip = Vec4f(currPos.x, currPos.y, 1.0, 1.0);
-      Vec4f farInCam = scene.projMat.Inverted() * farInClip;
-      farInCam /= farInCam.w;
-      Vec4f nearInWorld = scene.camPose.GetMatrix4() * nearInCam;
-      Vec4f farInWorld = scene.camPose.GetMatrix4() * farInCam;
-      Vec3f nearInWorld3 = Vec3f(&nearInWorld.x);
-      Vec3f farInWorld3 = Vec3f(&farInWorld.x);
-      Vec3f i;
-      Planef plane(Vec3f(0, 1, 0), intPoint.obj.modelPose.t.y);
-      Linef line(nearInWorld3, farInWorld3);
-      bool hit = plane.Intersect(line, i);
-      if (hitID == 0) {
-        light.obj.modelPose.t.x += (i.x - light.obj.modelPose.t.x + intObjLoc.x);
-        light.obj.modelPose.t.z += (i.z - light.obj.modelPose.t.z + intObjLoc.x);
-      }
-      if (hitID == 1) {
-        sph.obj.modelPose.t.x += (i.x - sph.obj.modelPose.t.x + intObjLoc.x);
-        sph.obj.modelPose.t.z += (i.z - sph.obj.modelPose.t.z + intObjLoc.x);
-      }
-      if (hitID == 2) {
-        squ.obj.modelPose.t.x += (i.x - squ.obj.modelPose.t.x + intObjLoc.x);
-        squ.obj.modelPose.t.z += (i.z - squ.obj.modelPose.t.z + intObjLoc.x);
-        grid.modelPose.t = squ.obj.modelPose.t;
-      }
-      if (hitID == 3) {
-        cube.obj.modelPose.t.x += (i.x - cube.obj.modelPose.t.x + intObjLoc.x);
-        cube.obj.modelPose.t.z += (i.z - cube.obj.modelPose.t.z + intObjLoc.x);
-      }
-      if (hitID == 4) {
-        tor.obj.modelPose.t.x += (i.x - tor.obj.modelPose.t.x + intObjLoc.x);
-        tor.obj.modelPose.t.z += (i.z - tor.obj.modelPose.t.z + intObjLoc.x);
-      }
+    if (hitID == 2) {
+      squ.obj.modelPose.t.x += (i.x - squ.obj.modelPose.t.x + intObjLoc.x);
+      squ.obj.modelPose.t.z += (i.z - squ.obj.modelPose.t.z + intObjLoc.x);
+      grid.modelPose.t = squ.obj.modelPose.t;
     }
-
-    glViewport(0, 0, width, height);
-
-    glClearColor(0.05f, 0.05f, 0.05f, 0);
-    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
-
-    float aspect = float(width) / float(height);
-    scene.projMat = Perspective(fovy, aspect, 0.1f, 100.0f);
-
-    if (clickRay) {
-      Vec2d currPos;
-      glfwGetCursorPos(window, &currPos.x, &currPos.y);
-      currPos.y = (height - 1) - currPos.y;
-      currPos.y = (currPos.y / (height - 1)) * 2 - 1;
-      currPos.x = (currPos.x / (width - 1)) * 2 - 1;
-      Vec4f nearInClip = Vec4f(currPos.x, currPos.y, -1.0, 1.0);
-      Vec4f nearInCam = scene.projMat.Inverted() * nearInClip;
-      nearInCam /= nearInCam.w;
-      Vec4f farInClip = Vec4f(currPos.x, currPos.y, 1.0, 1.0);
-      Vec4f farInCam = scene.projMat.Inverted() * farInClip;
-      farInCam /= farInCam.w;
-      Vec4f nearInWorld = scene.camPose.GetMatrix4() * nearInCam;
-      Vec4f farInWorld = scene.camPose.GetMatrix4() * farInCam;
-      ray.begin(GL_LINES);
-      ray.color(0.0f, 1.0f, 0.0f);
-      ray.position(nearInWorld.x, nearInWorld.y, nearInWorld.z);
-      ray.color(0.0f, 1.0f, 0.0f);
-      ray.position(farInWorld.x, farInWorld.y, farInWorld.z);
-      ray.end();
-      Vec3f nearInWorld3 = Vec3f(&nearInWorld.x);
-      Vec3f farInWorld3 = Vec3f(&farInWorld.x);
-      Vec3f intLoc;
-      Vec3f objIntLoc;
-
-      float distance = (farInWorld3 - nearInWorld3).Length();
-
-      if (light.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
-        if ((objIntLoc - nearInWorld3).Length() < distance) {
-          distance = (objIntLoc - nearInWorld3).Length();
-          intObjLoc = light.obj.modelPose.t - objIntLoc;
-          intLoc = objIntLoc;
-          hitID = 0;
-        }
-      }
-      if (sph.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
-        if ((objIntLoc - nearInWorld3).Length() < distance) {
-          distance = (objIntLoc - nearInWorld3).Length();
-          intObjLoc = sph.obj.modelPose.t - objIntLoc;
-          intLoc = objIntLoc;
-          hitID = 1;
-        }
-      }
-      if (squ.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
-        if ((objIntLoc - nearInWorld3).Length() < distance) {
-          distance = (objIntLoc - nearInWorld3).Length();
-          intObjLoc = squ.obj.modelPose.t - objIntLoc;
-          intLoc = objIntLoc;
-          hitID = 2;
-        }
-      }
-      if (cube.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
-        if ((objIntLoc - nearInWorld3).Length() < distance) {
-          distance = (objIntLoc - nearInWorld3).Length();
-          intObjLoc = cube.obj.modelPose.t - objIntLoc;
-          intLoc = objIntLoc;
-          hitID = 3;
-        }
-      }
-      if (tor.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
-        if ((objIntLoc - nearInWorld3).Length() < distance) {
-          distance = (objIntLoc - nearInWorld3).Length();
-          intObjLoc = tor.obj.modelPose.t - objIntLoc;
-          intLoc = objIntLoc;
-          hitID = 4;
-        }
-      }
-
-      if (distance != (farInWorld3 - nearInWorld3).Length()) {
-        intersect = true;
-        intPoint.obj.modelPose.t = intLoc;
-        // intObjLoc = intLoc;
-        printf("intLoc: %.3f, %.3f, %.3f\n", intLoc.x, intLoc.y, intLoc.z);
-      } else {
-        intersect = false;
-      }
-
-      clickRay = false;
+    if (hitID == 3) {
+      cube.obj.modelPose.t.x += (i.x - cube.obj.modelPose.t.x + intObjLoc.x);
+      cube.obj.modelPose.t.z += (i.z - cube.obj.modelPose.t.z + intObjLoc.x);
     }
-
-    ray.draw(scene, program);
-
-    if (scene.camPose.t.y <= 0.0f) {
-      grid.draw(scene, program);
-    } else {
-      squ.draw(scene, litTexProgram);
+    if (hitID == 4) {
+      tor.obj.modelPose.t.x += (i.x - tor.obj.modelPose.t.x + intObjLoc.x);
+      tor.obj.modelPose.t.z += (i.z - tor.obj.modelPose.t.z + intObjLoc.x);
     }
-    if (intersect) {
-      intPoint.draw(scene, program);
-    }
-    cube.draw(scene, litTexProgram);
-    sph.draw(scene, litTexProgram);
-    tor.draw(scene, litTexProgram);
-
-    scene.lightPose.t = light.obj.modelPose.t;
-    light.draw(scene, program);
-
-    hull.draw(scene, program);
-    curve.draw(scene, program);
-
-    dots.draw(scene, litProgram, iterate);
-
-    glfwSwapBuffers(window);
-    glfwPollEvents();
-    frame++;
   }
 
-  glfwDestroyWindow(window);
+  glViewport(0, 0, width, height);
 
-  glfwTerminate();
-  return 0;
+  glClearColor(0.05f, 0.05f, 0.05f, 0);
+  glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+  glEnable(GL_DEPTH_TEST);
+
+  float aspect = float(width) / float(height);
+  scene.projMat = Perspective(fovy, aspect, 0.1f, 100.0f);
+
+  if (clickRay) {
+    currPos.y = (height - 1) - currPos.y;
+    currPos.y = (currPos.y / (height - 1)) * 2 - 1;
+    currPos.x = (currPos.x / (width - 1)) * 2 - 1;
+    Vec4f nearInClip = Vec4f(currPos.x, currPos.y, -1.0, 1.0);
+    Vec4f nearInCam = scene.projMat.Inverted() * nearInClip;
+    nearInCam /= nearInCam.w;
+    Vec4f farInClip = Vec4f(currPos.x, currPos.y, 1.0, 1.0);
+    Vec4f farInCam = scene.projMat.Inverted() * farInClip;
+    farInCam /= farInCam.w;
+    Vec4f nearInWorld = scene.camPose.GetMatrix4() * nearInCam;
+    Vec4f farInWorld = scene.camPose.GetMatrix4() * farInCam;
+    ray.begin(GL_LINES);
+    ray.color(0.0f, 1.0f, 0.0f);
+    ray.position(nearInWorld.x, nearInWorld.y, nearInWorld.z);
+    ray.color(0.0f, 1.0f, 0.0f);
+    ray.position(farInWorld.x, farInWorld.y, farInWorld.z);
+    ray.end();
+    Vec3f nearInWorld3 = Vec3f(&nearInWorld.x);
+    Vec3f farInWorld3 = Vec3f(&farInWorld.x);
+    Vec3f intLoc;
+    Vec3f objIntLoc;
+
+    float distance = (farInWorld3 - nearInWorld3).Length();
+
+    if (light.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
+      if ((objIntLoc - nearInWorld3).Length() < distance) {
+        distance = (objIntLoc - nearInWorld3).Length();
+        intObjLoc = light.obj.modelPose.t - objIntLoc;
+        intLoc = objIntLoc;
+        hitID = 0;
+      }
+    }
+    if (sph.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
+      if ((objIntLoc - nearInWorld3).Length() < distance) {
+        distance = (objIntLoc - nearInWorld3).Length();
+        intObjLoc = sph.obj.modelPose.t - objIntLoc;
+        intLoc = objIntLoc;
+        hitID = 1;
+      }
+    }
+    if (squ.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
+      if ((objIntLoc - nearInWorld3).Length() < distance) {
+        distance = (objIntLoc - nearInWorld3).Length();
+        intObjLoc = squ.obj.modelPose.t - objIntLoc;
+        intLoc = objIntLoc;
+        hitID = 2;
+      }
+    }
+    if (cube.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
+      if ((objIntLoc - nearInWorld3).Length() < distance) {
+        distance = (objIntLoc - nearInWorld3).Length();
+        intObjLoc = cube.obj.modelPose.t - objIntLoc;
+        intLoc = objIntLoc;
+        hitID = 3;
+      }
+    }
+    if (tor.intersect(nearInWorld3, farInWorld3, objIntLoc)) {
+      if ((objIntLoc - nearInWorld3).Length() < distance) {
+        distance = (objIntLoc - nearInWorld3).Length();
+        intObjLoc = tor.obj.modelPose.t - objIntLoc;
+        intLoc = objIntLoc;
+        hitID = 4;
+      }
+    }
+
+    if (distance != (farInWorld3 - nearInWorld3).Length()) {
+      intersect = true;
+      intPoint.obj.modelPose.t = intLoc;
+        // intObjLoc = intLoc;
+      printf("intLoc: %.3f, %.3f, %.3f\n", intLoc.x, intLoc.y, intLoc.z);
+    } else {
+      intersect = false;
+    }
+
+    clickRay = false;
+  }
+
+  ray.draw(scene, program);
+
+  if (scene.camPose.t.y <= 0.0f) {
+    grid.draw(scene, program);
+  } else {
+    squ.draw(scene, litTexProgram);
+  }
+  if (intersect) {
+    intPoint.draw(scene, program);
+  }
+  cube.draw(scene, litTexProgram);
+  sph.draw(scene, litTexProgram);
+  tor.draw(scene, litTexProgram);
+
+  scene.lightPose.t = light.obj.modelPose.t;
+  light.draw(scene, program);
+
+  hull.draw(scene, program);
+  curve.draw(scene, program);
+
+  dots.draw(scene, litProgram, iterate);
 }
