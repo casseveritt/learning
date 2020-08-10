@@ -73,6 +73,10 @@ struct RendererImpl : public Renderer {
   Vec3f farInWorld3;
 };
 
+Renderer* CreateRenderer() {
+  return new RendererImpl();
+}
+
 static GLuint load_image(const char* imgName) {
   int w, h, n;
 
