@@ -13,17 +13,18 @@ using namespace r3;
   sudo apt install libgles2-mesa-dev libglfw3-dev
 */
 
-Renderer *rend = nullptr;
+Renderer* rend = nullptr;
 int frame = 0;
 bool mode1;
 bool drag = false;
+bool clickRay = false;
 
 static void error_callback(int error, const char* description) {
   fprintf(stderr, "Error: %d: %s\n", error, description);
 }
 
 static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int mods) {
-  if(rend==nullptr) {
+  if (rend == nullptr) {
     return;
   }
   if (action == GLFW_PRESS) {
@@ -58,9 +59,9 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
         break;
       case GLFW_KEY_X:
         if (mode1)
-          rend->clickRay = false;
+          clickRay = false;
         else
-          rend->clickRay = true;
+          clickRay = true;
         break;
       case GLFW_KEY_C:
         rend->intersect = false;
@@ -72,16 +73,14 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
       case GLFW_KEY_R:
         rend->ResetSim();
         break;
-      case GLFW_KEY_P:
-        {
-          int np = mods;//dots.numPoints + ((mods & GLFW_MOD_SHIFT) ? -1 : +1);
-          printf( "cass: new numPoints=%d\n", np);
-          if( np > 0 && np < 100) {
-            //dots.build(np);
-            //dots.reset();
-          }
+      case GLFW_KEY_P: {
+        int np = mods;  // dots.numPoints + ((mods & GLFW_MOD_SHIFT) ? -1 : +1);
+        printf("cass: new numPoints=%d\n", np);
+        if (np > 0 && np < 100) {
+          // dots.build(np);
+          // dots.reset();
         }
-        break;
+      } break;
       default:
         break;
     }
@@ -95,9 +94,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
   }
 }
 
-
 int main(void) {
-
   rend = CreateRenderer();
 
   glfwSetErrorCallback(error_callback);
@@ -124,9 +121,16 @@ int main(void) {
   rend->Init();
 
   while (!glfwWindowShouldClose(window)) {
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+
     if (drag) {
       Vec2d currPos;
       glfwGetCursorPos(window, &currPos.x, &currPos.y);
+      Vec3f nearInWorld3;
+      Vec3f farInWorld3;
+      rend->RayInWorld(currPos, width, height, &nearInWorld3, &farInWorld3);
+      rend->Intersect(nearInWorld3, farInWorld3);
       rend->diffPos = currPos - rend->prevPos;
       rend->prevPos = currPos;
       rend->theta += rend->diffPos.x * 0.0125f;
@@ -139,12 +143,9 @@ int main(void) {
       rend->rad += rend->diffPos.y * 0.0125f;
     }
 
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-
     rend->SetWindowSize(width, height);
 
-    if (rend->clickRay) {
+    if (clickRay) {
       Vec2d currPos;
       glfwGetCursorPos(window, &currPos.x, &currPos.y);
       rend->SetCursorPos(currPos);

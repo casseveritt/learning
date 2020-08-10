@@ -59,15 +59,15 @@ bool Sphere::intersect(Vec3f rayOrigin, Vec3f rayEnd, Vec3f& intersection) {
   float discr = b * b - 4 * a * c;
   float r1 = (-b - sqrt(discr)) / (2 * a);
   float r2 = (-b + sqrt(discr)) / (2 * a);
-  float r = 1000.0f;
-  if (r1 < r) {
-    r = r1;
+  float ria = 1000.0f;
+  if (r1 < ria) {
+    ria = r1;
   }
-  if (r2 < r) {
-    r = r2;
+  if (r2 < ria) {
+    ria = r2;
   }
   if (discr >= 0.0f) {
-    intersection = rayOrigin + rayDir * r;
+    intersection = rayOrigin + rayDir * ria;
     return true;
   } else {
     return false;
