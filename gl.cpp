@@ -48,20 +48,22 @@ struct RendererImpl : public Renderer {
   GLuint check, brick, stone, wood;
 
   Geom grid;
-  Square squ;
+  // Square squ;
   Planef ground;
 
-  Cube cube;
-  Sphere sph;
-  Torus tor;
-  Sphere light;
+  std::vector<Shape*> list;
+
+  // Cube cube;
+  // Sphere sph;
+  // Torus tor;
+  // Sphere light;
   std::vector<Vec3f> points;
   Geom hull;
   Geom curve;
   Geom ray;
   Sphere intPoint;
 
-  int hitID;
+  Shape* hitShape;
   Vec3f intObjLoc;
 
   int width;
@@ -107,12 +109,12 @@ static GLuint load_image(const char* imgName) {
   return out;
 }
 
-static Vec3f evalBezier(const std::vector<Vec3f>& p, float t) {
+/*static Vec3f evalBezier(const std::vector<Vec3f>& p, float t) {
   float t2 = t * t;
   float t3 = t * t * t;
   float w[4] = {-1 * t3 + 3 * t2 - 3 * t + 1, 3 * t3 - 6 * t2 + 3 * t, -3 * t3 + 3 * t2, t3};
   return p[0] * w[0] + p[1] * w[1] + p[2] * w[2] + p[3] * w[3];
-}
+}*/
 
 static Vec3f evalDeCast(const std::vector<Vec3f>& p, float t) {
   if (p.size() == 1) {
@@ -175,36 +177,46 @@ void RendererImpl::Init() {
   float sqrSize = float((gridsize - 1) / 2);
   float side = float((gridsize - 1) * s);
 
-  squ.build(sqrDime, sqrSize, side);
-  squ.obj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
-  squ.obj.shiny = 40.0f;
-  squ.obj.tex = check;
+  auto squ = new Square;  // Ground Square
+  squ->build(sqrDime, sqrSize, side);
+  list.push_back(squ);
+  list.back()->obj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
+  list.back()->obj.shiny = 40.0f;
+  list.back()->obj.tex = check;
 
   ground = Planef(Vec3f(0, 1, 0), 0.0f);
 
-  cube.build(Matrix4f::Scale(0.375f));
-  cube.obj.modelPose.t = Vec3f(-1, 0.375f, -1);
-  cube.obj.matDifCol = Vec3f(0.7f, 0.0f, 0.0f);
-  cube.obj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
-  cube.obj.shiny = 7.5f;
-  cube.obj.tex = brick;
+  auto cube = new Cube;  // Cube
+  cube->build(Matrix4f::Scale(0.375f));
+  list.push_back(cube);
+  list.back()->obj.modelPose.t = Vec3f(-1, 0.375f, -1);
+  list.back()->obj.matDifCol = Vec3f(0.7f, 0.0f, 0.0f);
+  list.back()->obj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
+  list.back()->obj.shiny = 7.5f;
+  list.back()->obj.tex = brick;
 
-  sph.build(0.5f);
-  sph.obj.modelPose.t = Vec3f(1.0, 0.5, -1.0);
-  sph.obj.matDifCol = Vec3f(0.0f, 0.3f, 0.0f);
-  sph.obj.matSpcCol = Vec3f(0.2f, 1.0f, 0.2f);
-  sph.obj.shiny = 25.0f;
-  sph.obj.tex = stone;
+  auto sph = new Sphere;  // Sphere
+  sph->build(0.5f);
+  list.push_back(sph);
+  list.back()->obj.modelPose.t = Vec3f(1.0, 0.5, -1.0);
+  list.back()->obj.matDifCol = Vec3f(0.0f, 0.3f, 0.0f);
+  list.back()->obj.matSpcCol = Vec3f(0.2f, 1.0f, 0.2f);
+  list.back()->obj.shiny = 25.0f;
+  list.back()->obj.tex = stone;
 
-  tor.build(0.5f, 0.25f);
-  tor.obj.modelPose.t = Vec3f(1, 0.25f, 1);
-  tor.obj.matDifCol = Vec3f(0.0f, 0.0f, 0.5f);
-  tor.obj.matSpcCol = Vec3f(0.3f, 0.3f, 1.0f);
-  tor.obj.shiny = 15.0f;
-  tor.obj.tex = wood;
+  auto tor = new Torus;  // Torus
+  tor->build(0.5f, 0.25f);
+  list.push_back(tor);
+  list.back()->obj.modelPose.t = Vec3f(1, 0.25f, 1);
+  list.back()->obj.matDifCol = Vec3f(0.0f, 0.0f, 0.5f);
+  list.back()->obj.matSpcCol = Vec3f(0.3f, 0.3f, 1.0f);
+  list.back()->obj.shiny = 15.0f;
+  list.back()->obj.tex = wood;
 
-  light.build(0.03125f);
-  light.obj.modelPose.t = Vec3f(0.0f, 1.0f, 0.0f);
+  auto light = new Sphere;  // Light Sphere
+  light->build(0.03125f);
+  list.push_back(light);
+  list.back()->obj.modelPose.t = Vec3f(0.0f, 1.0f, 0.0f);
 
   points.push_back(Vec3f(-1.0f, 0.0f, 1.0f));
   points.push_back(Vec3f(-1.0f, 1.0f, 1.0f));
@@ -231,7 +243,6 @@ void RendererImpl::Init() {
   glLineWidth(3);
 
   intPoint.build(0.015f, Vec3f(0.9, 0.0, 0.7));
-  hitID = -1;
 }
 
 void RendererImpl::SetWindowSize(int w, int h) {
@@ -279,44 +290,14 @@ void RendererImpl::Intersect(Vec3f nIW3, Vec3f fIW3) {
 
   float distance = (fIW3 - nIW3).Length();
 
-  if (light.intersect(nIW3, fIW3, objIntLoc)) {
-    if ((objIntLoc - nIW3).Length() < distance) {
-      distance = (objIntLoc - nIW3).Length();
-      intObjLoc = light.obj.modelPose.t - objIntLoc;
-      intLoc = objIntLoc;
-      hitID = 0;
-    }
-  }
-  if (sph.intersect(nIW3, fIW3, objIntLoc)) {
-    if ((objIntLoc - nIW3).Length() < distance) {
-      distance = (objIntLoc - nIW3).Length();
-      intObjLoc = sph.obj.modelPose.t - objIntLoc;
-      intLoc = objIntLoc;
-      hitID = 1;
-    }
-  }
-  if (squ.intersect(nIW3, fIW3, objIntLoc)) {
-    if ((objIntLoc - nIW3).Length() < distance) {
-      distance = (objIntLoc - nIW3).Length();
-      intObjLoc = squ.obj.modelPose.t - objIntLoc;
-      intLoc = objIntLoc;
-      hitID = 2;
-    }
-  }
-  if (cube.intersect(nIW3, fIW3, objIntLoc)) {
-    if ((objIntLoc - nIW3).Length() < distance) {
-      distance = (objIntLoc - nIW3).Length();
-      intObjLoc = cube.obj.modelPose.t - objIntLoc;
-      intLoc = objIntLoc;
-      hitID = 3;
-    }
-  }
-  if (tor.intersect(nIW3, fIW3, objIntLoc)) {
-    if ((objIntLoc - nIW3).Length() < distance) {
-      distance = (objIntLoc - nIW3).Length();
-      intObjLoc = tor.obj.modelPose.t - objIntLoc;
-      intLoc = objIntLoc;
-      hitID = 4;
+  for (auto shape : list) {
+    if (shape->intersect(nIW3, fIW3, objIntLoc)) {
+      if ((objIntLoc - nIW3).Length() < distance) {
+        distance = (objIntLoc - nIW3).Length();
+        intObjLoc = shape->obj.modelPose.t - objIntLoc;
+        intLoc = objIntLoc;
+        hitShape = shape;
+      }
     }
   }
 
@@ -324,7 +305,6 @@ void RendererImpl::Intersect(Vec3f nIW3, Vec3f fIW3) {
     intersect = true;
     intPoint.obj.modelPose.t = intLoc;
     // intObjLoc = intLoc;
-    // printf("intLoc: %.3f, %.3f, %.3f\n", intLoc.x, intLoc.y, intLoc.z);
   } else {
     intersect = false;
   }
@@ -343,28 +323,9 @@ void RendererImpl::Draw() {
     Vec3f i;
     Planef plane(Vec3f(0, 1, 0), intPoint.obj.modelPose.t.y);
     Linef line(nearInWorld3, farInWorld3);
-    bool hit = plane.Intersect(line, i);
-    if (hitID == 0) {
-      light.obj.modelPose.t.x += (i.x - light.obj.modelPose.t.x + intObjLoc.x);
-      light.obj.modelPose.t.z += (i.z - light.obj.modelPose.t.z + intObjLoc.x);
-    }
-    if (hitID == 1) {
-      sph.obj.modelPose.t.x += (i.x - sph.obj.modelPose.t.x + intObjLoc.x);
-      sph.obj.modelPose.t.z += (i.z - sph.obj.modelPose.t.z + intObjLoc.x);
-    }
-    if (hitID == 2) {
-      squ.obj.modelPose.t.x += (i.x - squ.obj.modelPose.t.x + intObjLoc.x);
-      squ.obj.modelPose.t.z += (i.z - squ.obj.modelPose.t.z + intObjLoc.x);
-      grid.modelPose.t = squ.obj.modelPose.t;
-    }
-    if (hitID == 3) {
-      cube.obj.modelPose.t.x += (i.x - cube.obj.modelPose.t.x + intObjLoc.x);
-      cube.obj.modelPose.t.z += (i.z - cube.obj.modelPose.t.z + intObjLoc.x);
-    }
-    if (hitID == 4) {
-      tor.obj.modelPose.t.x += (i.x - tor.obj.modelPose.t.x + intObjLoc.x);
-      tor.obj.modelPose.t.z += (i.z - tor.obj.modelPose.t.z + intObjLoc.x);
-    }
+    plane.Intersect(line, i);
+    hitShape->obj.modelPose.t.x += (i.x - hitShape->obj.modelPose.t.x + intObjLoc.x);
+    hitShape->obj.modelPose.t.z += (i.z - hitShape->obj.modelPose.t.z + intObjLoc.x);
   }
 
   glViewport(0, 0, width, height);
@@ -381,17 +342,17 @@ void RendererImpl::Draw() {
   if (scene.camPose.t.y <= 0.0f) {
     grid.draw(scene, program);
   } else {
-    squ.draw(scene, litTexProgram);
+    list[0]->draw(scene, litTexProgram);
   }
   if (intersect) {
     intPoint.draw(scene, program);
   }
-  cube.draw(scene, litTexProgram);
-  sph.draw(scene, litTexProgram);
-  tor.draw(scene, litTexProgram);
+  for (int i = 1; i < 4; i++) {
+    list[i]->draw(scene, litTexProgram);
+  }
 
-  scene.lightPose.t = light.obj.modelPose.t;
-  light.draw(scene, program);
+  scene.lightPose.t = list[4]->obj.modelPose.t;
+  list[4]->draw(scene, program);
 
   hull.draw(scene, program);
   curve.draw(scene, program);

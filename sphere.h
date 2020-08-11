@@ -1,21 +1,21 @@
 #pragma once
 #include "geom.h"
+#include "shape.h"
 
 using namespace r3;
 
-class Sphere {
+class Sphere : public Shape {
  public:
   struct Vert {
     Vec3f col;
     Vec3f norm;
     Vec3f pos;
   };
-  Geom obj;
   float r;
 
   void build(float radi = 0.5, Vec3f col = Vec3f(0.9f, 0.9f, 0.9f));
 
-  void draw(const Scene& scene, Prog p);
+  virtual void draw(const Scene& scene, Prog p) override;
 
-  bool intersect(Vec3f rayOrigin, Vec3f rayEnd, Vec3f& intersection);
+  virtual bool intersect(Vec3f p0, Vec3f p1, Vec3f& intersection) override;
 };

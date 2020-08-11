@@ -3,6 +3,7 @@
 using namespace r3;
 
 void Square::build(float sd, float ss, float s) {
+  form = 0;
   sqrDime = sd;
   sqrSize = ss;
   sideLen = s;

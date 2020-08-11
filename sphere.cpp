@@ -3,6 +3,7 @@
 using namespace r3;
 
 void Sphere::build(float radi, Vec3f col) {
+  form = 2;
   std::vector<Vec3f> circle;
   r = radi;
   for (int i = 0; i < 19; i++) {  // Degrees
@@ -49,10 +50,10 @@ void Sphere::draw(const Scene& scene, Prog p) {
   obj.draw(scene, p);
 }
 
-bool Sphere::intersect(Vec3f rayOrigin, Vec3f rayEnd, Vec3f& intersection) {
-  Vec3f rayDir = (rayEnd - rayOrigin).Normalized();
+bool Sphere::intersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
+  Vec3f rayDir = (p1 - p0).Normalized();
   Vec3f ce = obj.modelPose.t;
-  Vec3f oc = rayOrigin - ce;  // ray origin in object space
+  Vec3f oc = p0 - ce;  // ray origin in object space
   float a = Dot(rayDir, rayDir);
   float b = 2 * Dot(rayDir, oc);
   float c = Dot(oc, oc) - r * r;
@@ -67,7 +68,7 @@ bool Sphere::intersect(Vec3f rayOrigin, Vec3f rayEnd, Vec3f& intersection) {
     ria = r2;
   }
   if (discr >= 0.0f) {
-    intersection = rayOrigin + rayDir * ria;
+    intersection = p0 + rayDir * ria;
     return true;
   } else {
     return false;

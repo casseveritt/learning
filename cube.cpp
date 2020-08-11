@@ -20,6 +20,7 @@ void Cube::appendSquare(Matrix4f m) {
 }
 
 void Cube::build(Matrix4f m) {
+  form = 1;
   scale = m;
   Posef p;
 

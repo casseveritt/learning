@@ -1,9 +1,10 @@
 #pragma once
 #include "geom.h"
+#include "shape.h"
 
 using namespace r3;
 
-class Torus {
+class Torus : public Shape {
  public:
   struct Vert {
     r3::Vec3f col;
@@ -11,15 +12,14 @@ class Torus {
   };
   float bigr;
   float littler;
-  Geom obj;
 
   void build(float rad1 = 0.5, float rad2 = 0.25);
 
-  void draw(const Scene& scene, Prog p);
+  virtual void draw(const Scene& scene, Prog p);
 
   // float eval(Vec3f p0);
 
   // bool intersect(Vec3f p0, Vec3f p1);
 
-  bool intersect(Vec3f p0, Vec3f p1, Vec3f& intersection);
+  virtual bool intersect(Vec3f p0, Vec3f p1, Vec3f& intersection);
 };

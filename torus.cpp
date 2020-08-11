@@ -3,6 +3,7 @@
 using namespace r3;
 
 void Torus::build(float rad1, float rad2) {
+  form = 3;
   std::vector<Vec3f> torus;
   bigr = rad1;
   littler = rad2;
