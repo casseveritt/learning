@@ -17,6 +17,7 @@ Renderer* rend = nullptr;
 int frame = 0;
 bool mode1;
 bool drag = false;
+Vec2d anchor;
 bool clickRay = false;
 
 static void error_callback(int error, const char* description) {
@@ -58,10 +59,7 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
           mode1 = true;
         break;
       case GLFW_KEY_X:
-        if (mode1)
-          clickRay = false;
-        else
-          clickRay = true;
+        clickRay = true;
         break;
       case GLFW_KEY_C:
         rend->intersect = false;
@@ -127,28 +125,29 @@ int main(void) {
     if (drag) {
       Vec2d currPos;
       glfwGetCursorPos(window, &currPos.x, &currPos.y);
-      Vec3f nearInWorld3;
-      Vec3f farInWorld3;
-      rend->RayInWorld(currPos, width, height, &nearInWorld3, &farInWorld3);
-      rend->Intersect(nearInWorld3, farInWorld3);
       rend->diffPos = currPos - rend->prevPos;
       rend->prevPos = currPos;
-      rend->theta += rend->diffPos.x * 0.0125f;
+      if (mode1) {
+        rend->rad += rend->diffPos.x * 0.0125f;
+        rend->rad += rend->diffPos.y * 0.0125f;
+      } else {
+        rend->theta += rend->diffPos.x * 0.0125f;
+      }
     } else {
       rend->diffPos = Vec2d();
-    }
-
-    if (mode1) {
-      rend->rad += rend->diffPos.x * 0.0125f;
-      rend->rad += rend->diffPos.y * 0.0125f;
     }
 
     rend->SetWindowSize(width, height);
 
     if (clickRay) {
       Vec2d currPos;
+      Vec3f nearInWorld3;
+      Vec3f farInWorld3;
       glfwGetCursorPos(window, &currPos.x, &currPos.y);
       rend->SetCursorPos(currPos);
+      rend->RayInWorld(width, height, &nearInWorld3, &farInWorld3);
+      rend->Intersect(nearInWorld3, farInWorld3);
+      clickRay = false;
     }
 
     rend->Draw();

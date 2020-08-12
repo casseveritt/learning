@@ -31,7 +31,7 @@ struct RendererImpl : public Renderer {
   void SetWindowSize(int w, int h) override;
   void SetCursorPos(Vec2d cursorPos) override;
   void ResetSim() override;
-  void RayInWorld(Vec2d currPos, int width, int height, Vec3f* nIW3, Vec3f* fIW3) override;
+  void RayInWorld(int width, int height, Vec3f* nIW3, Vec3f* fIW3) override;
   void Intersect(Vec3f nIW3, Vec3f fIW3) override;
 
   Scene scene;
@@ -48,15 +48,10 @@ struct RendererImpl : public Renderer {
   GLuint check, brick, stone, wood;
 
   Geom grid;
-  // Square squ;
   Planef ground;
 
   std::vector<Shape*> list;
 
-  // Cube cube;
-  // Sphere sph;
-  // Torus tor;
-  // Sphere light;
   std::vector<Vec3f> points;
   Geom hull;
   Geom curve;
@@ -258,10 +253,10 @@ void RendererImpl::ResetSim() {
   dots.reset();
 }
 
-void RendererImpl::RayInWorld(Vec2d currentPos, int w, int h, Vec3f* nIW3, Vec3f* fIW3) {
-  currentPos.y = (h - 1) - currentPos.y;
-  currentPos.y = (currentPos.y / (h - 1)) * 2 - 1;
-  currentPos.x = (currentPos.x / (w - 1)) * 2 - 1;
+void RendererImpl::RayInWorld(int w, int h, Vec3f* nIW3, Vec3f* fIW3) {
+  currPos.y = (h - 1) - currPos.y;
+  currPos.y = (currPos.y / (h - 1)) * 2 - 1;
+  currPos.x = (currPos.x / (w - 1)) * 2 - 1;
   Vec4f nearInClip = Vec4f(currPos.x, currPos.y, -1.0, 1.0);
   Vec4f nearInCam = scene.projMat.Inverted() * nearInClip;
   nearInCam /= nearInCam.w;
@@ -274,13 +269,11 @@ void RendererImpl::RayInWorld(Vec2d currentPos, int w, int h, Vec3f* nIW3, Vec3f
   Vec3f pfIW3 = Vec3f(&farInWorld.x);
   nIW3 = &pnIW3;
   fIW3 = &pfIW3;
-  nearInWorld3 = pnIW3;
-  farInWorld3 = pfIW3;
   ray.begin(GL_LINES);
   ray.color(0.0f, 1.0f, 0.0f);
-  ray.position(nearInWorld3.x, nearInWorld3.y, nearInWorld3.z);
+  ray.position(pnIW3.x, pnIW3.y, pnIW3.z);
   ray.color(0.0f, 1.0f, 0.0f);
-  ray.position(farInWorld3.x, farInWorld3.y, farInWorld3.z);
+  ray.position(pfIW3.x, pfIW3.y, pfIW3.z);
   ray.end();
 }
 
@@ -304,7 +297,6 @@ void RendererImpl::Intersect(Vec3f nIW3, Vec3f fIW3) {
   if (distance != (fIW3 - nIW3).Length()) {
     intersect = true;
     intPoint.obj.modelPose.t = intLoc;
-    // intObjLoc = intLoc;
   } else {
     intersect = false;
   }

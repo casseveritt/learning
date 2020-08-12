@@ -6,7 +6,6 @@
 class Tetra {
  public:
   int numPoints;
-  std::vector<Vec3f> points;
   Vec3f pos;
   std::vector<Sphere*> sphs;
   void build(int np);
