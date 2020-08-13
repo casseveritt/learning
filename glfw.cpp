@@ -130,8 +130,10 @@ int main(void) {
       if (mode1) {
         rend->rad += rend->diffPos.x * 0.0125f;
         rend->rad += rend->diffPos.y * 0.0125f;
+      } else if (rend->intersect) {
       } else {
         rend->theta += rend->diffPos.x * 0.0125f;
+        rend->camHeight -= rend->diffPos.y * 0.0125f;
       }
     } else {
       rend->diffPos = Vec2d();
@@ -145,8 +147,7 @@ int main(void) {
       Vec3f farInWorld3;
       glfwGetCursorPos(window, &currPos.x, &currPos.y);
       rend->SetCursorPos(currPos);
-      rend->RayInWorld(width, height, &nearInWorld3, &farInWorld3);
-      rend->Intersect(nearInWorld3, farInWorld3);
+      rend->RayInWorld(width, height);
       clickRay = false;
     }
 
