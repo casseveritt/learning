@@ -15,10 +15,15 @@ using namespace r3;
 
 Renderer* rend = nullptr;
 int frame = 0;
-bool mode1;
-bool drag = false;
+int dragTime = 0;
+int width, height;
+bool leftDrag = false;
+bool rightDrag = false;
+bool leftClick = false;
+bool rightClick = false;
+Vec3f nIW3;
+Vec3f fIW3;
 Vec2d anchor;
-bool clickRay = false;
 
 static void error_callback(int error, const char* description) {
   fprintf(stderr, "Error: %d: %s\n", error, description);
@@ -34,6 +39,7 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
       case GLFW_KEY_ESCAPE:
         glfwSetWindowShouldClose(window, GLFW_TRUE);
         break;
+      /*
       case GLFW_KEY_UP:
         rend->rad -= 0.25;
         break;
@@ -46,12 +52,14 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
       case GLFW_KEY_RIGHT:
         rend->theta += 0.0125f;
         break;
-      case GLFW_KEY_I:
+      */
+      case GLFW_KEY_UP:
         rend->fovy -= 1.0;
         break;
-      case GLFW_KEY_O:
+      case GLFW_KEY_DOWN:
         rend->fovy += 1.0;
         break;
+      /*
       case GLFW_KEY_Z:
         if (mode1)
           mode1 = false;
@@ -64,6 +72,7 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
       case GLFW_KEY_C:
         rend->intersect = false;
         break;
+      */
       case GLFW_KEY_V:
         rend->iterate++;
         rend->iterate &= 1;
@@ -87,8 +96,24 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
 
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int /*mods*/) {
   if (button == GLFW_MOUSE_BUTTON_LEFT) {
-    drag = (action == GLFW_PRESS);
+    leftClick = (action == GLFW_PRESS);
     glfwGetCursorPos(window, &rend->prevPos.x, &rend->prevPos.y);
+    rend->SetCursorPos(rend->prevPos);
+    rend->RayInWorld(width, height, nIW3, fIW3);
+    rend->Intersect(nIW3, fIW3);  //*
+    anchor = rend->prevPos;
+  }
+  if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+    rightClick = (action == GLFW_PRESS);
+    glfwGetCursorPos(window, &rend->prevPos.x, &rend->prevPos.y);
+    anchor = rend->prevPos;
+  }
+}
+
+static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+  if (rend->intersect) {
+  } else {
+    rend->rad -= 0.1 * yoffset;
   }
 }
 
@@ -112,6 +137,7 @@ int main(void) {
 
   glfwSetKeyCallback(window, key_callback);
   glfwSetMouseButtonCallback(window, mouse_button_callback);
+  glfwSetScrollCallback(window, scroll_callback);
 
   glfwMakeContextCurrent(window);  // This is the point when you can make gl calls
   glfwSwapInterval(1);
@@ -119,19 +145,42 @@ int main(void) {
   rend->Init();
 
   while (!glfwWindowShouldClose(window)) {
-    int width, height;
     glfwGetFramebufferSize(window, &width, &height);
 
-    if (drag) {
-      Vec2d currPos;
+    double dist;
+    if (leftClick ^ rightClick) {
+      if (dragTime < 8) {
+        dragTime++;
+      }
+      Vec2d newPos;
+      glfwGetCursorPos(window, &newPos.x, &newPos.y);
+      double x = fabs(anchor.x - newPos.x);
+      double y = fabs(anchor.y - newPos.y);
+      dist = sqrt((x * x) + (y * y));
+    } else {
+      dragTime = 0;
+      dist = 0;
+    }
+    leftDrag = (leftClick && (dragTime == 8 || dist >= 15));
+    rightDrag = (rightClick && (dragTime == 8 || dist >= 15));
+
+    Vec2d currPos;
+    if (leftDrag || rightDrag) {
       glfwGetCursorPos(window, &currPos.x, &currPos.y);
       rend->diffPos = currPos - rend->prevPos;
       rend->prevPos = currPos;
-      if (mode1) {
-        rend->rad += rend->diffPos.x * 0.0125f;
-        rend->rad += rend->diffPos.y * 0.0125f;
-      } else if (rend->intersect) {
-      } else {
+      if (leftDrag) {
+        Vec3f i;
+
+        rend->SetCursorPos(currPos);
+        rend->RayInWorld(width, height, nIW3, fIW3);
+
+        Linef line(nIW3, fIW3);
+        Planef plane(Vec3f(0, 1, 0), rend->intLoc.y);
+        plane.Intersect(line, i);
+        rend->Drag(i);
+      }
+      if (rightDrag) {
         rend->theta += rend->diffPos.x * 0.0125f;
         rend->camHeight -= rend->diffPos.y * 0.0125f;
       }
@@ -141,20 +190,12 @@ int main(void) {
 
     rend->SetWindowSize(width, height);
 
-    if (clickRay) {
-      Vec2d currPos;
-      Vec3f nearInWorld3;
-      Vec3f farInWorld3;
-      glfwGetCursorPos(window, &currPos.x, &currPos.y);
-      rend->SetCursorPos(currPos);
-      rend->RayInWorld(width, height);
-      clickRay = false;
-    }
-
     rend->Draw();
 
     glfwSwapBuffers(window);
     glfwPollEvents();
+    // if(leftDrag && dragTime==8){printf("Left dragging\n");}
+    // if(rightDrag && dragTime==8){printf("Right dragging\n");}
     frame++;
   }
 

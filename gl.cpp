@@ -31,7 +31,9 @@ struct RendererImpl : public Renderer {
   void SetWindowSize(int w, int h) override;
   void SetCursorPos(Vec2d cursorPos) override;
   void ResetSim() override;
-  void RayInWorld(int width, int height) override;
+  void RayInWorld(int w, int h, Vec3f& nIW3, Vec3f& fIW3) override;
+  void Intersect(Vec3f nIW3, Vec3f fIW3) override;
+  void Drag(Vec3f newPos) override;
 
   Scene scene;
   Tetra dots;
@@ -252,7 +254,7 @@ void RendererImpl::ResetSim() {
   dots.reset();
 }
 
-void RendererImpl::RayInWorld(int w, int h) {
+void RendererImpl::RayInWorld(int w, int h, Vec3f& nIW3, Vec3f& fIW3) {
   currPos.y = (h - 1) - currPos.y;
   currPos.y = (currPos.y / (h - 1)) * 2 - 1;
   currPos.x = (currPos.x / (w - 1)) * 2 - 1;
@@ -262,18 +264,18 @@ void RendererImpl::RayInWorld(int w, int h) {
   Vec4f farInClip = Vec4f(currPos.x, currPos.y, 1.0, 1.0);
   Vec4f farInCam = scene.projMat.Inverted() * farInClip;
   farInCam /= farInCam.w;
-  Vec4f nearInWorld = scene.camPose.GetMatrix4() * nearInCam;
-  Vec4f farInWorld = scene.camPose.GetMatrix4() * farInCam;
-  Vec3f nIW3 = Vec3f(&nearInWorld.x);
-  Vec3f fIW3 = Vec3f(&farInWorld.x);
+  nIW3 = Homogenize(scene.camPose.GetMatrix4() * nearInCam);
+  fIW3 = Homogenize(scene.camPose.GetMatrix4() * farInCam);
   ray.begin(GL_LINES);
   ray.color(0.0f, 1.0f, 0.0f);
   ray.position(nIW3.x, nIW3.y, nIW3.z);
   ray.color(0.0f, 1.0f, 0.0f);
   ray.position(fIW3.x, fIW3.y, fIW3.z);
   ray.end();
+}
 
-  Vec3f intLoc;
+void RendererImpl::Intersect(Vec3f nIW3, Vec3f fIW3) {  //*
+  intLoc;
   Vec3f objIntLoc;
 
   float distance = (fIW3 - nIW3).Length();
@@ -297,6 +299,15 @@ void RendererImpl::RayInWorld(int w, int h) {
   }
 }
 
+void RendererImpl::Drag(Vec3f newPos) {
+  intPoint.obj.modelPose.t = newPos;
+  float x = newPos.x - intLoc.x;
+  float z = newPos.z - intLoc.z;
+  hitShape->obj.modelPose.t.x += x;
+  hitShape->obj.modelPose.t.z += z;
+  intLoc = newPos;
+}
+
 void RendererImpl::Draw() {
   scene.camPose.t.x = sin(theta) * rad;
   scene.camPose.t.z = cos(theta) * rad;
@@ -306,6 +317,7 @@ void RendererImpl::Draw() {
   scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t, Vec3f(0, 1, 0));
   scene.camPos = scene.camPose.t;  // Look into why I need this
 
+  /*
   if (intersect) {
     Vec3f i;
     Planef plane(Vec3f(0, 1, 0), intPoint.obj.modelPose.t.y);
@@ -314,6 +326,7 @@ void RendererImpl::Draw() {
     hitShape->obj.modelPose.t.x += diffPos.x * 0.0125;
     hitShape->obj.modelPose.t.z += diffPos.y * 0.0125;
   }
+  */
 
   glViewport(0, 0, width, height);
 
