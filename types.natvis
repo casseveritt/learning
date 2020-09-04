@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+    <Type Name="r3::Vec3f">
+        <DisplayString>{{{v[0]}, {v[1]}, {v[2]}}}</DisplayString>
+    </Type>
+    <Type Name="r3::Vec3&lt;*&gt;">
+        <DisplayString>{{{v[0]}, {v[1]}, {v[2]}}}</DisplayString>
+    </Type>
+
+</AutoVisualizer>

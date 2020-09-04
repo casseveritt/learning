@@ -50,6 +50,7 @@
 //#include <memory.h>
 #include <assert.h>
 #include <math.h>
+
 #include <algorithm>
 
 #define R3_RAD_TO_DEG 57.2957795130823208767981548141052

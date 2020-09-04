@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+
 #include "learning.h"
 #include "linear.h"
 #include "prog.h"

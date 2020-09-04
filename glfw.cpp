@@ -1,7 +1,9 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <cstring>
+
 #include "learning.h"
 #include "linear.h"
 #include "render.h"
@@ -169,7 +171,7 @@ int main(void) {
       glfwGetCursorPos(window, &currPos.x, &currPos.y);
       rend->diffPos = currPos - rend->prevPos;
       rend->prevPos = currPos;
-      if (leftDrag) {
+      if (leftDrag && rend->intersect) {
         Vec3f i;
 
         rend->SetCursorPos(currPos);

@@ -1,5 +1,7 @@
 #include "tetra.h"
+
 #include <stdio.h>
+
 #include "linear.h"
 
 using namespace r3;

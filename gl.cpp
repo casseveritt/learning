@@ -1,20 +1,21 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <cstring>
+
 #include "cube.h"
 #include "geom.h"
 #include "learning.h"
 #include "linear.h"
 #include "prog.h"
+#include "render.h"
 #include "scene.h"
 #include "sphere.h"
 #include "square.h"
 #include "stb.h"
 #include "tetra.h"
 #include "torus.h"
-
-#include "render.h"
 
 using namespace r3;
 
@@ -295,6 +296,7 @@ void RendererImpl::Intersect(Vec3f nIW3, Vec3f fIW3) {  //*
     intersect = true;
     intPoint.obj.modelPose.t = intLoc;
   } else {
+    hitShape = nullptr;
     intersect = false;
   }
 }
