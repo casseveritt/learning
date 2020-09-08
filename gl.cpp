@@ -93,13 +93,25 @@ static GLuint load_image(const char* imgName) {
 
   uint32_t* imgi = new uint32_t[w * h];
 
-  for (int i = 0; i < w * h; i++) {
-    imgi[i] = uint32_t(img[i * 3 + 0]) << 0 | uint32_t(img[i * 3 + 1]) << 8 | uint32_t(img[i * 3 + 2]) << 16;
+  for (int j = 0; j < h; j++) {
+    for (int i = 0; i < w; i++) {
+      int ij = i+j*w;
+      /*
+      if( (i % 32) == 0 ) {
+        imgi[ij] = 0xff00ff00;
+      } else if ( (j % 32) == 0) {
+        imgi[ij] = 0xff0000ff;
+      } else */
+      {
+        imgi[ij] = uint32_t(img[ij * n + 0]) << 0 | uint32_t(img[ij * n + 1]) << 8 | uint32_t(img[ij * n + 2]) << 16;
+      }
+    }
   }
 
-  glGenTextures(GLsizei(n), &out);
+  glGenTextures(1, &out);
   glBindTexture(GL_TEXTURE_2D, out);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgi);
+  glTexStorage2D(GL_TEXTURE_2D, 4, GL_RGBA8, w, h);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, imgi);
   glGenerateMipmap(GL_TEXTURE_2D);
   delete[] imgi;
   image_free(img);
