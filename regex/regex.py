@@ -1,23 +1,13 @@
 #!/usr/bin/python3
 import re
 
+
 def main():
-    f = open("gettysburg.txt", "r")
-    for i in range(20):
-        l = f.readline()
-        if l == "":
-            continue
-        words = re.findall(r'\b[A-Z][a-z]*\b', l)
-        print("line = {}".format(l))
-        for w in words:
-            print("w = {}".format(w))
-        space = 0
-        for j in l:
-            if j == ' ':
-                space += 1
-        print("spaces = {}, via re = {}".format(space, len(words)))
-    f.close()
+    with open("gettysburg.txt", "r") as f:
+        for l in f:
+            words = re.findall(r'\b[A-Za-z]+\b', l)
+            print("re = {}".format(len(words)))
+
 
 if __name__ == "__main__":
     main()
-
