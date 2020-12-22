@@ -1,5 +1,10 @@
 #!/usr/bin/python3
 import re
+from hashlib import sha1
+
+def make_sha1(s, encoding='utf-8'):
+    return sha1(s.encode(encoding)).hexdigest()
+
 
 
 def main():
@@ -37,6 +42,7 @@ def main():
     rs = re.sub(pat, lambda m: "{} {}".format(m.group(1), m.group(2).upper()), s)
 
     print(rs)
+    print("sha1: {}".format(make_sha1(rs)))
 
 if __name__ == "__main__":
     main()
