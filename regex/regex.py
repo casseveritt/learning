@@ -19,9 +19,11 @@ def main():
             d[k] = 0
         d[k] += 1
     
-    print("found {} matches".format(count))
-    for k,v in d.items():
-        print("{}: {}".format(k,v))
+    top = sorted(d.items(), key = lambda i: -i[1])
+    print("found {} matches\n".format(count))
+    print("top five matches:")
+    for v in top[0:5]:
+        print("{}: {}".format(v[0], v[1]))
 
 if __name__ == "__main__":
     main()
