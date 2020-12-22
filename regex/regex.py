@@ -24,6 +24,19 @@ def main():
     print("top five matches:")
     for v in top[0:5]:
         print("{}: {}".format(v[0], v[1]))
+    
+    words = [t[0] for t in top[0:5]]
+
+    pat = "".join([
+        r'\b(a|an|the)\s+',
+        "({})".format("|".join(words)),
+        r'\b'
+    ])
+    print("pat = {}".format(pat))
+
+    rs = re.sub(pat, lambda m: "{} {}".format(m.group(1), m.group(2).upper()), s)
+
+    print(rs)
 
 if __name__ == "__main__":
     main()
