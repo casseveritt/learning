@@ -18,12 +18,13 @@ def main():
     rs = s
 
     count = [0]
-    def r(m, count):
+    def r(m, count, r=' '):
         count[0] += 1
         print("{}: {}".format(count[0], m.group()))
-        return ' '
+        return r
 
     rs = re.sub(r'/\*.*?\*/', lambda m: r(m, count), rs, flags=re.DOTALL)
+    rs = re.sub(r'//.*?\n', lambda m: r(m, count, '\n'), rs)
 
     with open("y.h", "w") as f:
         f.write(rs)
