@@ -10,7 +10,8 @@
 #include "prog.h"
 #include "render.h"
 #include "scene.h"
-#include "square.h"
+#include "rectangle.h"
+#include "board.h"
 #include "stb.h"
 
 using namespace r3;
@@ -26,6 +27,7 @@ struct RendererImpl : public Renderer {
   void Init() override;
   void Draw() override;
   void SetWindowSize(int w, int h) override;
+  //void Intersect(int w, int h) override;
   void SetCursorPos(Vec2d cursorPos) override;
 
   Scene scene;
@@ -33,15 +35,7 @@ struct RendererImpl : public Renderer {
 
   Prog constColorProg;
 
-  Geom grid;
-  Planef ground;
-
-  std::vector<Shape*> list;
-
-  Geom ray;
-
-  Shape* hitShape;
-  Vec3f intObjLoc;
+  //Board gameBoard;   *****
 
   int width;
   int height;
@@ -76,12 +70,6 @@ static GLuint load_image(const char* imgName) {
   for (int j = 0; j < h; j++) {
     for (int i = 0; i < w; i++) {
       int ij = i+j*w;
-      /*
-      if( (i % 32) == 0 ) {
-        imgi[ij] = 0xff00ff00;
-      } else if ( (j % 32) == 0) {
-        imgi[ij] = 0xff0000ff;
-      } else */
       {
         imgi[ij] = uint32_t(img[ij * n + 0]) << 0 | uint32_t(img[ij * n + 1]) << 8 | uint32_t(img[ij * n + 2]) << 16;
       }
@@ -99,12 +87,6 @@ static GLuint load_image(const char* imgName) {
 }
 
 void RendererImpl::Init() {
-  scene.camPose.t.z = 2.0;
-
-  scene.lightPose.r = Quaternionf(Vec3f(1, 0, 0), ToRadians(-90.0f));
-  scene.lightPose.t = Vec3f(0, 1, 0);
-  scene.lightCol = Vec3f(1, 1, 1);
-
   GLint version_maj = 0;
   GLint version_min = 0;
   glGetIntegerv(GL_MAJOR_VERSION, &version_maj);
@@ -118,21 +100,7 @@ void RendererImpl::Init() {
   constColorProg = Prog("ccol");
 
   // objects init begin
-  grid.begin(GL_LINES);
-  grid.color(0.90f, 0.90f, 0.90f);
-  static const int gridsize = 17;  // vertical or horizontal size *odd*
-  static const float s = 0.25f;    // spacing of lines
-  for (int i = 0; i < gridsize; i++) {
-    float shift = (gridsize / 2) * -1 * s + i * s;
-    float move = (gridsize / 2) * s;
-    grid.position(shift, 0.0f, move);
-    grid.position(shift, 0.0f, move * -1);
-    grid.position(move, 0.0f, shift);
-    grid.position(move * -1, 0.0f, shift);
-  }
-  grid.end();
-
-  ground = Planef(Vec3f(0, 1, 0), 0.0f);
+  //gameBoard.build(boardDim);   *****
 
   glLineWidth(3);
 }
@@ -146,14 +114,40 @@ void RendererImpl::SetCursorPos(Vec2d cursorPos) {
   currPos = cursorPos;
 }
 
-void RendererImpl::Draw() {
-  scene.camPose.t.x = sin(theta) * rad;
-  scene.camPose.t.z = cos(theta) * rad;
-  scene.camPose.t.y = camHeight;
-  scene.camPos = scene.camPose.t;
+/*
+void RendererImpl::Intersect(int w, int h) {
+  currPos.y = (h - 1) - currPos.y;
+  currPos.y = (currPos.y / (h - 1)) * 2 - 1;
+  currPos.x = (currPos.x / (w - 1)) * 2 - 1;
+  Vec4f nearInClip = Vec4f(currPos.x, currPos.y, -1.0, 1.0);
+  Vec4f nearInCam = scene.projMat.Inverted() * nearInClip;
+  nearInCam /= nearInCam.w;
+  Vec4f farInClip = Vec4f(currPos.x, currPos.y, 1.0, 1.0);
+  Vec4f farInCam = scene.projMat.Inverted() * farInClip;
+  farInCam /= farInCam.w;
+  nIW3 = Homogenize(scene.camPose.GetMatrix4() * nearInCam);
+  fIW3 = Homogenize(scene.camPose.GetMatrix4() * farInCam);
 
+  Vec3f intLoc;
+  Vec3f objIntLoc;
+
+  float distance = (fIW3 - nIW3).Length();
+
+  for (auto shape : board) { // Need to add interesect for board to use here
+    if (shape->intersect(nIW3, fIW3, objIntLoc)) {
+      if ((objIntLoc - nIW3).Length() < distance) {
+        distance = (objIntLoc - nIW3).Length();
+        intObjLoc = shape->obj.modelPose.t - objIntLoc;
+        intLoc = objIntLoc;
+        hitShape = shape;
+      }
+    }
+  }
+}
+*/
+
+void RendererImpl::Draw() {
   scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t, Vec3f(0, 1, 0));
-  scene.camPos = scene.camPose.t;  // Look into why I need this
 
   glViewport(0, 0, width, height);
 
@@ -161,8 +155,5 @@ void RendererImpl::Draw() {
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
-  float aspect = float(width) / float(height);
-  scene.projMat = Perspective(fovy, aspect, 0.1f, 100.0f);
-
-  grid.draw(scene, constColorProg);
+  scene.projMat = Ortho(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
 }
