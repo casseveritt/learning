@@ -25,6 +25,13 @@ def main():
 
     rs = re.sub(r'/\*.*?\*/', lambda m: r(m, count), rs, flags=re.DOTALL)
     rs = re.sub(r'//.*?\n', lambda m: r(m, count, '\n'), rs)
+    block = r'\{[^{]*?\}'
+    rs = re.sub(block, lambda m: r(m, count, "B{}".format(count[0])), rs, flags=re.DOTALL)
+    rs = re.sub(block, lambda m: r(m, count, "B{}".format(count[0])), rs, flags=re.DOTALL)
+    rs = re.sub(block, lambda m: r(m, count, "B{}".format(count[0])), rs, flags=re.DOTALL)
+    rs = re.sub(block, lambda m: r(m, count, "B{}".format(count[0])), rs, flags=re.DOTALL)
+    rs = re.sub(block, lambda m: r(m, count, "B{}".format(count[0])), rs, flags=re.DOTALL)
+    rs = re.sub(block, lambda m: r(m, count, "B{}".format(count[0])), rs, flags=re.DOTALL)
 
     with open("y.h", "w") as f:
         f.write(rs)
