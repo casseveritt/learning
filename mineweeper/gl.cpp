@@ -137,10 +137,46 @@ void RendererImpl::Click(int w, int h) {
 }
 */
 
-static Rectangle drawTile(const Board::Tile& t, float xSide, float ySide, Vec3f pos) {
+static Rectangle makeTile(const Board::Tile& t, Vec3f pos, float xSide, float ySide) {
   Vec3f tileCol(0.9f, 0.9f, 0.9f);
   if (t.revealed) {
-    tileCol = Vec3f(0.5f, 0.5f, 0.5f);
+    if (t.isMine) {
+      tileCol = Vec3f(0.8f, 0.2f, 0.2f);
+    } else {
+      switch (t.adjMines) {
+        case 0:
+          tileCol = Vec3f(0.7f, 0.7f, 0.7f);
+          break;
+        case 1:
+          tileCol = Vec3f(0.4f, 0.4f, 0.8f);
+          break;
+        case 2:
+          tileCol = Vec3f(0.4f, 0.8f, 0.4f);
+          break;
+        case 3:
+          tileCol = Vec3f(0.8f, 0.5f, 0.1f);
+          break;
+        case 4:
+          tileCol = Vec3f(0.1f, 0.1f, 0.4f);
+          break;
+        case 5:
+          tileCol = Vec3f(0.55f, 0.1f, 0.1f);
+          break;
+        case 6:
+          tileCol = Vec3f(0.2f, 0.8f, 0.8f);
+          break;
+        case 7:
+          tileCol = Vec3f(0.05f, 0.05f, 0.05f);
+          break;
+        case 8:
+          tileCol = Vec3f(0.4f, 0.4f, 0.4f);
+          break;
+        default:
+          break;
+      }
+    }
+  } else if (t.flagged) {
+    tileCol = Vec3f(0.8f, 0.8f, 0.2f);
   }
   Rectangle rect;
   rect.build(xSide, ySide, tileCol);
@@ -164,7 +200,7 @@ void RendererImpl::Draw(const Board& b) {
   float ySide = 1.0f / (b.height);
   for (int x = 0; x < b.width; x++) {
     for (int y = 0; y < b.height; y++) {
-      Rectangle rect = drawTile(b.el(x, y), xSide, ySide, Vec3f((xSide * x), (ySide * (b.height - (1 + y))), 0.0f));
+      Rectangle rect = makeTile(b.el(x, y), Vec3f((xSide * x), (ySide * (b.height - (1 + y))), 0.0f), xSide, ySide);
       rect.draw(scene, constColorProg);
     }
   }
