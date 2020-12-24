@@ -23,6 +23,7 @@ class Board {
   void build(int inx, int iny, int inb);
   void initialize(int x, int y);
   void reveal(int x, int y);
+  void flag(int x, int y);
 
   Tile& el(int row, int col);
   Tile el(int row, int col) const;

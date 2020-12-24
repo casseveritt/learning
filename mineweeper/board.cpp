@@ -72,6 +72,13 @@ void Board::reveal(int x, int y) {
   }
 }
 
+// Places a flag on UNREVEALED tiles, or takes them off
+void Board::flag(int x, int y) {
+  if(!el(x,y).revealed) {
+    el(x,y).flagged = (!el(x,y).flagged);
+  }
+}
+
 // Given a row and col return the tile in that location
 Board::Tile& Board::el(int x, int y) {
   return board[y * width + x];
