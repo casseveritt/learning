@@ -1,5 +1,7 @@
 #include "board.h"
 
+#include "stdlib.h"
+
 // Set the board
 void Board::build(int w, int h, int m) {
   if (board != nullptr) {
@@ -22,6 +24,27 @@ void Board::build(int w, int h, int m) {
 // Set the board with the first tile and its radius having no bombs
 void Board::initialize(int, int) {
   state = Playing;
+  // return;
+  int minesToPlace = numMines;
+
+  while (minesToPlace > 0) {
+    int randRow = rand() % width;
+    int randCol = rand() % height;
+    Tile& t = el(randCol, randRow);
+
+    if (t.isMine) {
+      continue;
+    }
+    t.isMine = true;
+
+    minesToPlace--;
+
+    for (int r = -1; r < 2; r++) {
+      for (int c = -1; c < 2; c++) {
+        /* code */
+      }
+    }
+  }
 }
 
 void Board::reveal(int x, int y) {
@@ -31,7 +54,12 @@ void Board::reveal(int x, int y) {
   if (state != Playing) {
     return;
   }
+
   Tile& t = el(x, y);
+
+  if (t.flagged) {
+    return;
+  }
 
   if (t.revealed) {
     return;
