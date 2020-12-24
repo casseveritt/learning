@@ -5,7 +5,7 @@
 using namespace r3;
 
 class Rectangle : public Shape {
-public:
+ public:
   struct Vert {
     Vec3f col;
     Vec3f norm;

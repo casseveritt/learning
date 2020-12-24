@@ -4,6 +4,7 @@
 
 #include <cstring>
 
+#include "board.h"
 #include "learning.h"
 #include "linear.h"
 #include "render.h"
@@ -52,7 +53,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
     leftClick = (action == GLFW_PRESS);
     glfwGetCursorPos(window, &rend->prevPos.x, &rend->prevPos.y);
     rend->SetCursorPos(rend->prevPos);
-    //rend->Intersect(width, height);
+    // rend->Intersect(width, height);
     anchor = rend->prevPos;
   }
   if (button == GLFW_MOUSE_BUTTON_RIGHT) {
@@ -72,6 +73,10 @@ static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) 
 */
 
 int main(void) {
+  Board board;
+
+  board.build(10, 10, 10);
+
   rend = CreateRenderer();
 
   glfwSetErrorCallback(error_callback);
@@ -91,7 +96,7 @@ int main(void) {
 
   glfwSetKeyCallback(window, key_callback);
   glfwSetMouseButtonCallback(window, mouse_button_callback);
-  //glfwSetScrollCallback(window, scroll_callback);
+  // glfwSetScrollCallback(window, scroll_callback);
 
   glfwMakeContextCurrent(window);  // This is the point when you can make gl calls
   glfwSwapInterval(1);
@@ -123,7 +128,7 @@ int main(void) {
 
     rend->SetWindowSize(width, height);
 
-    rend->Draw();
+    rend->Draw(board);
 
     glfwSwapBuffers(window);
     glfwPollEvents();

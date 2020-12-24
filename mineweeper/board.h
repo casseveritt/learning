@@ -5,20 +5,19 @@
 using namespace r3;
 
 class Board {
-public:
-	struct Tile{
-		int num = 0;
-		bool revealed;
-	};
-	Tile* board;
-	Vec3i boardD;
+ public:
+  struct Tile {
+    int num = 0;
+    bool revealed, flag;
+  };
+  Tile* board = nullptr;
+  int width, height, numMines;
+  bool initialized = false;
 
-	void build(Vec3i dimensions);
+  void build(int inx, int iny, int inb);
+  void initialize(int x, int y);
+  void reveal(int x, int y);
 
-	//void Draw(int w, int h);
-
-	//void Intersect(int w, int h, Vec2f intPoint);
-
-	Tile &el(int row, int col);
-  	Tile el(int row, int col) const;
+  Tile& el(int row, int col);
+  Tile el(int row, int col) const;
 };

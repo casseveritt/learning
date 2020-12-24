@@ -15,7 +15,7 @@ class Geom {
   struct Vertex {
     r3::Vec3f color;
     r3::Vec3f normal;
-    r3::Vec2f position;
+    r3::Vec3f position;
     r3::Vec2f texCoords;
   };
 

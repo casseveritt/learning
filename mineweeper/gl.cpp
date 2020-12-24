@@ -4,14 +4,14 @@
 
 #include <cstring>
 
+#include "board.h"
 #include "geom.h"
 #include "learning.h"
 #include "linear.h"
 #include "prog.h"
+#include "rectangle.h"
 #include "render.h"
 #include "scene.h"
-#include "rectangle.h"
-#include "board.h"
 #include "stb.h"
 
 using namespace r3;
@@ -25,17 +25,15 @@ struct RendererImpl : public Renderer {
   RendererImpl() {}
 
   void Init() override;
-  void Draw() override;
+  void Draw(const Board& b) override;
   void SetWindowSize(int w, int h) override;
-  //void Intersect(int w, int h) override;
+  // void Click(int w, int h) override;
   void SetCursorPos(Vec2d cursorPos) override;
 
   Scene scene;
   GLuint defaultVab;
 
   Prog constColorProg;
-
-  //Board gameBoard;   *****
 
   int width;
   int height;
@@ -69,10 +67,8 @@ static GLuint load_image(const char* imgName) {
 
   for (int j = 0; j < h; j++) {
     for (int i = 0; i < w; i++) {
-      int ij = i+j*w;
-      {
-        imgi[ij] = uint32_t(img[ij * n + 0]) << 0 | uint32_t(img[ij * n + 1]) << 8 | uint32_t(img[ij * n + 2]) << 16;
-      }
+      int ij = i + j * w;
+      { imgi[ij] = uint32_t(img[ij * n + 0]) << 0 | uint32_t(img[ij * n + 1]) << 8 | uint32_t(img[ij * n + 2]) << 16; }
     }
   }
 
@@ -100,7 +96,7 @@ void RendererImpl::Init() {
   constColorProg = Prog("ccol");
 
   // objects init begin
-  //gameBoard.build(boardDim);   *****
+  // gameBoard.build(boardDim);   *****
 
   glLineWidth(3);
 }
@@ -115,7 +111,7 @@ void RendererImpl::SetCursorPos(Vec2d cursorPos) {
 }
 
 /*
-void RendererImpl::Intersect(int w, int h) {
+void RendererImpl::Click(int w, int h) {
   currPos.y = (h - 1) - currPos.y;
   currPos.y = (currPos.y / (h - 1)) * 2 - 1;
   currPos.x = (currPos.x / (w - 1)) * 2 - 1;
@@ -146,7 +142,7 @@ void RendererImpl::Intersect(int w, int h) {
 }
 */
 
-void RendererImpl::Draw() {
+void RendererImpl::Draw(const Board& b) {
   scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t, Vec3f(0, 1, 0));
 
   glViewport(0, 0, width, height);
@@ -155,5 +151,6 @@ void RendererImpl::Draw() {
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
+  float aspectRatio = float(width) / height;
   scene.projMat = Ortho(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
 }

@@ -10,7 +10,7 @@ void Rectangle::build(float side0, float side1, Vec3f rCol) {
   obj.normal(0, 0, -1);
   obj.color(rCol.x, rCol.y, rCol.z);
 
-  //obj.texCoord(0.0f, 0.0f);
+  // obj.texCoord(0.0f, 0.0f);
   obj.position(0.0f, 0.0f, 0.0f);
   obj.texCoord(0.0f, s1);
   obj.position(0.0f, s1, 0.0f);
