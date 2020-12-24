@@ -22,9 +22,8 @@ void Board::build(int w, int h, int m) {
 }
 
 // Set the board with the first tile and its radius having no bombs
-void Board::initialize(int, int) {
+void Board::initialize(int x, int y) {
   state = Playing;
-  // return;
   int minesToPlace = numMines;
 
   while (minesToPlace > 0) {
@@ -32,7 +31,21 @@ void Board::initialize(int, int) {
     int c = rand() % height;
     Tile& t = el(c, r);
 
-    if (t.isMine) {
+    /*
+    bool inClickRadius = false;
+    for(int i=-1;i<2;i++) {
+      for(int j=-1;j<2;j++) {
+        int xx = x+i;
+        int yy = y+j;
+        if((xx < width && xx>=0) && (yy < height && yy>=0)){
+          if(c == xx && r == yy) {
+            inClickRadius = true;
+          }
+        }
+      }
+    }
+    */
+    if (t.isMine) {  //} || inClickRadius) {
       continue;
     }
     t.isMine = true;
@@ -51,6 +64,48 @@ void Board::initialize(int, int) {
   }
 }
 
+void Board::checkWin() {
+  int tilesToWin = (width * height) - numMines;
+  for (int x = 0; x < width; x++) {
+    for (int y = 0; y < height; y++) {
+      if (!el(x, y).isMine && el(x, y).revealed) {
+        tilesToWin--;
+      }
+    }
+  }
+  if (tilesToWin == 0) {
+    state = Won;
+  }
+}
+
+void Board::lostGame() {
+  for (int x = 0; x < width; x++) {
+    for (int y = 0; y < height; y++) {
+      if (el(x, y).isMine && !el(x, y).flagged) {
+        el(x, y).revealed = true;
+      }
+    }
+  }
+  state = Failed;
+}
+
+void Board::flood(int x, int y) {
+  if (el(x, y).adjMines == 0 && !el(x, y).revealed) {
+    el(x, y).revealed = true;
+    for (int i = -1; i < 2; i++) {
+      for (int j = -1; j < 2; j++) {
+        int xx = x + i;
+        int yy = y + j;
+        if ((xx < width && xx >= 0) && (yy < height && yy >= 0)) {
+          flood(xx, yy);
+        }
+      }
+    }
+  } else {
+    el(x, y).revealed = true;
+  }
+}
+
 void Board::reveal(int x, int y) {
   if (state == Uninitialized) {
     initialize(x, y);
@@ -61,16 +116,47 @@ void Board::reveal(int x, int y) {
 
   Tile& t = el(x, y);
 
-  if (t.flagged) {
+  if (t.revealed && (t.adjMines > 0)) {
+    int flagCount = 0;
+    for (int i = -1; i < 2; i++) {
+      for (int j = -1; j < 2; j++) {
+        if ((x + i < width && x + i >= 0) && (y + j < height && y + j >= 0)) {
+          if (el(x + i, y + j).flagged) {
+            flagCount++;
+          }
+        }
+      }
+    }
+    if (flagCount == t.adjMines) {
+      for (int i = -1; i < 2; i++) {
+        for (int j = -1; j < 2; j++) {
+          if ((x + i < width && x + i >= 0) && (y + j < height && y + j >= 0)) {
+            if (!el(x + i, y + j).flagged && !el(x + i, y + j).revealed) {
+              el(x + i, y + j).revealed = true;
+            }
+          }
+        }
+      }
+      checkWin();
+    }
+  }
+
+  if (t.flagged || t.revealed) {
     return;
   }
 
-  if (t.revealed) {
+  if (t.adjMines == 0 && !t.isMine) {
+    flood(x, y);
+    checkWin();
     return;
   }
+
   t.revealed = true;
+  checkWin();
 
   if (t.isMine) {
+    t.flagged = true;
+    lostGame();
     state = Failed;
     return;
   }

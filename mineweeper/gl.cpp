@@ -162,6 +162,9 @@ static Rectangle makeTile(const Board::Tile& t, Vec3f pos, float xSide, float yS
   if (t.revealed) {
     if (t.isMine) {
       rect.obj.tex = mine;
+      if (t.flagged) {
+        rect.obj.tex = clickMine;
+      }
     } else {
       switch (t.adjMines) {
         case 0:
@@ -210,7 +213,6 @@ void RendererImpl::Draw(const Board& b) {
 
   glClearColor(0.05f, 0.05f, 0.05f, 0);
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-  glEnable(GL_DEPTH_TEST);
 
   float aspectRatio = float(width) / height;
   scene.projMat = Ortho(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);

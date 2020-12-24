@@ -22,6 +22,9 @@ class Board {
 
   void build(int inx, int iny, int inb);
   void initialize(int x, int y);
+  void checkWin();
+  void lostGame();
+  void flood(int x, int y);
   void reveal(int x, int y);
   void flag(int x, int y);
 
