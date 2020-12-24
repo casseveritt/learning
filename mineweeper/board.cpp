@@ -31,21 +31,17 @@ void Board::initialize(int x, int y) {
     int c = rand() % height;
     Tile& t = el(c, r);
 
-    /*
     bool inClickRadius = false;
-    for(int i=-1;i<2;i++) {
-      for(int j=-1;j<2;j++) {
-        int xx = x+i;
-        int yy = y+j;
-        if((xx < width && xx>=0) && (yy < height && yy>=0)){
-          if(c == xx && r == yy) {
+    for (int i = -1; i < 2; i++) {
+      for (int j = -1; j < 2; j++) {
+        if ((x + i < width && x + i >= 0) && (y + j < height && y + j >= 0)) {
+          if (c == x + i && r == y + j) {
             inClickRadius = true;
           }
         }
       }
     }
-    */
-    if (t.isMine) {  //} || inClickRadius) {
+    if (t.isMineS || inClickRadius) {
       continue;
     }
     t.isMine = true;

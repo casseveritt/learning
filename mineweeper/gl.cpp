@@ -23,6 +23,7 @@ using namespace r3;
 
 GLuint zero, one, two, three, four, five, six, seven, eight;
 GLuint unrev, flag, mine, clickMine;
+Rectangle rect;
 
 struct RendererImpl : public Renderer {
   RendererImpl() {}
@@ -156,8 +157,7 @@ void RendererImpl::Click(int w, int h) {
 }
 */
 
-static Rectangle makeTile(const Board::Tile& t, Vec3f pos, float xSide, float ySide) {
-  Rectangle rect;
+static void makeTile(const Board::Tile& t, Vec3f pos, float xSide, float ySide) {
   rect.obj.tex = unrev;
   if (t.revealed) {
     if (t.isMine) {
@@ -203,7 +203,6 @@ static Rectangle makeTile(const Board::Tile& t, Vec3f pos, float xSide, float yS
   }
   rect.build(xSide, ySide);
   rect.obj.modelPose.t = pos;
-  return rect;
 }
 
 void RendererImpl::Draw(const Board& b) {
@@ -221,7 +220,7 @@ void RendererImpl::Draw(const Board& b) {
   float ySide = 1.0f / (b.height);
   for (int x = 0; x < b.width; x++) {
     for (int y = 0; y < b.height; y++) {
-      Rectangle rect = makeTile(b.el(x, y), Vec3f((xSide * x), (ySide * (b.height - (1 + y))), 0.0f), xSide, ySide);
+      makeTile(b.el(x, y), Vec3f((xSide * x), (ySide * (b.height - (1 + y))), 0.0f), xSide, ySide);
       rect.draw(scene, texProg);
     }
   }
