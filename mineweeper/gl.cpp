@@ -21,6 +21,9 @@ using namespace r3;
   sudo apt install libgles2-mesa-dev libglfw3-dev
 */
 
+GLuint zero, one, two, three, four, five, six, seven, eight;
+GLuint unrev, flag, mine, clickMine;
+
 struct RendererImpl : public Renderer {
   RendererImpl() {}
 
@@ -33,7 +36,7 @@ struct RendererImpl : public Renderer {
   Scene scene;
   GLuint defaultVab;
 
-  Prog constColorProg;
+  Prog constColorProg, texProg;
 
   int width;
   int height;
@@ -94,6 +97,22 @@ void RendererImpl::Init() {
 
   // programs init begin
   constColorProg = Prog("ccol");
+  texProg = Prog("tex");
+
+  zero = load_image("0tile.png");
+  one = load_image("1tile.png");
+  two = load_image("2tile.png");
+  three = load_image("3tile.png");
+  four = load_image("4tile.png");
+  five = load_image("5tile.png");
+  six = load_image("6tile.png");
+  seven = load_image("7tile.png");
+  eight = load_image("8tile.png");
+
+  unrev = load_image("unrevealed.png");
+  flag = load_image("flagged.png");
+  mine = load_image("mine.png");
+  clickMine = load_image("clickedMine.png");
 }
 
 void RendererImpl::SetWindowSize(int w, int h) {
@@ -138,48 +157,48 @@ void RendererImpl::Click(int w, int h) {
 */
 
 static Rectangle makeTile(const Board::Tile& t, Vec3f pos, float xSide, float ySide) {
-  Vec3f tileCol(0.9f, 0.9f, 0.9f);
+  Rectangle rect;
+  rect.obj.tex = unrev;
   if (t.revealed) {
     if (t.isMine) {
-      tileCol = Vec3f(0.8f, 0.2f, 0.2f);
+      rect.obj.tex = mine;
     } else {
       switch (t.adjMines) {
         case 0:
-          tileCol = Vec3f(0.7f, 0.7f, 0.7f);
+          rect.obj.tex = zero;
           break;
         case 1:
-          tileCol = Vec3f(0.4f, 0.4f, 0.8f);
+          rect.obj.tex = one;
           break;
         case 2:
-          tileCol = Vec3f(0.4f, 0.8f, 0.4f);
+          rect.obj.tex = two;
           break;
         case 3:
-          tileCol = Vec3f(0.8f, 0.5f, 0.1f);
+          rect.obj.tex = three;
           break;
         case 4:
-          tileCol = Vec3f(0.1f, 0.1f, 0.4f);
+          rect.obj.tex = four;
           break;
         case 5:
-          tileCol = Vec3f(0.55f, 0.1f, 0.1f);
+          rect.obj.tex = five;
           break;
         case 6:
-          tileCol = Vec3f(0.2f, 0.8f, 0.8f);
+          rect.obj.tex = six;
           break;
         case 7:
-          tileCol = Vec3f(0.05f, 0.05f, 0.05f);
+          rect.obj.tex = seven;
           break;
         case 8:
-          tileCol = Vec3f(0.4f, 0.4f, 0.4f);
+          rect.obj.tex = eight;
           break;
         default:
           break;
       }
     }
   } else if (t.flagged) {
-    tileCol = Vec3f(0.8f, 0.8f, 0.2f);
+    rect.obj.tex = flag;
   }
-  Rectangle rect;
-  rect.build(xSide, ySide, tileCol);
+  rect.build(xSide, ySide);
   rect.obj.modelPose.t = pos;
   return rect;
 }
@@ -201,7 +220,7 @@ void RendererImpl::Draw(const Board& b) {
   for (int x = 0; x < b.width; x++) {
     for (int y = 0; y < b.height; y++) {
       Rectangle rect = makeTile(b.el(x, y), Vec3f((xSide * x), (ySide * (b.height - (1 + y))), 0.0f), xSide, ySide);
-      rect.draw(scene, constColorProg);
+      rect.draw(scene, texProg);
     }
   }
 }
