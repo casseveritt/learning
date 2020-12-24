@@ -94,20 +94,30 @@ int main(void) {
 
   rend->Init();
 
-  bool clickHandled = false;
+  bool leftClickHandled = false;
+  bool rightClickHandled = false;
 
   while (!glfwWindowShouldClose(window)) {
     glfwGetFramebufferSize(window, &width, &height);
 
-    if (clickHandled == false && leftClick != false) {
-      clickHandled = true;
+    if (leftClickHandled == false && leftClick != false) {
+      leftClickHandled = true;
       Vec2d p;
       glfwGetCursorPos(window, &p.x, &p.y);
       int row = board.height * (p.y / height);
       int col = board.width * (p.x / width);
       board.reveal(col, row);
-    } else if (clickHandled != false && leftClick == false) {
-      clickHandled = false;
+    } else if (leftClickHandled != false && leftClick == false) {
+      leftClickHandled = false;
+    } if (rightClickHandled == false && rightClick != false) {
+      rightClickHandled = true;
+      Vec2d p;
+      glfwGetCursorPos(window, &p.x, &p.y);
+      int row = board.height * (p.y / height);
+      int col = board.width * (p.x / width);
+      board.flag(col, row);
+    } else if (rightClickHandled != false && rightClick == false) {
+      rightClickHandled = false;
     }
 
     rend->SetWindowSize(width, height);
