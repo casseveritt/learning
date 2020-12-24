@@ -94,11 +94,6 @@ void RendererImpl::Init() {
 
   // programs init begin
   constColorProg = Prog("ccol");
-
-  // objects init begin
-  // gameBoard.build(boardDim);   *****
-
-  glLineWidth(3);
 }
 
 void RendererImpl::SetWindowSize(int w, int h) {
@@ -142,6 +137,17 @@ void RendererImpl::Click(int w, int h) {
 }
 */
 
+static Rectangle drawTile(const Board::Tile& t, float xSide, float ySide, Vec3f pos) {
+  Vec3f tileCol(0.9f, 0.9f, 0.9f);
+  if (t.revealed) {
+    tileCol = Vec3f(0.5f, 0.5f, 0.5f);
+  }
+  Rectangle rect;
+  rect.build(xSide, ySide, tileCol);
+  rect.obj.modelPose.t = pos;
+  return rect;
+}
+
 void RendererImpl::Draw(const Board& b) {
   scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t, Vec3f(0, 1, 0));
 
@@ -153,4 +159,13 @@ void RendererImpl::Draw(const Board& b) {
 
   float aspectRatio = float(width) / height;
   scene.projMat = Ortho(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
+
+  float xSide = 1.0f / (b.width);
+  float ySide = 1.0f / (b.height);
+  for (int x = 0; x < b.width; x++) {
+    for (int y = 0; y < b.height; y++) {
+      Rectangle rect = drawTile(b.el(x, y), xSide, ySide, Vec3f((xSide * x), (ySide * (b.height - (1 + y))), 0.0f));
+      rect.draw(scene, constColorProg);
+    }
+  }
 }

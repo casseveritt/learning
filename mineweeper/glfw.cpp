@@ -53,7 +53,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
     leftClick = (action == GLFW_PRESS);
     glfwGetCursorPos(window, &rend->prevPos.x, &rend->prevPos.y);
     rend->SetCursorPos(rend->prevPos);
-    // rend->Intersect(width, height);
+    // rend->Click(width, height);
     anchor = rend->prevPos;
   }
   if (button == GLFW_MOUSE_BUTTON_RIGHT) {
@@ -101,7 +101,6 @@ int main(void) {
   glfwMakeContextCurrent(window);  // This is the point when you can make gl calls
   glfwSwapInterval(1);
 
-  rend->boardDim = Vec3i(20, 20, 100);
   rend->Init();
 
   while (!glfwWindowShouldClose(window)) {

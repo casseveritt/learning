@@ -12,11 +12,11 @@ void Rectangle::build(float side0, float side1, Vec3f rCol) {
 
   // obj.texCoord(0.0f, 0.0f);
   obj.position(0.0f, 0.0f, 0.0f);
-  obj.texCoord(0.0f, s1);
+  // obj.texCoord(0.0f, s1);
   obj.position(0.0f, s1, 0.0f);
-  obj.texCoord(s0, 0.0f);
+  // obj.texCoord(s0, 0.0f);
   obj.position(s0, 0.0f, 0.0f);
-  obj.texCoord(s0, s1);
+  // obj.texCoord(s0, s1);
   obj.position(s0, s1, 0.0f);
   obj.end();
 }
