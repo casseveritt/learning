@@ -14,20 +14,34 @@ void Board::build(int w, int h, int m) {
     for (int c = 0; c < width; c++) {
       Tile& t = el(r, c);
       t.revealed = false;
-      t.flag = false;
-      t.num = 0;
+      t.flagged = false;
+      t.adjMines = 0;
     }
   }
 }
 
 // Set the board with the first tile and its radius having no bombs
 void Board::initialize(int, int) {
-  initialized = true;
+  state = Playing;
 }
 
 void Board::reveal(int x, int y) {
-  if (!initialized) {
+  if (state == Uninitialized) {
     initialize(x, y);
+  }
+  if (state != Playing) {
+    return;
+  }
+  Tile& t = el(x, y);
+
+  if (t.revealed) {
+    return;
+  }
+  t.revealed = true;
+
+  if (t.isMine) {
+    state = Failed;
+    return;
   }
 }
 
