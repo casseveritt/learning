@@ -1,5 +1,4 @@
 #include "board.h"
-#include "rectangle.h"
 
 // Set the board
 void Board::build(int w, int h, int m) {
