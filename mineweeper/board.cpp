@@ -28,9 +28,9 @@ void Board::initialize(int, int) {
   int minesToPlace = numMines;
 
   while (minesToPlace > 0) {
-    int randRow = rand() % width;
-    int randCol = rand() % height;
-    Tile& t = el(randCol, randRow);
+    int r = rand() % width;
+    int c = rand() % height;
+    Tile& t = el(c, r);
 
     if (t.isMine) {
       continue;
@@ -39,11 +39,15 @@ void Board::initialize(int, int) {
 
     minesToPlace--;
 
-    for (int r = -1; r < 2; r++) {
-      for (int c = -1; c < 2; c++) {
-        /* code */
+    for (int rr = r - 1; rr < r + 2; rr++) {
+      for (int cc = c - 1; cc < c + 2; cc++) {
+        if (rr >= 0 && rr < height && cc >= 0 && cc < width) {
+          Tile& u = el(cc, rr);
+          u.adjMines++;
+        }
       }
     }
+    t.adjMines--;
   }
 }
 
