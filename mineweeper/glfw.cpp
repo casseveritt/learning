@@ -109,7 +109,8 @@ int main(void) {
       board.reveal(col, row);
     } else if (leftClickHandled != false && leftClick == false) {
       leftClickHandled = false;
-    } if (rightClickHandled == false && rightClick != false) {
+    }
+    if (rightClickHandled == false && rightClick != false) {
       rightClickHandled = true;
       Vec2d p;
       glfwGetCursorPos(window, &p.x, &p.y);
