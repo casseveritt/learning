@@ -4,21 +4,11 @@
 
 // Set the board
 void Board::build(int w, int h, int m) {
-  if (board != nullptr) {
-    delete[] board;
-  }
-  board = new Tile[w * h];
+  board.clear();
+  board.resize(w * h);
   width = w;
   height = h;
   numMines = m;
-  for (int r = 0; r < height; r++) {
-    for (int c = 0; c < width; c++) {
-      Tile& t = el(r, c);
-      t.revealed = false;
-      t.flagged = false;
-      t.adjMines = 0;
-    }
-  }
 }
 
 // Set the board with the first tile and its radius having no bombs
@@ -27,8 +17,8 @@ void Board::initialize(int x, int y) {
   int minesToPlace = numMines;
 
   while (minesToPlace > 0) {
-    int r = rand() % width;
-    int c = rand() % height;
+    int c = rand() % width;
+    int r = rand() % height;
     Tile& t = el(c, r);
 
     bool inClickRadius = false;

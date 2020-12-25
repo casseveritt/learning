@@ -1,23 +1,24 @@
 #pragma once
 
+#include <vector>
+
 #include "linear.h"
 
 using namespace r3;
 
 class Board {
  public:
-  enum State {
-    Uninitialized,
-    Playing,
-    Failed,
-    Won,
-  };
+  enum State { Uninitialized, Playing, Failed, Won };
   struct Tile {
     int adjMines = 0;
-    bool revealed, flagged, isMine;
+    bool revealed = false;
+    bool flagged = false;
+    bool isMine = false;
   };
-  Tile* board = nullptr;
-  int width, height, numMines;
+  std::vector<Tile> board;
+  int width = 0;
+  int height = 0;
+  int numMines = 0;
   State state = Uninitialized;
 
   void build(int inx, int iny, int inb);

@@ -87,9 +87,11 @@ int main(int argc, char** argv) {
 
   srand(seed);
 
-  board.build(bWidth, bHeight, mines);
+  printf("w=%d, h=%d, mines=%d\n", bWidth, bHeight, mines);
 
   rend = CreateRenderer();
+
+  board.build(bWidth, bHeight, mines);
 
   glfwSetErrorCallback(error_callback);
 

@@ -15,7 +15,9 @@ Geom::Geom() {
 }
 
 void Geom::begin(GLenum prim) {
-  glGenBuffers(1, &b);
+  if (b == 0) {
+    glGenBuffers(1, &b);
+  }
   primType = prim;
   verts.clear();
 }
