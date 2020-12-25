@@ -41,7 +41,7 @@ void Board::initialize(int x, int y) {
         }
       }
     }
-    if (t.isMineS || inClickRadius) {
+    if (t.isMine || inClickRadius) {
       continue;
     }
     t.isMine = true;

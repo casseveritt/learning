@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include <cstring>
 
@@ -63,10 +64,30 @@ static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) 
 }
 */
 
-int main(void) {
+int main(int argc, char** argv) {
   Board board;
 
-  board.build(10, 10, 10);
+  int bWidth = 10;
+  int bHeight = 10;
+  int mines = 10;
+
+  timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+
+  uint32_t seed = uint32_t(ts.tv_nsec / 10000) + uint32_t(ts.tv_sec);
+
+  if (argc == 2) {
+    seed = atoi(argv[1]);
+  }
+  if (argc == 4) {
+    bWidth = atoi(argv[1]);
+    bHeight = atoi(argv[2]);
+    mines = atoi(argv[3]);
+  }
+
+  srand(seed);
+
+  board.build(bWidth, bHeight, mines);
 
   rend = CreateRenderer();
 
