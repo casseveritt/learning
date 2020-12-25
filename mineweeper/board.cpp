@@ -1,6 +1,7 @@
 #include "board.h"
 
-#include "stdlib.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 // Set the board
 void Board::build(int w, int h, int m) {
@@ -12,40 +13,42 @@ void Board::build(int w, int h, int m) {
 }
 
 // Set the board with the first tile and its radius having no bombs
-void Board::initialize(int x, int y) {
+void Board::initialize(int fx, int fy) {
   state = Playing;
   int minesToPlace = numMines;
 
   while (minesToPlace > 0) {
-    int c = rand() % width;
-    int r = rand() % height;
-    Tile& t = el(c, r);
+    int x = rand() % width;
+    int y = rand() % height;
+    Tile& t = el(x, y);
 
-    bool inClickRadius = false;
-    for (int i = -1; i < 2; i++) {
-      for (int j = -1; j < 2; j++) {
-        if ((x + i < width && x + i >= 0) && (y + j < height && y + j >= 0)) {
-          if (c == x + i && r == y + j) {
-            inClickRadius = true;
-          }
-        }
-      }
-    }
-    if (t.isMine || inClickRadius) {
+    if (t.isMine) {
       continue;
     }
-    t.isMine = true;
 
-    minesToPlace--;
-
-    for (int rr = r - 1; rr < r + 2; rr++) {
-      for (int cc = c - 1; cc < c + 2; cc++) {
-        if (rr >= 0 && rr < height && cc >= 0 && cc < width) {
-          Tile& u = el(cc, rr);
-          u.adjMines++;
-        }
+    // We don't place mines on or adjacent to the first clicked location.
+    bool adjacentToFirstClick = false;
+    for (int yy = std::max(y - 1, 0); yy < std::min(y + 2, height); yy++) {
+      for (int xx = std::max(x - 1, 0); xx < std::min(x + 2, width); xx++) {
+        adjacentToFirstClick = adjacentToFirstClick || (std::abs(xx - fx) < 2 && std::abs(yy - fy) < 2);
       }
     }
+    if (adjacentToFirstClick) {
+      continue;
+    }
+
+    // Place this mine.
+    t.isMine = true;
+    minesToPlace--;
+
+    // Increment the adjMines for all adjacent tiles
+    for (int yy = std::max(y - 1, 0); yy < std::min(y + 2, height); yy++) {
+      for (int xx = std::max(x - 1, 0); xx < std::min(x + 2, width); xx++) {
+        Tile& u = el(xx, yy);
+        u.adjMines++;
+      }
+    }
+    // Not that it matters, but fix up adjMines for this tile.
     t.adjMines--;
   }
 }
@@ -54,7 +57,8 @@ void Board::checkWin() {
   int tilesToWin = (width * height) - numMines;
   for (int x = 0; x < width; x++) {
     for (int y = 0; y < height; y++) {
-      if (!el(x, y).isMine && el(x, y).revealed) {
+      Tile& t = el(x, y);
+      if (!t.isMine && t.revealed) {
         tilesToWin--;
       }
     }
@@ -67,8 +71,9 @@ void Board::checkWin() {
 void Board::lostGame() {
   for (int x = 0; x < width; x++) {
     for (int y = 0; y < height; y++) {
-      if (el(x, y).isMine && !el(x, y).flagged) {
-        el(x, y).revealed = true;
+      Tile& t = el(x, y);
+      if (t.isMine && !t.flagged) {
+        t.revealed = true;
       }
     }
   }
@@ -76,23 +81,24 @@ void Board::lostGame() {
 }
 
 void Board::flood(int x, int y) {
-  if (el(x, y).adjMines == 0 && !el(x, y).revealed) {
-    el(x, y).revealed = true;
-    for (int i = -1; i < 2; i++) {
-      for (int j = -1; j < 2; j++) {
-        int xx = x + i;
-        int yy = y + j;
-        if ((xx < width && xx >= 0) && (yy < height && yy >= 0)) {
+  Tile& t = el(x, y);
+  if (t.revealed) {
+    return;
+  }
+  t.revealed = true;
+  if (t.adjMines == 0) {
+    for (int yy = std::max(y - 1, 0); yy < std::min(y + 2, height); yy++) {
+      for (int xx = std::max(x - 1, 0); xx < std::min(x + 2, width); xx++) {
+        if ((xx != x) || (yy != y)) {
           flood(xx, yy);
         }
       }
     }
-  } else {
-    el(x, y).revealed = true;
   }
 }
 
 void Board::reveal(int x, int y) {
+  printf("reveal: %d, %d\n", x, y);
   if (state == Uninitialized) {
     initialize(x, y);
   }
@@ -102,43 +108,9 @@ void Board::reveal(int x, int y) {
 
   Tile& t = el(x, y);
 
-  if (t.revealed && (t.adjMines > 0)) {
-    int flagCount = 0;
-    for (int i = -1; i < 2; i++) {
-      for (int j = -1; j < 2; j++) {
-        if ((x + i < width && x + i >= 0) && (y + j < height && y + j >= 0)) {
-          if (el(x + i, y + j).flagged) {
-            flagCount++;
-          }
-        }
-      }
-    }
-    if (flagCount == t.adjMines) {
-      for (int i = -1; i < 2; i++) {
-        for (int j = -1; j < 2; j++) {
-          if ((x + i < width && x + i >= 0) && (y + j < height && y + j >= 0)) {
-            if (!el(x + i, y + j).flagged && !el(x + i, y + j).revealed) {
-              el(x + i, y + j).revealed = true;
-            }
-          }
-        }
-      }
-      checkWin();
-    }
-  }
-
   if (t.flagged || t.revealed) {
     return;
   }
-
-  if (t.adjMines == 0 && !t.isMine) {
-    flood(x, y);
-    checkWin();
-    return;
-  }
-
-  t.revealed = true;
-  checkWin();
 
   if (t.isMine) {
     t.flagged = true;
@@ -146,12 +118,38 @@ void Board::reveal(int x, int y) {
     state = Failed;
     return;
   }
+
+  if (t.revealed && (t.adjMines > 0)) {
+    int flagCount = 0;
+    for (int yy = std::max(y - 1, 0); yy < std::min(y + 2, height); yy++) {
+      for (int xx = std::max(x - 1, 0); xx < std::min(x + 2, width); xx++) {
+        if (el(xx, yy).flagged) {
+          flagCount++;
+        }
+      }
+    }
+    if (flagCount == t.adjMines) {
+      for (int yy = std::max(y - 1, 0); yy < std::min(y + 2, height); yy++) {
+        for (int xx = std::max(x - 1, 0); xx < std::min(x + 2, width); xx++) {
+          Tile& n = el(xx, yy);
+          if (!n.flagged && !n.revealed) {
+            n.revealed = true;
+          }
+        }
+      }
+      checkWin();
+    }
+  }
+
+  flood(x, y);
+  checkWin();
 }
 
 // Places a flag on UNREVEALED tiles, or takes them off
 void Board::flag(int x, int y) {
-  if (!el(x, y).revealed) {
-    el(x, y).flagged = (!el(x, y).flagged);
+  Tile& t = el(x, y);
+  if (!t.revealed) {
+    t.flagged = !t.flagged;
   }
 }
 

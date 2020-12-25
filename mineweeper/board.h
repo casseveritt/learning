@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 
 #include "linear.h"
@@ -29,6 +30,6 @@ class Board {
   void reveal(int x, int y);
   void flag(int x, int y);
 
-  Tile& el(int row, int col);
-  Tile el(int row, int col) const;
+  Tile& el(int x, int y);
+  Tile el(int x, int y) const;
 };

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include <atomic>
 #include <cstring>
 
 #include "board.h"
@@ -20,8 +21,8 @@ using namespace r3;
 Renderer* rend = nullptr;
 int frame = 0;
 int width, height;
-bool leftClick = false;
-bool rightClick = false;
+std::atomic<uint32_t> leftClick(0);
+std::atomic<uint32_t> rightClick(0);
 
 static void error_callback(int error, const char* description) {
   fprintf(stderr, "Error: %d: %s\n", error, description);
@@ -45,12 +46,18 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
 
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int /*mods*/) {
   if (button == GLFW_MOUSE_BUTTON_LEFT) {
-    leftClick = (action == GLFW_PRESS);
+    if (action != GLFW_PRESS) {
+      leftClick++;
+      printf("left click = %d\n", leftClick.load());
+    }
     glfwGetCursorPos(window, &rend->prevPos.x, &rend->prevPos.y);
     rend->SetCursorPos(rend->prevPos);
   }
   if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-    rightClick = (action == GLFW_PRESS);
+    if (action == GLFW_PRESS) {
+      rightClick++;
+      printf("right click = %d\n", rightClick.load());
+    }
     glfwGetCursorPos(window, &rend->prevPos.x, &rend->prevPos.y);
   }
 }
@@ -85,6 +92,7 @@ int main(int argc, char** argv) {
     mines = atoi(argv[3]);
   }
 
+  seed = 0;
   srand(seed);
 
   printf("w=%d, h=%d, mines=%d\n", bWidth, bHeight, mines);
@@ -117,31 +125,30 @@ int main(int argc, char** argv) {
 
   rend->Init();
 
-  bool leftClickHandled = false;
-  bool rightClickHandled = false;
+  uint32_t prevLeftClick = 0;
+  uint32_t prevRightClick = 0;
 
   while (!glfwWindowShouldClose(window)) {
     glfwGetFramebufferSize(window, &width, &height);
 
-    if (leftClickHandled == false && leftClick != false) {
-      leftClickHandled = true;
+    if (prevLeftClick < leftClick.load()) {
+      prevLeftClick = leftClick.load();
+      printf("leftClick = %d\n", prevLeftClick);
       Vec2d p;
       glfwGetCursorPos(window, &p.x, &p.y);
       int row = board.height * (p.y / height);
       int col = board.width * (p.x / width);
       board.reveal(col, row);
-    } else if (leftClickHandled != false && leftClick == false) {
-      leftClickHandled = false;
     }
-    if (rightClickHandled == false && rightClick != false) {
-      rightClickHandled = true;
+
+    if (prevRightClick < rightClick.load()) {
+      prevRightClick = rightClick.load();
+      printf("rightClick = %d\n", prevRightClick);
       Vec2d p;
       glfwGetCursorPos(window, &p.x, &p.y);
-      int row = board.height * (p.y / height);
-      int col = board.width * (p.x / width);
+      int row = board.height * (p.y / height) + 0.5;
+      int col = board.width * (p.x / width) + 0.5;
       board.flag(col, row);
-    } else if (rightClickHandled != false && rightClick == false) {
-      rightClickHandled = false;
     }
 
     rend->SetWindowSize(width, height);
