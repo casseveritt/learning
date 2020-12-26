@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include <cstring>
 
@@ -205,7 +206,18 @@ static void makeTile(const Board::Tile& t, Vec3f pos, float xSide, float ySide) 
   rect.obj.modelPose.t = pos;
 }
 
+static double GetTimeInSeconds() {
+  timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return double(int64_t(ts.tv_sec) * int64_t(1e9) + int64_t(ts.tv_nsec)) * 1e-9;
+}
+
 void RendererImpl::Draw(const Board& b) {
+  static int frames = 0;
+  static double sumtime = 0.0;
+
+  double t0 = GetTimeInSeconds();
+
   scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t, Vec3f(0, 1, 0));
 
   glViewport(0, 0, width, height);
@@ -223,5 +235,14 @@ void RendererImpl::Draw(const Board& b) {
       makeTile(b.el(x, y), Vec3f((xSide * x), (ySide * (b.height - (1 + y))), 0.0f), xSide, ySide);
       rect.draw(scene, texProg);
     }
+  }
+
+  double t1 = GetTimeInSeconds();
+  frames++;
+  sumtime += (t1 - t0);
+  if (frames >= 100) {
+    printf("avg frame time = %d msec\n", int((sumtime / frames) * 1000));
+    frames = 0;
+    sumtime = 0.0;
   }
 }
