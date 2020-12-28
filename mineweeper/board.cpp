@@ -27,13 +27,7 @@ void Board::initialize(int fx, int fy) {
     }
 
     // We don't place mines on or adjacent to the first clicked location.
-    bool adjacentToFirstClick = false;
-    for (int yy = std::max(y - 1, 0); yy < std::min(y + 2, height); yy++) {
-      for (int xx = std::max(x - 1, 0); xx < std::min(x + 2, width); xx++) {
-        adjacentToFirstClick = adjacentToFirstClick || (std::abs(xx - fx) < 2 && std::abs(yy - fy) < 2);
-      }
-    }
-    if (adjacentToFirstClick) {
+    if ((std::abs(x - fx) < 2 && std::abs(y - fy) < 2)) {
       continue;
     }
 
