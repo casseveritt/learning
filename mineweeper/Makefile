@@ -19,7 +19,7 @@ all: $(PROG)
 
 H := $(wildcard *.h)
 
-SRC := geom.cpp gl.cpp glfw.cpp prog.cpp rectangle.cpp board.cpp
+SRC := geom.cpp gl.cpp glfw.cpp prog.cpp multrect.cpp rectangle.cpp board.cpp
 
 OBJ := $(patsubst %.cpp, %.o, $(SRC))
 

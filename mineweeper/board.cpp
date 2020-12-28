@@ -86,6 +86,7 @@ void Board::flood(int x, int y) {
     return;
   }
   t.revealed = true;
+  t.flagged = false;
   if (t.adjMines == 0) {
     for (int yy = std::max(y - 1, 0); yy < std::min(y + 2, height); yy++) {
       for (int xx = std::max(x - 1, 0); xx < std::min(x + 2, width); xx++) {
@@ -98,7 +99,6 @@ void Board::flood(int x, int y) {
 }
 
 void Board::reveal(int x, int y) {
-  printf("reveal: %d, %d\n", x, y);
   if (state == Uninitialized) {
     initialize(x, y);
   }
@@ -108,18 +108,7 @@ void Board::reveal(int x, int y) {
 
   Tile& t = el(x, y);
 
-  if (t.flagged || t.revealed) {
-    return;
-  }
-
-  if (t.isMine) {
-    t.flagged = true;
-    lostGame();
-    state = Failed;
-    return;
-  }
-
-  if (t.revealed && (t.adjMines > 0)) {
+  if (t.revealed && t.adjMines > 0) {
     int flagCount = 0;
     for (int yy = std::max(y - 1, 0); yy < std::min(y + 2, height); yy++) {
       for (int xx = std::max(x - 1, 0); xx < std::min(x + 2, width); xx++) {
@@ -131,15 +120,27 @@ void Board::reveal(int x, int y) {
     if (flagCount == t.adjMines) {
       for (int yy = std::max(y - 1, 0); yy < std::min(y + 2, height); yy++) {
         for (int xx = std::max(x - 1, 0); xx < std::min(x + 2, width); xx++) {
-          Tile& n = el(xx, yy);
-          if (!n.flagged && !n.revealed) {
-            n.revealed = true;
+          if (!el(xx, yy).flagged && !el(xx, yy).revealed) {
+            reveal(xx,yy);
           }
         }
       }
       checkWin();
     }
   }
+
+  if (t.flagged || t.revealed) {
+    return;
+  }
+
+  // Sets failed mine click as flagged and revealed to render differently
+  if (t.isMine) {
+    t.revealed = true;
+    t.flagged = true;
+    lostGame();
+    state = Failed;
+    return;
+  }  
 
   flood(x, y);
   checkWin();
@@ -148,7 +149,7 @@ void Board::reveal(int x, int y) {
 // Places a flag on UNREVEALED tiles, or takes them off
 void Board::flag(int x, int y) {
   Tile& t = el(x, y);
-  if (!t.revealed) {
+  if (!t.revealed && (state == Playing)) {
     t.flagged = !t.flagged;
   }
 }

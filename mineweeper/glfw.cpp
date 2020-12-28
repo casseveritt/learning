@@ -48,7 +48,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
   if (button == GLFW_MOUSE_BUTTON_LEFT) {
     if (action != GLFW_PRESS) {
       leftClick++;
-      printf("left click = %d\n", leftClick.load());
+      //printf("left click = %d\n", leftClick.load());
     }
     glfwGetCursorPos(window, &rend->prevPos.x, &rend->prevPos.y);
     rend->SetCursorPos(rend->prevPos);
@@ -56,7 +56,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
   if (button == GLFW_MOUSE_BUTTON_RIGHT) {
     if (action == GLFW_PRESS) {
       rightClick++;
-      printf("right click = %d\n", rightClick.load());
+      //printf("right click = %d\n", rightClick.load());
     }
     glfwGetCursorPos(window, &rend->prevPos.x, &rend->prevPos.y);
   }
@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
     mines = atoi(argv[3]);
   }
 
-  seed = 0;
+  //seed = 0;
   srand(seed);
 
   printf("w=%d, h=%d, mines=%d\n", bWidth, bHeight, mines);
@@ -123,7 +123,7 @@ int main(int argc, char** argv) {
   glfwMakeContextCurrent(window);  // This is the point when you can make gl calls
   glfwSwapInterval(1);
 
-  rend->Init();
+  rend->Init(board);
 
   uint32_t prevLeftClick = 0;
   uint32_t prevRightClick = 0;
@@ -133,7 +133,7 @@ int main(int argc, char** argv) {
 
     if (prevLeftClick < leftClick.load()) {
       prevLeftClick = leftClick.load();
-      printf("leftClick = %d\n", prevLeftClick);
+      //printf("leftClick = %d\n", prevLeftClick);
       Vec2d p;
       glfwGetCursorPos(window, &p.x, &p.y);
       int row = board.height * (p.y / height);
@@ -143,11 +143,11 @@ int main(int argc, char** argv) {
 
     if (prevRightClick < rightClick.load()) {
       prevRightClick = rightClick.load();
-      printf("rightClick = %d\n", prevRightClick);
+      //printf("rightClick = %d\n", prevRightClick);
       Vec2d p;
       glfwGetCursorPos(window, &p.x, &p.y);
-      int row = board.height * (p.y / height) + 0.5;
-      int col = board.width * (p.x / width) + 0.5;
+      int row = board.height * (p.y / height);
+      int col = board.width * (p.x / width);
       board.flag(col, row);
     }
 

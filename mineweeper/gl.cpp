@@ -10,7 +10,7 @@
 #include "learning.h"
 #include "linear.h"
 #include "prog.h"
-#include "rectangle.h"
+#include "multrect.h"
 #include "render.h"
 #include "scene.h"
 #include "stb.h"
@@ -22,23 +22,23 @@ using namespace r3;
   sudo apt install libgles2-mesa-dev libglfw3-dev
 */
 
-GLuint zero, one, two, three, four, five, six, seven, eight;
-GLuint unrev, flag, mine, clickMine;
-Rectangle rect;
-
 struct RendererImpl : public Renderer {
   RendererImpl() {}
 
-  void Init() override;
+  void Init(const Board& b) override;
   void Draw(const Board& b) override;
   void SetWindowSize(int w, int h) override;
-  // void Click(int w, int h) override;
   void SetCursorPos(Vec2d cursorPos) override;
 
   Scene scene;
   GLuint defaultVab;
 
   Prog constColorProg, texProg;
+
+  GLuint zero, one, two, three, four, five, six, seven, eight;
+  GLuint unrev, flag, mine, clickMine;
+
+  MultRect tiles;
 
   int width;
   int height;
@@ -87,7 +87,7 @@ static GLuint load_image(const char* imgName) {
   return out;
 }
 
-void RendererImpl::Init() {
+void RendererImpl::Init(const Board& b) {
   GLint version_maj = 0;
   GLint version_min = 0;
   glGetIntegerv(GL_MAJOR_VERSION, &version_maj);
@@ -97,10 +97,11 @@ void RendererImpl::Init() {
   glGenVertexArrays(1, &defaultVab);
   glBindVertexArray(defaultVab);
 
-  // programs init begin
+  // Programs init begin
   constColorProg = Prog("ccol");
   texProg = Prog("tex");
 
+  // Textures init begin
   zero = load_image("0tile.png");
   one = load_image("1tile.png");
   two = load_image("2tile.png");
@@ -115,6 +116,9 @@ void RendererImpl::Init() {
   flag = load_image("flagged.png");
   mine = load_image("mine.png");
   clickMine = load_image("clickedMine.png");
+
+  tiles.s0 = 1.0f / (b.width);
+  tiles.s1 = 1.0f / (b.height);
 }
 
 void RendererImpl::SetWindowSize(int w, int h) {
@@ -124,86 +128,6 @@ void RendererImpl::SetWindowSize(int w, int h) {
 
 void RendererImpl::SetCursorPos(Vec2d cursorPos) {
   currPos = cursorPos;
-}
-
-/*
-void RendererImpl::Click(int w, int h) {
-  currPos.y = (h - 1) - currPos.y;
-  currPos.y = (currPos.y / (h - 1)) * 2 - 1;
-  currPos.x = (currPos.x / (w - 1)) * 2 - 1;
-  Vec4f nearInClip = Vec4f(currPos.x, currPos.y, -1.0, 1.0);
-  Vec4f nearInCam = scene.projMat.Inverted() * nearInClip;
-  nearInCam /= nearInCam.w;
-  Vec4f farInClip = Vec4f(currPos.x, currPos.y, 1.0, 1.0);
-  Vec4f farInCam = scene.projMat.Inverted() * farInClip;
-  farInCam /= farInCam.w;
-  nIW3 = Homogenize(scene.camPose.GetMatrix4() * nearInCam);
-  fIW3 = Homogenize(scene.camPose.GetMatrix4() * farInCam);
-
-  Vec3f intLoc;
-  Vec3f objIntLoc;
-
-  float distance = (fIW3 - nIW3).Length();
-
-  for (auto shape : board) { // Need to add interesect for board to use here
-    if (shape->intersect(nIW3, fIW3, objIntLoc)) {
-      if ((objIntLoc - nIW3).Length() < distance) {
-        distance = (objIntLoc - nIW3).Length();
-        intObjLoc = shape->obj.modelPose.t - objIntLoc;
-        intLoc = objIntLoc;
-        hitShape = shape;
-      }
-    }
-  }
-}
-*/
-
-static void makeTile(const Board::Tile& t, Vec3f pos, float xSide, float ySide) {
-  rect.obj.tex = unrev;
-  if (t.revealed) {
-    if (t.isMine) {
-      rect.obj.tex = mine;
-      if (t.flagged) {
-        rect.obj.tex = clickMine;
-      }
-    } else {
-      switch (t.adjMines) {
-        case 0:
-          rect.obj.tex = zero;
-          break;
-        case 1:
-          rect.obj.tex = one;
-          break;
-        case 2:
-          rect.obj.tex = two;
-          break;
-        case 3:
-          rect.obj.tex = three;
-          break;
-        case 4:
-          rect.obj.tex = four;
-          break;
-        case 5:
-          rect.obj.tex = five;
-          break;
-        case 6:
-          rect.obj.tex = six;
-          break;
-        case 7:
-          rect.obj.tex = seven;
-          break;
-        case 8:
-          rect.obj.tex = eight;
-          break;
-        default:
-          break;
-      }
-    }
-  } else if (t.flagged) {
-    rect.obj.tex = flag;
-  }
-  rect.build(xSide, ySide);
-  rect.obj.modelPose.t = pos;
 }
 
 static double GetTimeInSeconds() {
@@ -225,23 +149,83 @@ void RendererImpl::Draw(const Board& b) {
   glClearColor(0.05f, 0.05f, 0.05f, 0);
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-  float aspectRatio = float(width) / height;
+  //float aspectRatio = float(width) / height;
   scene.projMat = Ortho(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
 
-  float xSide = 1.0f / (b.width);
-  float ySide = 1.0f / (b.height);
-  for (int x = 0; x < b.width; x++) {
-    for (int y = 0; y < b.height; y++) {
-      makeTile(b.el(x, y), Vec3f((xSide * x), (ySide * (b.height - (1 + y))), 0.0f), xSide, ySide);
-      rect.draw(scene, texProg);
+  std::vector<MultRect::Rect> rects;
+  for (int i=0;i<13;i++) {
+    switch (i) {
+      case 0:
+        tiles.obj.tex = zero;
+        break;
+      case 1:
+        tiles.obj.tex = one;
+        break;
+      case 2:
+        tiles.obj.tex = two;
+        break;
+      case 3:
+        tiles.obj.tex = three;
+        break;
+      case 4:
+        tiles.obj.tex = four;
+        break;
+      case 5:
+        tiles.obj.tex = five;
+        break;
+      case 6:
+        tiles.obj.tex = six;
+        break;
+      case 7:
+        tiles.obj.tex = seven;
+        break;
+      case 8:
+        tiles.obj.tex = eight;
+        break;
+      case 9:
+        tiles.obj.tex = unrev;
+        break;
+      case 10:
+        tiles.obj.tex = flag;
+        break;
+      case 11:
+        tiles.obj.tex = mine;
+        break;
+      case 12:
+        tiles.obj.tex = clickMine;
+        break;
+      default:
+      break;
     }
+    for (int x = 0; x < b.width; x++) {
+      for (int y = 0; y < b.height; y++) {
+        Board::Tile t = b.el(x, y);
+        if(i == t.adjMines && t.revealed) {
+          rects.push_back(MultRect::Rect(x,y));
+        } if (i == 9 && !t.revealed){
+          rects.push_back(MultRect::Rect(x,y));
+        } if (i == 10 && t.flagged){
+          rects.push_back(MultRect::Rect(x,y));
+        } if (i == 11 && t.isMine && t.revealed){
+          rects.push_back(MultRect::Rect(x,y));
+        }if (i == 12 && t.isMine && t.revealed && t.flagged){
+          rects.push_back(MultRect::Rect(x,y));
+        }
+        //rects.push_back(MultRect::Rect(x,y));
+        //setTile(b.el(x, y), xSide, ySide);
+        //rect.obj.modelPose.t = Vec3f((xSide * x), (ySide * (b.height - (1 + y))), 0.0f);
+        //rect.draw(scene, texProg);
+      }
+    }
+    tiles.draw(scene, texProg);
   }
 
   double t1 = GetTimeInSeconds();
   frames++;
   sumtime += (t1 - t0);
   if (frames >= 100) {
-    printf("avg frame time = %d msec\n", int((sumtime / frames) * 1000));
+    //printf("avg frame time = %d msec\n", int((sumtime / frames) * 1000));
+    printf("avg fps = %d\n", int((frames / (sumtime))));
     frames = 0;
     sumtime = 0.0;
   }
