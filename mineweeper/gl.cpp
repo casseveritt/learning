@@ -152,64 +152,27 @@ void RendererImpl::Draw(const Board& b) {
   //float aspectRatio = float(width) / height;
   scene.projMat = Ortho(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
 
-  std::vector<MultRect::Rect> rects;
+  GLuint tex[] = {
+    zero, one, two, three, four, five, six, seven, eight, unrev, flag, mine, clickMine
+  };
+
   for (int i=0;i<13;i++) {
-    switch (i) {
-      case 0:
-        tiles.obj.tex = zero;
-        break;
-      case 1:
-        tiles.obj.tex = one;
-        break;
-      case 2:
-        tiles.obj.tex = two;
-        break;
-      case 3:
-        tiles.obj.tex = three;
-        break;
-      case 4:
-        tiles.obj.tex = four;
-        break;
-      case 5:
-        tiles.obj.tex = five;
-        break;
-      case 6:
-        tiles.obj.tex = six;
-        break;
-      case 7:
-        tiles.obj.tex = seven;
-        break;
-      case 8:
-        tiles.obj.tex = eight;
-        break;
-      case 9:
-        tiles.obj.tex = unrev;
-        break;
-      case 10:
-        tiles.obj.tex = flag;
-        break;
-      case 11:
-        tiles.obj.tex = mine;
-        break;
-      case 12:
-        tiles.obj.tex = clickMine;
-        break;
-      default:
-      break;
-    }
+    std::vector<MultRect::Rect> rects;
+    tiles.obj.tex = tex[i];
     for (int x = 0; x < b.width; x++) {
       for (int y = 0; y < b.height; y++) {
         Board::Tile t = b.el(x, y);
+        MultRect::Rect r(x,y);
         if(i == t.adjMines && t.revealed) {
-          rects.push_back(MultRect::Rect(x,y));
-        } if (i == 9 && !t.revealed){
-          rects.push_back(MultRect::Rect(x,y));
-        } if (i == 10 && t.flagged){
-          rects.push_back(MultRect::Rect(x,y));
-        } if (i == 11 && t.isMine && t.revealed){
-          rects.push_back(MultRect::Rect(x,y));
-        }if (i == 12 && t.isMine && t.revealed && t.flagged){
-          rects.push_back(MultRect::Rect(x,y));
+          rects.push_back(r);
+        } else if (i == 9 && !t.revealed){
+          rects.push_back(r);
+        } else if (i == 10 && t.flagged){
+          rects.push_back(r);
+        } else if (i == 11 && t.isMine && t.revealed){
+          rects.push_back(r);
+        } else if (i == 12 && t.isMine && t.revealed && t.flagged){
+          rects.push_back(r);
         }
         //rects.push_back(MultRect::Rect(x,y));
         //setTile(b.el(x, y), xSide, ySide);
@@ -217,6 +180,7 @@ void RendererImpl::Draw(const Board& b) {
         //rect.draw(scene, texProg);
       }
     }
+    tiles.build(rects);
     tiles.draw(scene, texProg);
   }
 
@@ -224,7 +188,7 @@ void RendererImpl::Draw(const Board& b) {
   frames++;
   sumtime += (t1 - t0);
   if (frames >= 100) {
-    //printf("avg frame time = %d msec\n", int((sumtime / frames) * 1000));
+    printf("avg frame time = %d msec\n", int((sumtime / frames) * 1000));
     printf("avg fps = %d\n", int((frames / (sumtime))));
     frames = 0;
     sumtime = 0.0;
