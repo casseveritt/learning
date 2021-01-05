@@ -15,7 +15,6 @@ class Board {
     int adjMines = 0;
     bool flagged = false;
     bool isMine = false;
-    bool selected = false;
     bool removed = false;
   };
   std::vector<Tile> board;
@@ -24,13 +23,14 @@ class Board {
   int numMines = 0;
   int numSelected = 0;
   State state = Uninitialized;
+  Tile * selected = nullptr;
 
   void build(int inx, int iny, int inb);
   void initialize(int x, int y);
   void checkWin();
   void lostGame();
   void flood(int x, int y);
-  void reveal(int x, int y);
+  void select(int x, int y);
   void flag(int x, int y);
 
   Tile& el(int x, int y);

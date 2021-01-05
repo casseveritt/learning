@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
       glfwGetCursorPos(window, &p.x, &p.y);
       int row = board.height * (p.y / height);
       int col = board.width * (p.x / width);
-      board.reveal(col, row);
+      board.select(col, row);
     }
 
     if (prevRightClick < rightClick.load()) {

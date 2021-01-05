@@ -9,7 +9,7 @@ void Board::build(int w, int h, int m) {
   board.resize(w * h);
   width = w;
   height = h;
-  //numMines = m;
+  numMines = m;
 }
 
 // Set the board with the first tile and its radius having no bombs
@@ -96,7 +96,7 @@ void Board::initialize(int fx, int fy) {
   }
 }*/
 
-void Board::reveal(int x, int y) {
+void Board::select(int x, int y) {
   if (state == Uninitialized) {
     initialize(x, y);
   }
@@ -105,10 +105,19 @@ void Board::reveal(int x, int y) {
   }
 
   Tile& t = el(x, y);
-
-  if (!t.selected && state == Playing) {
-    t.selected = true;
+  
+  if (selected == &t) {
+    selected = nullptr;
+    return;
+  } else if (selected == nullptr) {
+    selected = &t;
+    return;
+  } else {
+    t.removed = true;
+    selected->removed = true;
   }
+
+  selected = nullptr;
 
   /*if (t.revealed && t.adjMines > 0) {
     int flagCount = 0;
@@ -153,7 +162,7 @@ void Board::reveal(int x, int y) {
 void Board::flag(int x, int y) {
   Tile& t = el(x, y);
   if (state == Playing) {
-    t.flagged = !t.flagged;
+    //t.flagged = !t.flagged;
   }
 }
 

@@ -156,18 +156,19 @@ void RendererImpl::Draw(const Board& b) {
     zero, one, two, three, four, five, six, seven, eight, unrev, flag, mine, clickMine
   };
 
-  for (int i=0;i<13;i++) {
+  for (int i=0;i<14;i++) {
     std::vector<MultRect::Rect> rects;
     tiles.obj.tex = tex[i];
     for (int x = 0; x < b.width; x++) {
       for (int y = 0; y < b.height; y++) {
         Board::Tile t = b.el(x, y);
+        if (t.removed) {
+          continue;
+        }
         MultRect::Rect r(x,y);
         if(i == t.adjMines) {
           rects.push_back(r);
-        } else if (i == 9){
-          rects.push_back(r);
-        } else if (i == 10){
+        } else if (i == 10 && t.flagged){
           rects.push_back(r);
         } else if (i == 11 && t.isMine){
           rects.push_back(r);
