@@ -163,15 +163,15 @@ void RendererImpl::Draw(const Board& b) {
       for (int y = 0; y < b.height; y++) {
         Board::Tile t = b.el(x, y);
         MultRect::Rect r(x,y);
-        if(i == t.adjMines && t.revealed) {
+        if(i == t.adjMines) {
           rects.push_back(r);
-        } else if (i == 9 && !t.revealed){
+        } else if (i == 9){
           rects.push_back(r);
-        } else if (i == 10 && t.flagged){
+        } else if (i == 10){
           rects.push_back(r);
-        } else if (i == 11 && t.isMine && t.revealed){
+        } else if (i == 11 && t.isMine){
           rects.push_back(r);
-        } else if (i == 12 && t.isMine && t.revealed && t.flagged){
+        } else if (i == 12 && t.isMine && t.flagged){
           rects.push_back(r);
         }
         //rects.push_back(MultRect::Rect(x,y));

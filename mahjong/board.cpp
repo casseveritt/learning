@@ -9,14 +9,15 @@ void Board::build(int w, int h, int m) {
   board.resize(w * h);
   width = w;
   height = h;
-  numMines = m;
+  //numMines = m;
 }
 
 // Set the board with the first tile and its radius having no bombs
 void Board::initialize(int fx, int fy) {
   state = Playing;
-  int minesToPlace = numMines;
+  //int minesToPlace = numMines;
 
+  /*
   while (minesToPlace > 0) {
     int x = rand() % width;
     int y = rand() % height;
@@ -45,9 +46,12 @@ void Board::initialize(int fx, int fy) {
     // Not that it matters, but fix up adjMines for this tile.
     t.adjMines--;
   }
+  */
+
+
 }
 
-void Board::checkWin() {
+/*void Board::checkWin() {
   int tilesToWin = (width * height) - numMines;
   for (int x = 0; x < width; x++) {
     for (int y = 0; y < height; y++) {
@@ -60,9 +64,9 @@ void Board::checkWin() {
   if (tilesToWin == 0) {
     state = Won;
   }
-}
+}*/
 
-void Board::lostGame() {
+/*void Board::lostGame() {
   for (int x = 0; x < width; x++) {
     for (int y = 0; y < height; y++) {
       Tile& t = el(x, y);
@@ -72,9 +76,9 @@ void Board::lostGame() {
     }
   }
   state = Failed;
-}
+}*/
 
-void Board::flood(int x, int y) {
+/*void Board::flood(int x, int y) {
   Tile& t = el(x, y);
   if (t.revealed) {
     return;
@@ -90,7 +94,7 @@ void Board::flood(int x, int y) {
       }
     }
   }
-}
+}*/
 
 void Board::reveal(int x, int y) {
   if (state == Uninitialized) {
@@ -102,7 +106,11 @@ void Board::reveal(int x, int y) {
 
   Tile& t = el(x, y);
 
-  if (t.revealed && t.adjMines > 0) {
+  if (!t.selected && state == Playing) {
+    t.selected = true;
+  }
+
+  /*if (t.revealed && t.adjMines > 0) {
     int flagCount = 0;
     for (int yy = std::max(y - 1, 0); yy < std::min(y + 2, height); yy++) {
       for (int xx = std::max(x - 1, 0); xx < std::min(x + 2, width); xx++) {
@@ -138,15 +146,17 @@ void Board::reveal(int x, int y) {
 
   flood(x, y);
   checkWin();
+  */
 }
 
-// Places a flag on UNREVEALED tiles, or takes them off
+//Places a flag on UNREVEALED tiles, or takes them off
 void Board::flag(int x, int y) {
   Tile& t = el(x, y);
-  if (!t.revealed && (state == Playing)) {
+  if (state == Playing) {
     t.flagged = !t.flagged;
   }
 }
+
 
 // Given a row and col return the tile in that location
 Board::Tile& Board::el(int x, int y) {
