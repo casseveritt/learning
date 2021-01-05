@@ -13,7 +13,7 @@ else
 	GLFLAGS := -lGLESv2
 endif
 
-PROG := minesweeper
+PROG := mahjong
 
 all: $(PROG)
 
