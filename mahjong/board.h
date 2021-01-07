@@ -11,17 +11,17 @@ class Board {
  public:
   enum State { Uninitialized, Playing, Failed, Won, selectedOneTile, };
   struct Tile {
-    int numSelected = 0;
     int adjMines = 0;
     bool flagged = false;
     bool isMine = false;
     bool removed = false;
+    int tileValue;
   };
   std::vector<Tile> board;
   int width = 0;
   int height = 0;
   int numMines = 0;
-  int numSelected = 0;
+  int tileValue;
   State state = Uninitialized;
   Tile * selected = nullptr;
 

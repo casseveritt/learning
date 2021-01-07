@@ -15,6 +15,13 @@ void Board::build(int w, int h, int m) {
 // Set the board with the first tile and its radius having no bombs
 void Board::initialize(int fx, int fy) {
   state = Playing;
+
+  for (int y = 0; y < fy ; y++) {
+      for (int x = 0; x < fx; x++) {
+        Tile& t = el(x, y);
+        t.tileValue = rand() % 6;
+      }
+    }
   //int minesToPlace = numMines;
 
   /*
@@ -113,8 +120,16 @@ void Board::select(int x, int y) {
     selected = &t;
     return;
   } else {
-    t.removed = true;
-    selected->removed = true;
+    if (t.tileValue == selected->tileValue)
+    {
+      t.removed = true;
+      selected->removed = true;
+      selected = nullptr;
+    }
+    else {
+      selected = nullptr;
+      return;
+    } 
   }
 
   selected = nullptr;
