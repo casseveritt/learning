@@ -134,7 +134,7 @@ bool Torus::intersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
   // double e3 = e * e * e;
   // double e2 = e * e;
 
-  double delta; /*= 256 * a3 * e3 - 192 * a2 * b * d * e2 - 128 * a2 * c2 * e2 + 144 * a2 * c * d2 * e;
+  /*double delta = 256 * a3 * e3 - 192 * a2 * b * d * e2 - 128 * a2 * c2 * e2 + 144 * a2 * c * d2 * e;
   delta += -27 * a2 * d4 + 144 * a * b2 * c * e2 - 6 * a * b2 * d2 * e - 80 * a * b * c2 * d * e;
   delta += 18 * a * b * c * d3 + 16 * a * c4 * e - 4 * a * c3 * d2 - 27 * b4 * e2;
   delta += 18 * b3 * c * d * e - 4 * b3 * d3 - 4 * b2 * c3 * e + b2 * c2 * d2;*/
@@ -146,7 +146,7 @@ bool Torus::intersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
   p = (P / (8 * a2));
   double q = (R / (8 * a3));
   double y = (delta1 * delta1 - 4 * delta0 * delta0 * delta0);
-  delta = y / -27;
+  double delta = y / -27;
   double qrt = pow(y, 0.5f);
   double Q = cbrt(((delta1 + qrt) / 2.0));
   double S;
@@ -176,9 +176,7 @@ bool Torus::intersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
     z = z3;
   }
 
-  if (z != 1000.0) {
-    printf("Closest root: %lf\n", z);
-  }
+  // if (z != 1000.0) { printf("Closest root: %lf\n", z); }
 
   if (delta < 0) {
     intersection = p0 + l * z;

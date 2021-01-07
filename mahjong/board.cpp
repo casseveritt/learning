@@ -10,52 +10,19 @@ void Board::build(int w, int h, int m) {
   width = w;
   height = h;
   numMines = m;
+
+  state = Playing;
+  initialize();
 }
 
-// Set the board with the first tile and its radius having no bombs
-void Board::initialize(int fx, int fy) {
-  state = Playing;
-
-  for (int y = 0; y < fy ; y++) {
-      for (int x = 0; x < fx; x++) {
-        Tile& t = el(x, y);
-        t.tileValue = rand() % 6;
-      }
+// Set the board with the tiles
+void Board::initialize() {
+  for (int y=0;y<height;y++) {
+    for (int x=0;x<width;x++) {
+      Tile& t = el(x,y);
+      t.tileValue = rand() % 6;
     }
-  //int minesToPlace = numMines;
-
-  /*
-  while (minesToPlace > 0) {
-    int x = rand() % width;
-    int y = rand() % height;
-    Tile& t = el(x, y);
-
-    if (t.isMine) {
-      continue;
-    }
-
-    // We don't place mines on or adjacent to the first clicked location.
-    if ((std::abs(x - fx) < 2 && std::abs(y - fy) < 2)) {
-      continue;
-    }
-
-    // Place this mine.
-    t.isMine = true;
-    minesToPlace--;
-
-    // Increment the adjMines for all adjacent tiles
-    for (int yy = std::max(y - 1, 0); yy < std::min(y + 2, height); yy++) {
-      for (int xx = std::max(x - 1, 0); xx < std::min(x + 2, width); xx++) {
-        Tile& u = el(xx, yy);
-        u.adjMines++;
-      }
-    }
-    // Not that it matters, but fix up adjMines for this tile.
-    t.adjMines--;
   }
-  */
-
-
 }
 
 /*void Board::checkWin() {
@@ -104,9 +71,6 @@ void Board::initialize(int fx, int fy) {
 }*/
 
 void Board::select(int x, int y) {
-  if (state == Uninitialized) {
-    initialize(x, y);
-  }
   if (state != Playing) {
     return;
   }

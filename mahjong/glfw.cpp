@@ -48,7 +48,6 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
   if (button == GLFW_MOUSE_BUTTON_LEFT) {
     if (action != GLFW_PRESS) {
       leftClick++;
-      //printf("left click = %d\n", leftClick.load());
     }
     glfwGetCursorPos(window, &rend->prevPos.x, &rend->prevPos.y);
     rend->SetCursorPos(rend->prevPos);
@@ -56,7 +55,6 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
   if (button == GLFW_MOUSE_BUTTON_RIGHT) {
     if (action == GLFW_PRESS) {
       rightClick++;
-      //printf("right click = %d\n", rightClick.load());
     }
     glfwGetCursorPos(window, &rend->prevPos.x, &rend->prevPos.y);
   }
@@ -92,7 +90,7 @@ int main(int argc, char** argv) {
     mines = atoi(argv[3]);
   }
 
-  //seed = 0;
+  seed = 0;
   srand(seed);
 
   printf("w=%d, h=%d, mines=%d\n", bWidth, bHeight, mines);

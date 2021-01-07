@@ -29,11 +29,10 @@ struct RendererImpl : public Renderer {
 
   void Init() override;
   void Draw() override;
-  void SetWindowSize(int w, int h) override;
   void SetCursorPos(Vec2d cursorPos) override;
   void ResetSim() override;
-  void RayInWorld(int w, int h, Vec3f& nIW3, Vec3f& fIW3) override;
-  void Intersect(Vec3f nIW3, Vec3f fIW3) override;
+  void RayInWorld(Vec3f& nIW3, Vec3f& fIW3) override;
+  void Intersect() override;
   void Drag(Vec3f newPos) override;
 
   Scene scene;
@@ -62,9 +61,6 @@ struct RendererImpl : public Renderer {
 
   Shape* hitShape;
   Vec3f intObjLoc;
-
-  int width;
-  int height;
 
   Vec2d currPos;
 
@@ -186,46 +182,56 @@ void RendererImpl::Init() {
   float sqrSize = float((gridsize - 1) / 2);
   float side = float((gridsize - 1) * s);
 
-  auto squ = new Square;  // Ground Square
-  squ->build(sqrDime, sqrSize, side);
-  list.push_back(squ);
-  list.back()->obj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
-  list.back()->obj.shiny = 40.0f;
-  list.back()->obj.tex = check;
+  {
+    auto squ = new Square;  // Ground Square
+    squ->build(sqrDime, sqrSize, side);
+    list.push_back(squ);
+    list.back()->obj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
+    list.back()->obj.shiny = 40.0f;
+    list.back()->obj.tex = check;
+  }
 
   ground = Planef(Vec3f(0, 1, 0), 0.0f);
 
-  auto cube = new Cube;  // Cube
-  cube->build(Matrix4f::Scale(0.375f));
-  list.push_back(cube);
-  list.back()->obj.modelPose.t = Vec3f(-1, 0.375f, -1);
-  list.back()->obj.matDifCol = Vec3f(0.7f, 0.0f, 0.0f);
-  list.back()->obj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
-  list.back()->obj.shiny = 7.5f;
-  list.back()->obj.tex = brick;
+  {
+    auto cube = new Cube;  // Cube
+    cube->build(Matrix4f::Scale(0.375f));
+    list.push_back(cube);
+    list.back()->obj.modelPose.t = Vec3f(-1, 0.375f, -1);
+    list.back()->obj.matDifCol = Vec3f(0.7f, 0.0f, 0.0f);
+    list.back()->obj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
+    list.back()->obj.shiny = 7.5f;
+    list.back()->obj.tex = brick;
+  }
 
-  auto sph = new Sphere;  // Sphere
-  sph->build(0.5f);
-  list.push_back(sph);
-  list.back()->obj.modelPose.t = Vec3f(1.0, 0.5, -1.0);
-  list.back()->obj.matDifCol = Vec3f(0.0f, 0.3f, 0.0f);
-  list.back()->obj.matSpcCol = Vec3f(0.2f, 1.0f, 0.2f);
-  list.back()->obj.shiny = 25.0f;
-  list.back()->obj.tex = stone;
+  {
+    auto sph = new Sphere;  // Sphere
+    sph->build(0.5f);
+    list.push_back(sph);
+    list.back()->obj.modelPose.t = Vec3f(1.0, 0.5, -1.0);
+    list.back()->obj.matDifCol = Vec3f(0.0f, 0.3f, 0.0f);
+    list.back()->obj.matSpcCol = Vec3f(0.2f, 1.0f, 0.2f);
+    list.back()->obj.shiny = 25.0f;
+    list.back()->obj.tex = stone;
+  }
 
-  auto tor = new Torus;  // Torus
-  tor->build(0.5f, 0.25f);
-  list.push_back(tor);
-  list.back()->obj.modelPose.t = Vec3f(1, 0.25f, 1);
-  list.back()->obj.matDifCol = Vec3f(0.0f, 0.0f, 0.5f);
-  list.back()->obj.matSpcCol = Vec3f(0.3f, 0.3f, 1.0f);
-  list.back()->obj.shiny = 15.0f;
-  list.back()->obj.tex = wood;
+  {
+    auto tor = new Torus;  // Torus
+    tor->build(0.5f, 0.25f);
+    list.push_back(tor);
+    list.back()->obj.modelPose.t = Vec3f(1, 0.25f, 1);
+    list.back()->obj.matDifCol = Vec3f(0.0f, 0.0f, 0.5f);
+    list.back()->obj.matSpcCol = Vec3f(0.3f, 0.3f, 1.0f);
+    list.back()->obj.shiny = 15.0f;
+    list.back()->obj.tex = wood;
+  }
 
-  auto light = new Sphere;  // Light Sphere
-  light->build(0.03125f);
-  list.push_back(light);
-  list.back()->obj.modelPose.t = Vec3f(0.0f, 1.0f, 0.0f);
+  {
+    auto light = new Sphere;  // Light Sphere
+    light->build(0.03125f);
+    list.push_back(light);
+    list.back()->obj.modelPose.t = Vec3f(0.0f, 1.0f, 0.0f);
+  }
 
   points.push_back(Vec3f(-1.0f, 0.0f, 1.0f));
   points.push_back(Vec3f(-1.0f, 1.0f, 1.0f));
@@ -254,11 +260,6 @@ void RendererImpl::Init() {
   intPoint.build(0.015f, Vec3f(0.9, 0.0, 0.7));
 }
 
-void RendererImpl::SetWindowSize(int w, int h) {
-  width = w;
-  height = h;
-}
-
 void RendererImpl::SetCursorPos(Vec2d cursorPos) {
   currPos = cursorPos;
 }
@@ -267,10 +268,10 @@ void RendererImpl::ResetSim() {
   dots.reset();
 }
 
-void RendererImpl::RayInWorld(int w, int h, Vec3f& nIW3, Vec3f& fIW3) {
-  currPos.y = (h - 1) - currPos.y;
-  currPos.y = (currPos.y / (h - 1)) * 2 - 1;
-  currPos.x = (currPos.x / (w - 1)) * 2 - 1;
+void RendererImpl::RayInWorld(Vec3f& nIW3, Vec3f& fIW3) {
+  currPos.y = (height - 1) - currPos.y;
+  currPos.y = (currPos.y / (height - 1)) * 2 - 1;
+  currPos.x = (currPos.x / (width - 1)) * 2 - 1;
   Vec4f nearInClip = Vec4f(currPos.x, currPos.y, -1.0, 1.0);
   Vec4f nearInCam = scene.projMat.Inverted() * nearInClip;
   nearInCam /= nearInCam.w;
@@ -287,8 +288,9 @@ void RendererImpl::RayInWorld(int w, int h, Vec3f& nIW3, Vec3f& fIW3) {
   ray.end();
 }
 
-void RendererImpl::Intersect(Vec3f nIW3, Vec3f fIW3) {  //*
-  intLoc;
+void RendererImpl::Intersect() {
+  Vec3f nIW3, fIW3;
+  RayInWorld(nIW3, fIW3);
   Vec3f objIntLoc;
 
   float distance = (fIW3 - nIW3).Length();
@@ -323,13 +325,8 @@ void RendererImpl::Drag(Vec3f newPos) {
 }
 
 void RendererImpl::Draw() {
-  scene.camPose.t.x = sin(theta) * rad;
-  scene.camPose.t.z = cos(theta) * rad;
-  scene.camPose.t.y = camHeight;
+  scene.camPose = camera;
   scene.camPos = scene.camPose.t;
-
-  scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t, Vec3f(0, 1, 0));
-  scene.camPos = scene.camPose.t;  // Look into why I need this
 
   /*
   if (intersect) {
@@ -345,6 +342,7 @@ void RendererImpl::Draw() {
   glViewport(0, 0, width, height);
 
   glClearColor(0.05f, 0.05f, 0.05f, 0);
+  if(!trackCamera) { glClearColor(0.5f, 0.5f, 0.5f, 0); }
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 

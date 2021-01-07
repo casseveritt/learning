@@ -159,20 +159,20 @@ void RendererImpl::Draw(const Board& b) {
   for (int i=0;i<14;i++) {
     std::vector<MultRect::Rect> rects;
     tiles.obj.tex = tex[i];
-    for (int x = 0; x < b.width; x++) {
-      for (int y = 0; y < b.height; y++) {
+    for (int x=0;x<b.width;x++) {
+      for (int y=0;y<b.height;y++) {
         Board::Tile t = b.el(x, y);
         if (t.removed) {
           continue;
         }
         MultRect::Rect r(x,y);
-        if(i == t.adjMines) {
+        if(i == t.tileValue) {
           rects.push_back(r);
-        } else if (i == 10 && t.flagged){
+        } else if (i==10 && t.flagged){
           rects.push_back(r);
-        } else if (i == 11 && t.isMine){
+        } else if (i==11 && t.isMine){
           rects.push_back(r);
-        } else if (i == 12 && t.isMine && t.flagged){
+        } else if (i==12 && t.isMine && t.flagged){
           rects.push_back(r);
         }
         //rects.push_back(MultRect::Rect(x,y));
@@ -189,8 +189,8 @@ void RendererImpl::Draw(const Board& b) {
   frames++;
   sumtime += (t1 - t0);
   if (frames >= 100) {
-    printf("avg frame time = %d msec\n", int((sumtime / frames) * 1000));
-    printf("avg fps = %d\n", int((frames / (sumtime))));
+    //printf("avg frame time = %d msec\n", int((sumtime / frames) * 1000));
+    //printf("avg fps = %d\n", int((frames / (sumtime))));
     frames = 0;
     sumtime = 0.0;
   }

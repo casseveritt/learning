@@ -115,7 +115,7 @@ void Board::reveal(int x, int y) {
       for (int yy = std::max(y - 1, 0); yy < std::min(y + 2, height); yy++) {
         for (int xx = std::max(x - 1, 0); xx < std::min(x + 2, width); xx++) {
           if (!el(xx, yy).flagged && !el(xx, yy).revealed) {
-            reveal(xx,yy);
+            reveal(xx, yy);
           }
         }
       }
@@ -134,7 +134,7 @@ void Board::reveal(int x, int y) {
     lostGame();
     state = Failed;
     return;
-  }  
+  }
 
   flood(x, y);
   checkWin();

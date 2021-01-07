@@ -9,8 +9,8 @@
 #include "geom.h"
 #include "learning.h"
 #include "linear.h"
-#include "prog.h"
 #include "multrect.h"
+#include "prog.h"
 #include "render.h"
 #include "scene.h"
 #include "stb.h"
@@ -149,35 +149,33 @@ void RendererImpl::Draw(const Board& b) {
   glClearColor(0.05f, 0.05f, 0.05f, 0);
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-  //float aspectRatio = float(width) / height;
+  // float aspectRatio = float(width) / height;
   scene.projMat = Ortho(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
 
-  GLuint tex[] = {
-    zero, one, two, three, four, five, six, seven, eight, unrev, flag, mine, clickMine
-  };
+  GLuint tex[] = {zero, one, two, three, four, five, six, seven, eight, unrev, flag, mine, clickMine};
 
-  for (int i=0;i<13;i++) {
+  for (int i = 0; i < 13; i++) {
     std::vector<MultRect::Rect> rects;
     tiles.obj.tex = tex[i];
     for (int x = 0; x < b.width; x++) {
       for (int y = 0; y < b.height; y++) {
         Board::Tile t = b.el(x, y);
-        MultRect::Rect r(x,y);
-        if(i == t.adjMines && t.revealed) {
+        MultRect::Rect r(x, y);
+        if (i == t.adjMines && t.revealed) {
           rects.push_back(r);
-        } else if (i == 9 && !t.revealed){
+        } else if (i == 9 && !t.revealed) {
           rects.push_back(r);
-        } else if (i == 10 && t.flagged){
+        } else if (i == 10 && t.flagged) {
           rects.push_back(r);
-        } else if (i == 11 && t.isMine && t.revealed){
+        } else if (i == 11 && t.isMine && t.revealed) {
           rects.push_back(r);
-        } else if (i == 12 && t.isMine && t.revealed && t.flagged){
+        } else if (i == 12 && t.isMine && t.revealed && t.flagged) {
           rects.push_back(r);
         }
-        //rects.push_back(MultRect::Rect(x,y));
-        //setTile(b.el(x, y), xSide, ySide);
-        //rect.obj.modelPose.t = Vec3f((xSide * x), (ySide * (b.height - (1 + y))), 0.0f);
-        //rect.draw(scene, texProg);
+        // rects.push_back(MultRect::Rect(x,y));
+        // setTile(b.el(x, y), xSide, ySide);
+        // rect.obj.modelPose.t = Vec3f((xSide * x), (ySide * (b.height - (1 + y))), 0.0f);
+        // rect.draw(scene, texProg);
       }
     }
     tiles.build(rects);
@@ -188,8 +186,8 @@ void RendererImpl::Draw(const Board& b) {
   frames++;
   sumtime += (t1 - t0);
   if (frames >= 100) {
-    printf("avg frame time = %d msec\n", int((sumtime / frames) * 1000));
-    printf("avg fps = %d\n", int((frames / (sumtime))));
+    //printf("avg frame time = %d msec\n", int((sumtime / frames) * 1000));
+    //printf("avg fps = %d\n", int((frames / (sumtime))));
     frames = 0;
     sumtime = 0.0;
   }

@@ -9,7 +9,7 @@ using namespace r3;
 
 class Board {
  public:
-  enum State { Uninitialized, Playing, Failed, Won, selectedOneTile, };
+  enum State { Playing, Failed, Won, };
   struct Tile {
     int adjMines = 0;
     bool flagged = false;
@@ -22,11 +22,11 @@ class Board {
   int height = 0;
   int numMines = 0;
   int tileValue;
-  State state = Uninitialized;
+  State state = Playing;
   Tile * selected = nullptr;
 
   void build(int inx, int iny, int inb);
-  void initialize(int x, int y);
+  void initialize();
   void checkWin();
   void lostGame();
   void flood(int x, int y);
