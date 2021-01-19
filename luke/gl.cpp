@@ -13,6 +13,7 @@
 #include "scene.h"
 #include "sphere.h"
 #include "square.h"
+#include "rectprism.h"
 #include "stb.h"
 #include "tetra.h"
 #include "torus.h"
@@ -227,6 +228,17 @@ void RendererImpl::Init() {
   }
 
   {
+    auto prism = new RectPrism; // Rectangular Prism
+    prism->build(0.5, 0.75, 0.8);
+    list.push_back(prism);
+    list.back()->obj.modelPose.t = Vec3f(-1.0, 0.0, 1.0);
+    list.back()->obj.matDifCol = Vec3f(0.0f, 0.3f, 0.0f);
+    list.back()->obj.matSpcCol = Vec3f(0.2f, 1.0f, 0.2f);
+    list.back()->obj.shiny = 4.0f;
+    list.back()->obj.tex = stone;
+  }
+
+  {
     auto light = new Sphere;  // Light Sphere
     light->build(0.03125f);
     list.push_back(light);
@@ -359,12 +371,12 @@ void RendererImpl::Draw() {
   if (intersect) {
     intPoint.draw(scene, program);
   }
-  for (int i = 1; i < 4; i++) {
-    list[i]->draw(scene, litTexProgram);
+  for (int i = 1; i < 5; i++) {
+    list[i]->draw(scene, texProgram);
   }
 
-  scene.lightPose.t = list[4]->obj.modelPose.t;
-  list[4]->draw(scene, program);
+  scene.lightPose.t = list[5]->obj.modelPose.t;
+  list[5]->draw(scene, program);
 
   hull.draw(scene, program);
   curve.draw(scene, program);
