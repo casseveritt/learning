@@ -14,18 +14,17 @@ int loop = 0;
 int main(void) {
 
   int nPrimes = 10;
-  int primes [nPrimes];
+  std::vector<int> primes;
   int num = 3; // Start checking with 3
-  while (nPrimes > 0){
-    bool isPrime = true;
-    for(int i=3;i<num/2;i++){
-
-    }
-    num+=2; // Why even check even numbers
-    loop++;
+  while(nPrimes > 0) {
+    
   }
 
-  
+  for() {
+
+  }
+
+  printf("Hello World!\n");
 
   return 0;
 }
