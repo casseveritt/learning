@@ -24,11 +24,8 @@ OBJ := $(patsubst %.cpp, %.o, $(SRC))
 .cpp.o:
 	g++ $(CFLAGS) $< -c
 
-gl: $(OBJ) $(H) stb.o
-	g++ $(CFLAGS) $(OBJ) stb.o -o gl $(GLFLAGS) -lglfw
-
-stb.o: stb.cpp
-	g++ $(CFLAGS_NOWARN) stb.cpp -c
+prime: $(OBJ) $(H)
+	g++ $(CFLAGS) $(OBJ) -o prime $(GLFLAGS) -lglfw -lpthread
 
 format: format_h format_cpp
 

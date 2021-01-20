@@ -1,6 +1,9 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <vector>
+#include <thread>
+#include <algorithm>
 
 #include <cstring>
 
@@ -9,13 +12,10 @@
   sudo apt install libgles2-mesa-dev libglfw3-dev
 */
 
-int loop = 0;
-int primesList = 10;
+int nPrimes;
+int primes [100];
 
-int main(void) {
-  int nPrimes = primesList;
-  int primes [nPrimes];
-  int num = 3;  // Start checking with 3
+static void findPrimes(int num, int mov) {
   while (nPrimes > 0) {
     bool isPrime = true;
     for (int i=3;i<num/2;i+=2) {
@@ -30,13 +30,24 @@ int main(void) {
       primes[nPrimes-1] = num;
       nPrimes--;
     }
-    num += 2;  // Why bother checking even numbers?
-    loop++;
+    num += mov;
   }
+}
 
-  for (int i=primesList-1;i>-1;i--) {
+int main(void) {
+  nPrimes = sizeof(primes)/sizeof(primes[0]);
+
+  std::thread thread1(findPrimes, 3, 4);
+  std::thread thread2(findPrimes, 5, 4);
+
+  thread1.join();
+  thread2.join();
+
+  int len = sizeof(primes)/sizeof(primes[0]);
+  std::sort(primes, primes+len);
+  for (int i=0;i<len;i++) {
     printf("%i", primes[i]);
-    if(i!=0) {
+    if(i!=len-1) {
       printf(", ");
     }
   }
