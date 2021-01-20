@@ -13,51 +13,67 @@
   sudo apt install libgles2-mesa-dev libglfw3-dev
 */
 
-int nPrimes;
-int primes [100];
+int nPrimes = 4;
+std::vector<int> primes;
 int numThreads = 4;
+int num = 3;
 std::mutex m;
 
-static void findPrimes(int num, int mov) {
-  int findPrim = nPrimes;
+static void findPrimes() {
+  //printf("Made thread\n");
+  int checkNum;
+  bool locked = false;
   while (nPrimes > 0) {
+    while(!locked){
+      locked = m.try_lock();
+    }
+    checkNum = num;
+    num += 2;
+    m.unlock();
+    locked = false;
+
+  //printf("got here: %d\n", __LINE__);
     bool isPrime = true;
-    for (int i=3;i<num/2;i+=2) {
-      float out = num;
+    for (int i=3;i<checkNum/2;i+=2) {
+      float out = checkNum;
       out /= i;
       if(out == (int)out) {
         isPrime = false;
         break;
       }
     }
+
     if (isPrime) {
-      m.try_lock(); // Tries to lock other threads from altering primes list anc count
-      primes[nPrimes-1] = num;
+      while(!locked){
+        locked = m.try_lock(); // Tries to lock other threads from altering primes list anc count
+      }
+      primes.push_back(checkNum);
       nPrimes--;
       m.unlock(); // Unlocks
+      locked = false;
     }
-    num += mov;
   }
 }
 
 int main(void) {
-  nPrimes = sizeof(primes)/sizeof(primes[0]);
-
   std::vector<std::thread> threads;
+  int numPrimes = nPrimes;
 
+  threads.resize(numThreads);
   for(int i=0;i<numThreads;i++) {
-    threads.push_back(std::thread(findPrimes, 3 + (2*i), (2*numThreads)));
+    threads[i] = std::thread(findPrimes);
+  }
+  for(auto& thread : threads) {
+      //printf("joining %p", &thread);
+    if (thread.joinable()) {
+      thread.join();
+    }
+    //printf(" joined\n");
   }
 
-  for(auto& thr : threads) {
-    thr.join();
-  }
-
-  int len = sizeof(primes)/sizeof(primes[0]);
-  std::sort(primes, primes+len);
-  for (int i=0;i<len;i++) {
+  for (int i=0;i<numPrimes;i++) {
     printf("%i", primes[i]);
-    if(i!=len-1) {
+    if(i!=numPrimes-1) {
       printf(", ");
     }
   }

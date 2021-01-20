@@ -37,7 +37,7 @@ format_cpp: $(SRC)
 
 clean:
 	rm -f *.o
-	rm -f gl
+	rm -f prime
 	rm -f *~
 	rm -f .*~
 
