@@ -4,6 +4,7 @@
 #include <vector>
 #include <thread>
 #include <algorithm>
+#include <mutex>
 
 #include <cstring>
 
@@ -14,8 +15,11 @@
 
 int nPrimes;
 int primes [100];
+int numThreads = 4;
+std::mutex m;
 
 static void findPrimes(int num, int mov) {
+  int findPrim = nPrimes;
   while (nPrimes > 0) {
     bool isPrime = true;
     for (int i=3;i<num/2;i+=2) {
@@ -27,8 +31,10 @@ static void findPrimes(int num, int mov) {
       }
     }
     if (isPrime) {
+      m.try_lock(); // Tries to lock other threads from altering primes list anc count
       primes[nPrimes-1] = num;
       nPrimes--;
+      m.unlock(); // Unlocks
     }
     num += mov;
   }
@@ -37,11 +43,15 @@ static void findPrimes(int num, int mov) {
 int main(void) {
   nPrimes = sizeof(primes)/sizeof(primes[0]);
 
-  std::thread thread1(findPrimes, 3, 4);
-  std::thread thread2(findPrimes, 5, 4);
+  std::vector<std::thread> threads;
 
-  thread1.join();
-  thread2.join();
+  for(int i=0;i<numThreads;i++) {
+    threads.push_back(std::thread(findPrimes, 3 + (2*i), (2*numThreads)));
+  }
+
+  for(auto& thr : threads) {
+    thr.join();
+  }
 
   int len = sizeof(primes)/sizeof(primes[0]);
   std::sort(primes, primes+len);
