@@ -1,12 +1,12 @@
+#include <bits/stdc++.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <atomic>
 #include <mutex>
 #include <thread>
 #include <vector>
-#include <atomic>
-#include <bits/stdc++.h> 
 
 #include <cstring>
 
@@ -18,7 +18,7 @@
 int nPrimes = 1000;
 std::vector<int> primes;
 int numThreads = 8;
-std::atomic<int> num (2);
+std::atomic<int> num(2);
 std::mutex m;
 
 static bool checkPrime(int checkNum) {
@@ -32,12 +32,12 @@ static bool checkPrime(int checkNum) {
   return true;
 }
 
-static int getNextNum() { // returns next number to check
-  if(num.load() == 2) return num.fetch_add(1);
+static int getNextNum() {  // returns next number to check
+  if (num.load() == 2) return num.fetch_add(1);
   return num.fetch_add(2);
 }
 
-static void pushPrime(int primeNum) { // pushes prime number onto list
+static void pushPrime(int primeNum) {  // pushes prime number onto list
   const std::lock_guard<std::mutex> lock(m);
   primes.push_back(primeNum);
   nPrimes--;
@@ -63,25 +63,25 @@ int main(int argc, char** argv) {
     nPrimes = atoi(argv[1]);
   }
   if (argc == 3) {
-    numThreads = atoi(argv[2]); // Set number of threads to make
+    numThreads = atoi(argv[2]);  // Set number of threads to make
   }
   int numPrimes = nPrimes;
 
-  double t0 = getTimeInSeconds(); // Start time
+  double t0 = getTimeInSeconds();  // Start time
   std::vector<std::thread> threads;
   threads.resize(numThreads);
-  for (int i = 0; i < numThreads; i++) { // Initalize threads
+  for (int i = 0; i < numThreads; i++) {  // Initalize threads
     threads[i] = std::thread(findPrimes);
   }
-  for (auto& thread : threads) { // Join threads
+  for (auto& thread : threads) {  // Join threads
     if (thread.joinable()) {
       thread.join();
     }
   }
-  double t1 = getTimeInSeconds(); // End time
+  double t1 = getTimeInSeconds();  // End time
 
   sort(primes.begin(), primes.end());
-  for (int i = 0; i < numPrimes; i++) { // Print primes
+  for (int i = 0; i < numPrimes; i++) {  // Print primes
     printf("%i", primes[i]);
     if (i != numPrimes - 1) {
       printf(", ");
