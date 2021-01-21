@@ -16,10 +16,18 @@
 */
 
 int nPrimes = 1000;
+int totalPrimesFound = 0;
 std::vector<int> primes;
 int numThreads = 8;
-std::atomic<int> num(2);
+std::atomic<int> num(3);
 std::mutex m;
+double t0, t1, t2;
+
+static double getTimeInSeconds() {
+  timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return double(int64_t(ts.tv_sec) * int64_t(1e9) + int64_t(ts.tv_nsec)) * 1e-9;
+}
 
 static bool checkPrime(int checkNum) {
   for (int i = 3; i < checkNum / 2; i += 2) {
@@ -44,18 +52,21 @@ static void pushPrime(int primeNum) {  // pushes prime number onto list
 }
 
 static void findPrimes() {
+  int checkPrimeCalls = 0;
+  int primesFound = 0;
   while (nPrimes > 0) {
+    t1 = getTimeInSeconds();
+    if ((t1 - t0) >= 15) break;
     int checkNum = getNextNum();
+    checkPrimeCalls++;
     if (checkPrime(checkNum)) {
+      primesFound++;
       pushPrime(checkNum);
     }
   }
-}
-
-static double getTimeInSeconds() {
-  timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return double(int64_t(ts.tv_sec) * int64_t(1e9) + int64_t(ts.tv_nsec)) * 1e-9;
+  totalPrimesFound += primesFound;
+  printf("checkPrimeCalls: %i\nPrimes Found: %i\n\n", checkPrimeCalls, primesFound);
+  // Print thread work load.
 }
 
 int main(int argc, char** argv) {
@@ -67,7 +78,7 @@ int main(int argc, char** argv) {
   }
   int numPrimes = nPrimes;
 
-  double t0 = getTimeInSeconds();  // Start time
+  t0 = getTimeInSeconds();  // Start time
   std::vector<std::thread> threads;
   threads.resize(numThreads);
   for (int i = 0; i < numThreads; i++) {  // Initalize threads
@@ -78,16 +89,17 @@ int main(int argc, char** argv) {
       thread.join();
     }
   }
-  double t1 = getTimeInSeconds();  // End time
+  t2 = getTimeInSeconds();  // End time
 
   sort(primes.begin(), primes.end());
-  for (int i = 0; i < numPrimes; i++) {  // Print primes
+  /*for (int i = 0; i < numPrimes; i++) {  // Print primes
     printf("%i", primes[i]);
     if (i != numPrimes - 1) {
       printf(", ");
     }
-  }
-  printf("\nThreads: %i\nTime in msec: %lf\n", numThreads, (t1 - t0) * 1000);
+  }*/
+  if ((int)primes.size() < numPrimes) printf("\nTimed out\nTotal primes found: %i", totalPrimesFound);
+  printf("\nThreads: %i\nTime in msec: %lf\n", numThreads, (t2 - t0) * 1000);
 
   return 0;
 }
