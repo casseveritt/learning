@@ -19,7 +19,7 @@ int nPrimes = 1000;
 int totalPrimesFound = 0;
 std::vector<int> primes;
 int numThreads = 8;
-std::atomic<int> num(3);
+std::atomic<int> num(2);
 std::mutex m;
 double t0, t1, t2;
 
@@ -30,10 +30,10 @@ static double getTimeInSeconds() {
 }
 
 static bool checkPrime(int checkNum) {
-  for (int i = 3; i < checkNum / 2; i += 2) {
-    float quotient = checkNum;
-    quotient /= i;
-    if (quotient == (int)quotient) {
+  for (int i = 3; i <= sqrt(checkNum); i += 2) {
+    // float quotient = checkNum;
+    // quotient /= i;
+    if (checkNum % i == 0) {
       return false;
     }
   }
@@ -70,12 +70,8 @@ static void findPrimes() {
 }
 
 int main(int argc, char** argv) {
-  if (argc >= 2) {
-    nPrimes = atoi(argv[1]);
-  }
-  if (argc == 3) {
-    numThreads = atoi(argv[2]);  // Set number of threads to make
-  }
+  if (argc >= 2) nPrimes = atoi(argv[1]);
+  if (argc == 3) numThreads = atoi(argv[2]);  // Set number of threads to make}
   int numPrimes = nPrimes;
 
   t0 = getTimeInSeconds();  // Start time
@@ -99,6 +95,7 @@ int main(int argc, char** argv) {
     }
   }*/
   if ((int)primes.size() < numPrimes) printf("\nTimed out\nTotal primes found: %i", totalPrimesFound);
+  printf("\nMax Prime: %i", primes.back());
   printf("\nThreads: %i\nTime in msec: %lf\n", numThreads, (t2 - t0) * 1000);
 
   return 0;
