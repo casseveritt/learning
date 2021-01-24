@@ -30,7 +30,8 @@ static double getTimeInSeconds() {
 }
 
 static bool checkPrime(int checkNum) {
-  for (int i = 3; i <= sqrt(checkNum); i += 2) {
+  int numSqrt = sqrt(checkNum);
+  for (int i = 3; i <= numSqrt; i += 2) {
     // float quotient = checkNum;
     // quotient /= i;
     if (checkNum % i == 0) {
