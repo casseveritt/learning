@@ -15,8 +15,7 @@
   sudo apt install libgles2-mesa-dev libglfw3-dev
 */
 
-int nPrimes = 1000;
-int totalPrimesFound = 0;
+int nPrimes = 1000000;
 std::vector<int> primes;
 int numThreads = 8;
 std::atomic<int> num(2);
@@ -65,7 +64,6 @@ static void findPrimes() {
       pushPrime(checkNum);
     }
   }
-  totalPrimesFound += primesFound;
   printf("checkPrimeCalls: %i\nPrimes Found: %i\n\n", checkPrimeCalls, primesFound);
   // Print thread work load.
 }
@@ -95,7 +93,7 @@ int main(int argc, char** argv) {
       printf(", ");
     }
   }*/
-  if ((int)primes.size() < numPrimes) printf("\nTimed out\nTotal primes found: %i", totalPrimesFound);
+  if ((int)primes.size() < numPrimes) printf("\nTimed out\nTotal primes found: %i", (int)primes.size());
   printf("\nMax Prime: %i", primes.back());
   printf("\nThreads: %i\nTime in msec: %lf\n", numThreads, (t2 - t0) * 1000);
 
