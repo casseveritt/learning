@@ -31,8 +31,6 @@ static double getTimeInSeconds() {
 static bool checkPrime(int checkNum) {
   int numSqrt = sqrt(checkNum);
   for (int i = 3; i <= numSqrt; i += 2) {
-    // float quotient = checkNum;
-    // quotient /= i;
     if (checkNum % i == 0) {
       return false;
     }
@@ -87,6 +85,7 @@ int main(int argc, char** argv) {
   t2 = getTimeInSeconds();  // End time
 
   sort(primes.begin(), primes.end());
+  primes.resize(numPrimes);
   /*for (int i = 0; i < numPrimes; i++) {  // Print primes
     printf("%i", primes[i]);
     if (i != numPrimes - 1) {
