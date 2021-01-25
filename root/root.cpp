@@ -20,6 +20,7 @@
 // https://www.codeproject.com/Articles/570700/SquareplusRootplusalgorithmplusforplusC
 
 double num = 8773;
+int iter = 0;
 double t0, t1, t2;
 
 static double getTimeInSeconds() {
@@ -42,7 +43,7 @@ static double tenPow(int n) {  // 10^n
   return rst;
 }
 
-static double sqrRoot(double a) {
+static double compSqrt(double a) {
   double z = a, rst = 0.0, j = 1.0;
   int max = 24;                    // to define maximum digit
   for (int i = max; i > 0; i--) {  // value must be bigger then 0
@@ -71,9 +72,19 @@ static double sqrRoot(double a) {
   return rst;
 }
 
+static double simpleSqrt(double n) {
+  double temp = 0, root = n / 2;
+  while (root != temp) {
+    temp = root;
+    root = (n / temp + temp) / 2;
+    iter++;
+  }
+  return root;
+}
+
 int main(int argc, char** argv) {
   int opt = 0;
-  while ((opt = getopt(argc, argv, "n:t:")) != -1) {
+  while ((opt = getopt(argc, argv, "n:")) != -1) {
     switch (opt) {
       case 'n':
         if (optarg) num = atof(optarg);
@@ -84,17 +95,22 @@ int main(int argc, char** argv) {
     }
   }
 
-  double executeTime0, executeTime1;
+  double executeTime0, executeTime1, executeTime2;
 
   t0 = getTimeInSeconds();  // Start time
-  double rootOut = sqrRoot(num);
+  double compRoot = compSqrt(num);
   t1 = getTimeInSeconds();  // End time
   executeTime0 = (t1 - t0) * 1000;
 
   t0 = getTimeInSeconds();  // Start time
-  double mathRoot = sqrt(num);
+  double simpRoot = simpleSqrt(num);
   t1 = getTimeInSeconds();  // End time
   executeTime1 = (t1 - t0) * 1000;
+
+  t0 = getTimeInSeconds();  // Start time
+  double mathRoot = sqrt(num);
+  t1 = getTimeInSeconds();  // End time
+  executeTime2 = (t1 - t0) * 1000;
 
   /*for (int i = 0; i < numPrimes; i++) {  // Print primes
     printf("%i", primes[i]);
@@ -102,9 +118,8 @@ int main(int argc, char** argv) {
       printf(", ");
     }
   }*/
-  // if ((int)primes.size() < numPrimes) printf("\nTimed out\nTotal primes found: %i", (int)primes.size());
-  printf("Number:\t%lf\nRoot:\t%lf\nMath.h:\t%lf\n\n", num, rootOut, mathRoot);
-  printf("My time in msec:   %lf\nMath time in msec: %lf\n", executeTime0, executeTime1);
+  printf("Number:\t%lf\n\nComp:\t%lf\nSimp:\t%lf\nIterations: %i\nMath:\t%lf\n\n", num, compRoot, simpRoot, iter, mathRoot);
+  printf("Comp time in msec: %lf\nSimp time in msec: %lf\nMath time in msec: %lf\n", executeTime0, executeTime1, executeTime2);
 
   return 0;
 }
