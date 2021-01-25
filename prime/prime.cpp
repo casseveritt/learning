@@ -3,12 +3,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
+
 #include <atomic>
+#include <cstring>
 #include <mutex>
 #include <thread>
 #include <vector>
-
-#include <cstring>
 
 /*
   You need dev packages to build and run this:
@@ -67,8 +68,20 @@ static void findPrimes() {
 }
 
 int main(int argc, char** argv) {
-  if (argc >= 2) nPrimes = atoi(argv[1]);
-  if (argc == 3) numThreads = atoi(argv[2]);  // Set number of threads to make}
+  int opt = 0;
+  while ((opt = getopt(argc, argv, "n:t:")) != -1) {
+    switch (opt) {
+      case 'n':
+        if (optarg) nPrimes = atoi(optarg);
+        break;
+      case 't':
+        if (optarg) numThreads = atoi(optarg);
+        break;
+      default: /* '?' */
+        fprintf(stderr, "Usage: %s [-a algorithm (l|c|b)] [-n numPrimes] [-t numThreads]\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+  }
   int numPrimes = nPrimes;
 
   t0 = getTimeInSeconds();  // Start time
