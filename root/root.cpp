@@ -31,15 +31,25 @@ static double getTimeInSeconds() {
   return double(int64_t(ts.tv_sec) * int64_t(1e9) + int64_t(ts.tv_nsec)) * 1e-9;
 }
 
-static double simpleSqrt(double n) {
+#define T double
+static T simpleSqrt(T n) {
   flt.f = n;
   flt.i = (flt.i & 0x807fffff) | ((((((flt.i >> 23) & 0xff) - 127) / 2) + 127) << 23);
-  double temp = 0, root = flt.f;
-  while (root != temp && (root * root != n)) {
+  T temp = 0;
+  T root = flt.f;
+  int lociter = 0;
+  while ((temp != root) && (fabs((root * root) - n) > 1e-14)) {
     temp = root;
     root = (n / temp + temp) / 2;
-    iter++;
+    lociter++;
+    if (lociter > 1000) {
+      printf("root = %lf, n = %lf, r*r = %.16lf, (r*r-n) = %le\n", root, n, root * root, root * root - n);
+      if (lociter > 1020) {
+        exit(1);
+      }
+    }
   }
+  iter += lociter;
   return root;
 }
 
@@ -58,17 +68,25 @@ int main(int argc, char** argv) {
 
   double executeTime0, executeTime1;
 
+  auto loopy = [](T (*func)(T n)) {
+    T v;
+    for (int i = 0; i < 1000; i++) {
+      v = func(num);
+    }
+    return v;
+  };
+
   t0 = getTimeInSeconds();  // Start time
-  double simpRoot = simpleSqrt(num);
+  double simpRoot = loopy(simpleSqrt);
   t1 = getTimeInSeconds();  // End time
   executeTime0 = (t1 - t0) * 1000;
 
   t0 = getTimeInSeconds();  // Start time
-  double mathRoot = sqrt(num);
+  double mathRoot = loopy(sqrt);
   t1 = getTimeInSeconds();  // End time
   executeTime1 = (t1 - t0) * 1000;
 
-  printf("Number:\t%lf\n\nSimp:\t%lf\nIterations: %i\nMath:\t%lf\n\n", num, simpRoot, iter, mathRoot);
+  printf("Number:\t%lf\n\nSimp:\t%lf\nIterations: %i\nMath:\t%lf\n\n", num, simpRoot, iter / 1000, mathRoot);
   printf("Simp time in msec: %lf\nMath time in msec: %lf\n", executeTime0, executeTime1);
 
   return 0;
