@@ -16,9 +16,9 @@
   sudo apt install libgles2-mesa-dev libglfw3-dev
 */
 
+int numThreads = 8;
 int nPrimes = 1000000;
 std::vector<int> primes;
-int numThreads = 8;
 std::atomic<int> num(2);
 std::mutex m;
 double t0, t1, t2;
@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
   t2 = getTimeInSeconds();  // End time
 
   sort(primes.begin(), primes.end());
-  primes.resize(numPrimes);
+  if (nPrimes == 0) primes.resize(numPrimes);
   /*for (int i = 0; i < numPrimes; i++) {  // Print primes
     printf("%i", primes[i]);
     if (i != numPrimes - 1) {
