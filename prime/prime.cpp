@@ -16,7 +16,7 @@
 */
 
 int nThreads = 1;         // Number of threads
-int nPrimes = 10;         // Number of primes to find
+int nPrimes = 1000;         // Number of primes to find
 std::vector<int> primes;  // Vector containing all primes found
 int num = 2;              // Start checking with 2
 double t0, t1, t2;        // Time variables
@@ -30,7 +30,15 @@ static double getTimeInSeconds() {  // Returns time in seconds
 
 // Implement me
 static bool isPrime(int number) {
-  return number > 1;
+    if (number == 2) {
+      return true;
+    }
+    for (int i = 3; i < sqrt(number); i = i + 2) {
+      if (number % i == 0) {
+        return false;
+      }
+    }
+    return true;
 }
 
 int main(int argc, char** argv) {
@@ -56,7 +64,7 @@ int main(int argc, char** argv) {
 
   sort(primes.begin(), primes.end());
   primes.resize(numPrimes);
-  for (int i = 0; i < numPrimes; i++) {  // Prints out all primes found
+  for (int i = 0; i < 10; i++) {  // Prints out all primes found
     printf("%i", primes[i]);
     if (i != numPrimes - 1) {
       printf(", ");
