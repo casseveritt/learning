@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
   t2 = getTimeInSeconds();  // End time
 
   sort(primes.begin(), primes.end());
-  if (nPrimes == 0) primes.resize(numPrimes);
+  if (nPrimes <= 0) primes.resize(numPrimes);
   /*for (int i = 0; i < numPrimes; i++) {  // Print primes
     printf("%i", primes[i]);
     if (i != numPrimes - 1) {
