@@ -5,10 +5,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <atomic>
 #include <cstring>
-#include <mutex>
-#include <thread>
 #include <vector>
 
 /*
@@ -31,7 +28,7 @@ static double getTimeInSeconds() {
   return double(int64_t(ts.tv_sec) * int64_t(1e9) + int64_t(ts.tv_nsec)) * 1e-9;
 }
 
-#define T double
+#define T float
 static T simpleSqrt(T n) {
   flt.f = n;
   flt.i = (flt.i & 0x807fffff) | ((((((flt.i >> 23) & 0xff) - 127) / 2) + 127) << 23);
@@ -55,7 +52,7 @@ static T simpleSqrt(T n) {
 
 int main(int argc, char** argv) {
   int opt = 0;
-  while ((opt = getopt(argc, argv, "n:f:")) != -1) {
+  while ((opt = getopt(argc, argv, "n:")) != -1) {
     switch (opt) {
       case 'n':
         if (optarg) num = atof(optarg);
@@ -77,12 +74,12 @@ int main(int argc, char** argv) {
   };
 
   t0 = getTimeInSeconds();  // Start time
-  double simpRoot = loopy(simpleSqrt);
+  float simpRoot = loopy(simpleSqrt);
   t1 = getTimeInSeconds();  // End time
   executeTime0 = (t1 - t0) * 1000;
 
   t0 = getTimeInSeconds();  // Start time
-  double mathRoot = loopy(sqrt);
+  float mathRoot = loopy(sqrtf);
   t1 = getTimeInSeconds();  // End time
   executeTime1 = (t1 - t0) * 1000;
 
