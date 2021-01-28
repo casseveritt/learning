@@ -33,45 +33,45 @@ static float toDegrees(float radians) {
   return radians * (180.0f / M_PI);
 }
 
-static int factorial(int n) {
-  int out = 1, temp = n;
-  while (temp > 1) {
-    out *= temp;
-    temp--;
+static double factorial(int n) {
+  double f = 1;
+  for (int i = n; i > 1; i--) {
+    f *= i;
   }
-  return out;
+  return f;
 }
 
-static float tsin(float t) {
-  float theta = t;
-  float sinTheta = theta;
-  bool sign = false;
-  for (int i = 3; i < 14; i += 2) {
-    double numPow = pow(theta, i);
-    double numFac = factorial(i);
-    // printf("Pow: %f\nFac: %f\n",numPow, numFac);
-    if (sign)
-      sinTheta += (numPow / numFac);
-    else
-      sinTheta -= (numPow / numFac);
-    sign = !sign;
+static double power(double n, int e) {
+  double p = n;
+  for (int i = 2; i <= e; i++) {
+    p *= n;
   }
+  return p;
+}
+
+static double tsin(float t) {
+  float theta = fmod(t, toRadians(360));
+  double sinTheta = 0, posSum = 0, negSum = 0;
+  for (int i = 401; i >= 1; i -= 4) {
+    posSum += power(theta, i) / factorial(i);
+  }
+  for (int i = 403; i >= 3; i -= 4) {
+    negSum += power(theta, i) / factorial(i);
+  }
+  sinTheta = posSum - negSum;
   return sinTheta;
 }
 
-static float tcos(float t) {
-  float theta = t;
-  double cosTheta = 1;
-  bool sign = false;
-  for (int i = 2; i < 13; i += 2) {
-    double numPow = pow(theta, i);
-    double numFac = factorial(i);
-    if (sign)
-      cosTheta += (numPow / numFac);
-    else
-      cosTheta -= (numPow / numFac);
-    sign = !sign;
+static double tcos(float t) {
+  float theta = fmod(t, toRadians(360));
+  double cosTheta = 0, posSum = 0, negSum = 0;
+  for (int i = 404; i >= 4; i -= 4) {
+    posSum += power(theta, i) / factorial(i);
   }
+  for (int i = 402; i >= 2; i -= 4) {
+    negSum += power(theta, i) / factorial(i);
+  }
+  cosTheta = 1 + posSum - negSum;
   return cosTheta;
 }
 
@@ -95,9 +95,9 @@ int main(int argc, char** argv) {
   float radNum = toRadians(num);
 
   printf("Theta: %f\n\n", num);
-  printf("My Sin:  %f\nMath Sin:%f\n\n", tsin(radNum), sin(radNum));
-  printf("My Cos:  %f\nMath Cos:%f\n\n", tcos(radNum), cos(radNum));
-  printf("My Tan:  %f\nMath Tan:%f\n", ttan(radNum), tan(radNum));
+  printf("My Sin:  %.10f\nMath Sin:%.10f\n\n", tsin(radNum), sin(radNum));
+  printf("My Cos:  %.10f\nMath Cos:%.10f\n\n", tcos(radNum), cos(radNum));
+  printf("My Tan:  %.10f\nMath Tan:%.10f\n", ttan(radNum), tan(radNum));
 
   return 0;
 }

@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
   make_hints();
   glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
 
-  GLFWwindow* window = glfwCreateWindow(1280, 960, "Learning", NULL, NULL);
+  GLFWwindow* window = glfwCreateWindow(2560, 2560, "Learning", NULL, NULL);
   if (!window) {
     glfwTerminate();
     exit(EXIT_FAILURE);
