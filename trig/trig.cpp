@@ -26,10 +26,10 @@ static double getTimeInSeconds() {
   return double(int64_t(ts.tv_sec) * int64_t(1e9) + int64_t(ts.tv_nsec)) * 1e-9;
 }
 
-static float toRadians(float degrees) {
+static double toRadians(double degrees) {
   return degrees * (M_PI / 180.0f);
 }
-static float toDegrees(float radians) {
+static double toDegrees(double radians) {
   return radians * (180.0f / M_PI);
 }
 
@@ -49,48 +49,47 @@ static double power(double n, int e) {
   return p;
 }
 
-static double tsin(float t) {
-  float theta = fmod(t, toRadians(360));
+static double tsin(double t) {
+  double theta = fmod(t, toRadians(360));
   double sinTheta = 0, posSum = 0, negSum = 0;
-  for (int i = 1001; i >= 1; i -= 4) {
+  for (int i = 381; i >= 1; i -= 4) {
     posSum += power(theta, i) / factorial(i);
   }
-  for (int i = 1003; i >= 3; i -= 4) {
+  for (int i = 383; i >= 3; i -= 4) {
     negSum += power(theta, i) / factorial(i);
   }
   sinTheta = posSum - negSum;
-  return (float)sinTheta;
+  return sinTheta;
 }
 
-static double tasin(float x) {
+static double tasin(double x) {
   double asinX = x;
   for (int i = 243; i >= 3; i -= 2) {
     double n = 1, d = 1;
-    for (int j = i - 1; j >= 2; j -= 2) {
+    for (int j = 2; j <= (i - 1); j += 2) {
       n *= (j - 1);
       d *= j;
     }
-    // printf("%lf / %lf\n", n, (d*i));
     asinX += (n * power(x, i)) / (d * i);
   }
-  return (float)asinX;
+  return asinX;
 }
 
-static double tcos(float t) {
-  float theta = fmod(t, toRadians(360));
+static double tcos(double t) {
+  double theta = fmod(t, toRadians(360));
   double cosTheta = 0, posSum = 0, negSum = 0;
-  for (int i = 1004; i >= 4; i -= 4) {
+  for (int i = 384; i >= 4; i -= 4) {
     posSum += power(theta, i) / factorial(i);
   }
-  for (int i = 1002; i >= 2; i -= 4) {
+  for (int i = 382; i >= 2; i -= 4) {
     negSum += power(theta, i) / factorial(i);
   }
   cosTheta = 1 + posSum - negSum;
-  return (float)cosTheta;
+  return cosTheta;
 }
 
-static float ttan(float theta) {
-  return tsin(theta) / tcos(theta);
+static double ttan(double theta) {
+  return (tsin(theta) / tcos(theta));
 }
 
 int main(int argc, char** argv) {
@@ -106,13 +105,27 @@ int main(int argc, char** argv) {
     }
   }
 
-  float radNum = toRadians(num);
+  float radNum;
 
-  printf("Theta: %f\n\n", num);
-  printf("My Sin:  %.10f\nMath Sin:%.10f\n\n", tsin(radNum), sin(radNum));
-  printf("My Cos:  %.10f\nMath Cos:%.10f\n\n", tcos(radNum), cos(radNum));
-  printf("My Tan:  %.10f\nMath Tan:%.10f\n\n", ttan(radNum), tan(radNum));
-  printf("My ArcSin:  %.24f\nMath ArcSin:%.24f\n", tasin(tsin(radNum)), asin(sin(radNum)));
+  for (int i = 0; i <= 360; i++) {
+    radNum = toRadians(i);
+    float tASin = tasin(tsin(radNum)), mASin = asin(sin(radNum));
+    if (tASin != mASin) {
+      printf("Theta: %i\tArcSin Diff:  %.24f\n", i, fabs(tASin - mASin));
+    }
+  }
+
+  radNum = toRadians(num);
+  float tSin = tsin(radNum), mSin = sin(radNum);
+  float tCos = tcos(radNum), mCos = cos(radNum);
+  float tTan = ttan(radNum), mTan = tan(radNum);
+  float tASin = tasin(tsin(radNum)), mASin = asin(sin(radNum));
+
+  printf("\nTheta: %f\n\n", num);
+  printf("My Sin:  %.10f\nMath Sin:%.10f\n\n", tSin, mSin);
+  printf("My Cos:  %.10f\nMath Cos:%.10f\n\n", tCos, mCos);
+  printf("My Tan:  %.10f\nMath Tan:%.10f\n\n", tTan, mTan);
+  printf("My ArcSin:  %.24f\nMath ArcSin:%.24f\n", tASin, mASin);
 
   return 0;
 }
