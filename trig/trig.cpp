@@ -17,6 +17,8 @@
   sudo apt install libgles2-mesa-dev libglfw3-dev
 */
 
+#define tPi 3.1415926535897932384626433832795
+
 float num = 90;
 double t0, t1;
 
@@ -92,6 +94,18 @@ static double ttan(double theta) {
   return (tsin(theta) / tcos(theta));
 }
 
+static double func(double x) {
+  double xx = x * x;
+  return x / (1.0 + xx * (0.33288950512027 + xx * (-0.08467922817644 + xx * (0.03252232640125 + xx * (-0.00749305860992 + xx)))));
+}
+
+static double tatan(double theta) {
+  double t = fmod(theta, toRadians(360));
+  if (t >= 1) return (tPi / 2) - func(1 / t);
+  if (t <= -1) return -(tPi / 2) - func(1 / t);
+  return func(t);
+}
+
 int main(int argc, char** argv) {
   int opt = 0;
   while ((opt = getopt(argc, argv, "n:")) != -1) {
@@ -109,9 +123,9 @@ int main(int argc, char** argv) {
 
   for (int i = 0; i <= 360; i++) {
     radNum = toRadians(i);
-    float tASin = tasin(tsin(radNum)), mASin = asin(sin(radNum));
-    if (tASin != mASin) {
-      printf("Theta: %i\tArcSin Diff:  %.24f\n", i, fabs(tASin - mASin));
+    float tATan = tatan(tan(radNum)), mATan = atan(tan(radNum));
+    if (tATan != mATan) {
+      printf("Theta: %i\tArcTan Diff:  %.24f\n", i, fabs(tATan - mATan));
     }
   }
 
@@ -119,13 +133,13 @@ int main(int argc, char** argv) {
   float tSin = tsin(radNum), mSin = sin(radNum);
   float tCos = tcos(radNum), mCos = cos(radNum);
   float tTan = ttan(radNum), mTan = tan(radNum);
-  float tASin = tasin(tsin(radNum)), mASin = asin(sin(radNum));
+  float tATan = tatan(tan(radNum)), mATan = atan(tan(radNum));
 
   printf("\nTheta: %f\n\n", num);
-  printf("My Sin:  %.10f\nMath Sin:%.10f\n\n", tSin, mSin);
-  printf("My Cos:  %.10f\nMath Cos:%.10f\n\n", tCos, mCos);
+  // printf("My Sin:  %.10f\nMath Sin:%.10f\n\n", tSin, mSin);
+  // printf("My Cos:  %.10f\nMath Cos:%.10f\n\n", tCos, mCos);
   printf("My Tan:  %.10f\nMath Tan:%.10f\n\n", tTan, mTan);
-  printf("My ArcSin:  %.24f\nMath ArcSin:%.24f\n", tASin, mASin);
+  printf("My ArcTan:  %.24f\nMath ArcTan:%.24f\n", tATan, mATan);
 
   return 0;
 }
