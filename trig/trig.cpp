@@ -64,7 +64,7 @@ static double tsin(double t) {
   return sinTheta;
 }
 
-static double tasin(double x) {
+static double tasin(double x) { // Tried taylor-series
   double asinX = x;
   for (int i = 243; i >= 3; i -= 2) {
     double n = 1, d = 1;
@@ -99,12 +99,15 @@ static double func(double x) {
   return x / (1.0 + xx * (0.33288950512027 + xx * (-0.08467922817644 + xx * (0.03252232640125 + xx * (-0.00749305860992 + xx)))));
 }
 
-static double tatan(double theta) {
+static double tatan(double theta) { // Tried taylor-series and horners method
   double t = fmod(theta, toRadians(360));
   if (t >= 1) return (tPi / 2) - func(1 / t);
   if (t <= -1) return -(tPi / 2) - func(1 / t);
   return func(t);
 }
+
+// I am struggling to find a functioning method for finding inverse trig functions, or I am at least 
+// not implementing them effectively, I have tried the taylor-series and horners method so far.
 
 int main(int argc, char** argv) {
   int opt = 0;
