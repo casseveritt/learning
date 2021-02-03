@@ -1,17 +1,8 @@
 
-UNAME := $(shell uname)
-$(info UNAME is $(UNAME))
+WARNFLAGS := -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wshadow
 
-WARNFLAGS := -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-declarations -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow  -Wsign-promo -Wstrict-overflow=5 -Wswitch-default -Wundef
-
-CFLAGS_NOWARN := -g -isystem stb -std=c++11
+CFLAGS_NOWARN := -g -std=c++11
 CFLAGS := $(CFLAGS_NOWARN) $(WARNFLAGS)
-
-ifeq ($(UNAME),Darwin)
-	GLFLAGS := -framework CoreVideo -framework OpenGL -framework IOKit -framework Cocoa -framework Carbon
-else
-	GLFLAGS := -lGLESv2
-endif
 
 all: trig
 
@@ -25,7 +16,7 @@ OBJ := $(patsubst %.cpp, %.o, $(SRC))
 	g++ $(CFLAGS) $< -c
 
 trig: $(OBJ) $(H)
-	g++ $(CFLAGS) $(OBJ) -o trig $(GLFLAGS) -lglfw -lpthread
+	g++ $(CFLAGS) $(OBJ) -o trig -lpthread
 
 format: format_h format_cpp
 
