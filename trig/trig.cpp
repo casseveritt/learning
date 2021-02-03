@@ -117,7 +117,7 @@ int main(int argc, char** argv) {
         if (optarg) num = atof(optarg);
         break;
       default: /* '?' */
-        fprintf(stderr, "Usage: %s [-a algorithm (l|c|b)] [-n numPrimes] [-t numThreads]\n", argv[0]);
+        fprintf(stderr, "Usage: %s [-n number]\n", argv[0]);
         exit(EXIT_FAILURE);
     }
   }
@@ -125,11 +125,13 @@ int main(int argc, char** argv) {
   float radNum;
 
   for (int i = 0; i <= 360; i++) {
-    radNum = toRadians(i);
-    float tATan = tatan(tan(radNum)), mATan = atan(tan(radNum));
-    if (tATan != mATan) {
-      printf("Theta: %i\tArcTan Diff:  %.24f\n", i, fabs(tATan - mATan));
-    }
+    float r = toRadians(i);
+    double t = tan(r);
+    float dat = fabsf(tatan(t) - atan(t));
+    float dt = fabsf(ttan(r) - tan(r));
+    float ds = fabsf(tsin(r) - sin(r));
+    float dc = fabsf(tcos(r) - cos(r));
+    printf("Theta: %i\tdiffs: at: %e t: %e s: %e c: %e\n", i, dat, dt, ds, dc);
   }
 
   radNum = toRadians(num);
