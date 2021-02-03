@@ -64,7 +64,7 @@ static double tsin(double t) {
   return sinTheta;
 }
 
-static double tasin(double x) { // Tried taylor-series
+static double tasin(double x) {  // Tried taylor-series
   double asinX = x;
   for (int i = 243; i >= 3; i -= 2) {
     double n = 1, d = 1;
@@ -91,22 +91,23 @@ static double tcos(double t) {
 }
 
 static double ttan(double theta) {
-  return (tsin(theta) / tcos(theta));
+  return tsin(theta) / tcos(theta);
 }
 
-static double func(double x) {
-  double xx = x * x;
-  return x / (1.0 + xx * (0.33288950512027 + xx * (-0.08467922817644 + xx * (0.03252232640125 + xx * (-0.00749305860992 + xx)))));
+static double tatan(double t) {  // Tried taylor-series and horners method
+  double theta = fmod(t, toRadians(360));
+  double atanTheta = theta, posSum = 0, negSum = 0;
+  for (int i = 1005; i >= 5; i -= 4) {
+    posSum += pow(theta, i) / i;
+  }
+  for (int i = 1003; i >= 3; i -= 4) {
+    negSum += pow(theta, i) / i;
+  }
+  atanTheta += (posSum - negSum);
+  return atanTheta;
 }
 
-static double tatan(double theta) { // Tried taylor-series and horners method
-  double t = fmod(theta, toRadians(360));
-  if (t >= 1) return (tPi / 2) - func(1 / t);
-  if (t <= -1) return -(tPi / 2) - func(1 / t);
-  return func(t);
-}
-
-// I am struggling to find a functioning method for finding inverse trig functions, or I am at least 
+// I am struggling to find a functioning method for finding inverse trig functions, or I am at least
 // not implementing them effectively, I have tried the taylor-series and horners method so far.
 
 int main(int argc, char** argv) {
@@ -122,26 +123,36 @@ int main(int argc, char** argv) {
     }
   }
 
-  float radNum;
-
   for (int i = 0; i <= 360; i++) {
-    float r = toRadians(i);
+    double r = toRadians(i);
     double t = tan(r);
-    float dat = fabsf(tatan(t) - atan(t));
-    float dt = fabsf(ttan(r) - tan(r));
-    float ds = fabsf(tsin(r) - sin(r));
-    float dc = fabsf(tcos(r) - cos(r));
+    double dat = atan(t);
+    dat -= tatan(t);
+    dat = fabsf(dat);
+    double dt = tan(r);
+    dt -= ttan(r);
+    dt = fabsf(dt);
+    double ds = sin(r);
+    ds -= tsin(r);
+    ds = fabsf(ds);
+    double dc = cos(r);
+    dc -= tcos(r);
+    dc = fabsf(dc);
+    // if (dat != 0.0 || dt != 0.0 || ds != 0.0 || dc != 0.0) {
     printf("Theta: %i\tdiffs: at: %e t: %e s: %e c: %e\n", i, dat, dt, ds, dc);
+    //}
   }
 
-  radNum = toRadians(num);
-  float tSin = tsin(radNum), mSin = sin(radNum);
+  double radNum = toRadians(num);
+  double tSin = tsin(radNum), mSin = sin(radNum);
+  // tSin -= 0.7071067811865475244008443621048490392848359376884740365883398689;
+  // mSin -= 0.7071067811865475244008443621048490392848359376884740365883398689;
   float tCos = tcos(radNum), mCos = cos(radNum);
   float tTan = ttan(radNum), mTan = tan(radNum);
   float tATan = tatan(tan(radNum)), mATan = atan(tan(radNum));
 
   printf("\nTheta: %f\n\n", num);
-  // printf("My Sin:  %.10f\nMath Sin:%.10f\n\n", tSin, mSin);
+  printf("My Sin:  %e\nMath Sin:%e\n\n", tSin, mSin);
   // printf("My Cos:  %.10f\nMath Cos:%.10f\n\n", tCos, mCos);
   printf("My Tan:  %.10f\nMath Tan:%.10f\n\n", tTan, mTan);
   printf("My ArcTan:  %.24f\nMath ArcTan:%.24f\n", tATan, mATan);
