@@ -51,8 +51,29 @@ static double power(double n, int e) {
   return p;
 }
 
+static double tfloor(double f) {
+  union {
+    double d;
+    uint64_t u;
+  };
+  d = f;
+  u = u & ~(1ULL << 63);
+  d -= (d - uint64_t(d));
+  if (f >= 0) {
+    return d;
+  } else {
+    return -d - 1;
+  }
+}
+
+static double tfmod(double t, double divisor) {
+  t /= divisor;
+  t -= tfloor(t);
+  return t * divisor;
+}
+
 static double tsin(double t) {
-  double theta = fmod(t, toRadians(360));
+  double theta = tfmod(t, toRadians(360));
   double sinTheta = 0, posSum = 0, negSum = 0;
   for (int i = 381; i >= 1; i -= 4) {
     posSum += power(theta, i) / factorial(i);
@@ -123,7 +144,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  for (int i = 0; i <= 360; i++) {
+  for (int i = -720; i <= 720; i+=4) {
     double r = toRadians(i);
     double t = tan(r);
     double dat = atan(t);
