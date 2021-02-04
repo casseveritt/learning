@@ -106,17 +106,17 @@ static double tcos(double t) {
 }
 
 static double ttan(double t) {
-  /*
+  ///*
   double theta = tfmod(t, toRadians(360));
   double sinTheta = theta, cosTheta = 1;
-  for (int i = 45; i >= 5; i -= 4) {
+  for (int i = 37; i >= 5; i -= 4) {
     sinTheta += (power(theta, i) / factorial(i)) - (power(theta, (i - 2)) / factorial((i - 2)));
     cosTheta += (power(theta, (i - 1)) / factorial((i - 1))) - (power(theta, (i - 3)) / factorial((i - 3)));
   }
   return sinTheta / cosTheta;
-  */
+  //*/
   // theta is only valid on [-pi/2, pi/2]
-  ///*
+  /*
   double theta = tfmod((t + toRadians(90)), toRadians(90));
   double tanTheta = theta;
   // for (int i = 43; i >= 3; i -= 2) {
@@ -141,7 +141,7 @@ static double ttan(double t) {
   tanTheta += (129848163681107301953.0 / 122529844256906551386796875.0) * power(theta, 31);
 
   return tanTheta;
-  //*/
+  */
 }
 
 static double tatan(double t) {  // Tried taylor-series and horners method
