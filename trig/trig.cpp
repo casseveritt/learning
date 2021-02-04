@@ -145,9 +145,9 @@ static double ttan(double t) {
 }
 
 static double tatan(double t) {  // Tried taylor-series and horners method
-  double theta = tfmod(t, tan(toRadians(360)));
+  double theta = tfmod((t + toRadians(90)), toRadians(90));
   double atanTheta = theta;
-  for (int i = 405; i >= 5; i -= 4) {
+  for (int i = 205; i >= 5; i -= 4) {
     atanTheta += pow(theta, i) / i;
     atanTheta -= pow(theta, (i - 2)) / (i - 2);
   }
@@ -172,7 +172,7 @@ int main(int argc, char** argv) {
 
   double te = 0, se = 0, ce = 0;
 
-  for (int i = -720; i <= 720; i += 4) {
+  for (int i = 0; i <= 360; i++) {
     double r = toRadians(i);
     double t = tan(r);
     double dat = atan(t);
