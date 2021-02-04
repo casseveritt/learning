@@ -106,6 +106,7 @@ static double tcos(double t) {
 }
 
 static double ttan(double t) {
+  /*
   double theta = tfmod(t, toRadians(360));
   double sinTheta = theta, cosTheta = 1;
   for (int i = 45; i >= 5; i -= 4) {
@@ -113,24 +114,34 @@ static double ttan(double t) {
     cosTheta += (power(theta, (i - 1)) / factorial((i - 1))) - (power(theta, (i - 3)) / factorial((i - 3)));
   }
   return sinTheta / cosTheta;
-  /*
-  // theta is only valid on [-pi/2, pi/2]
-  double theta = tfmod(t + toRadians(90), toRadians(180)) - toRadians(90);
-  double tanTheta = theta;
-  for (int i = 203; i >= 3; i -= 2) {
-    // if (t == toRadians(716)) printf("tanTheta += (%i^%i / %i!) * %lf^%i\n", 2, (i-2), i, theta, i);
-    tanTheta += (power(2, (i - 2)) / factorial(i)) * power(theta, i);
-  }
-
-  // tanTheta = 0
-  //   + theta
-  //   + (1.0/3.0) * power(theta, 3)
-  //   + (2.0/15.0) * power(theta, 5)
-  //   + (17.0/315.0) * power(theta, 7)
-  //   + (62.0/2835.0) * power(theta, 9);
-  
-  return tanTheta;
   */
+  // theta is only valid on [-pi/2, pi/2]
+  ///*
+  double theta = tfmod((t + toRadians(90)), toRadians(90));
+  double tanTheta = theta;
+  // for (int i = 43; i >= 3; i -= 2) {
+  // if (t == toRadians(716)) printf("tanTheta += (%i^%i / %i!) * %lf^%i\n", 2, (i-2), i, theta, i);
+  // tanTheta += (power(2, (i-2))/factorial(i))*power(theta, i);
+  //}
+
+  tanTheta += (1.0 / 3.0) * power(theta, 3);
+  tanTheta += (2.0 / 15.0) * power(theta, 5);
+  tanTheta += (17.0 / 315.0) * power(theta, 7);
+  tanTheta += (62.0 / 2835.0) * power(theta, 9);
+  tanTheta += (1382.0 / 155925.0) * power(theta, 11);
+  tanTheta += (21844.0 / 6081075.0) * power(theta, 13);
+  tanTheta += (929569.0 / 638512875.0) * power(theta, 15);
+  tanTheta += (6404582.0 / 10854718875.0) * power(theta, 17);
+  tanTheta += (443861162.0 / 1856156927625.0) * power(theta, 19);
+  tanTheta += (18888466084.0 / 194896477400625.0) * power(theta, 21);
+  tanTheta += (113927491862.0 / 49308808782358125.0) * power(theta, 23);
+  tanTheta += (58870668456604.0 / 3698160658676859375.0) * power(theta, 25);
+  tanTheta += (8374643517010684.0 / 1298054391195577640625.0) * power(theta, 27);
+  tanTheta += (689005380505609448.0 / 263505041412702261046875.0) * power(theta, 29);
+  tanTheta += (129848163681107301953.0 / 122529844256906551386796875.0) * power(theta, 31);
+
+  return tanTheta;
+  //*/
 }
 
 static double tatan(double t) {  // Tried taylor-series and horners method
@@ -184,7 +195,7 @@ int main(int argc, char** argv) {
     //}
   }
 
-  printf("\nte=%.50le\nse=%.50le\nce=%.50le\n", te, se, ce);
+  printf("\nte=%le\nse=%le\nce=%le\n", te, se, ce);
 
   double radNum = toRadians(num);
   double tSin = tsin(radNum), mSin = sin(radNum);
