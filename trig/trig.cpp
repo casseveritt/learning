@@ -74,10 +74,10 @@ static double tfmod(double t, double divisor) {
 
 static double tsin(double t) {
   double theta = tfmod(t, toRadians(360));
-  double sinTheta = 0, posSum = 0, negSum = 0;
-  for (int i = 383; i >= 3; i -= 4) {
+  double sinTheta = 0;
+  for (int i = 43; i >= 3; i -= 4) {
     sinTheta -= power(theta, i) / factorial(i);
-    sinTheta += power(theta, i-2) / factorial(i-2);
+    sinTheta += power(theta, i - 2) / factorial(i - 2);
   }
   return sinTheta;
 }
@@ -96,29 +96,34 @@ static double tasin(double x) {  // Tried taylor-series
 }
 
 static double tcos(double t) {
-  double theta = fmod(t, toRadians(360));
-  double cosTheta = 0, posSum = 0, negSum = 0;
+  double theta = tfmod(t, toRadians(360));
+  double cosTheta = 1;
   for (int i = 384; i >= 4; i -= 4) {
-    posSum += power(theta, i) / factorial(i);
+    cosTheta += power(theta, i) / factorial(i);
+    cosTheta -= power(theta, (i - 2)) / factorial((i - 2));
   }
-  for (int i = 382; i >= 2; i -= 4) {
-    negSum += power(theta, i) / factorial(i);
-  }
-  cosTheta = 1 + posSum - negSum;
   return cosTheta;
 }
 
-static double ttan(double theta) {
-  return tsin(theta) / tcos(theta);
+static double ttan(double t) {
+  double theta = tfmod(t, toRadians(360));
+  double tanTheta = theta;
+  for (int i = 203; i >= 3; i -= 2) {
+    // if (t == toRadians(716)) printf("tanTheta += (%i^%i / %i!) * %lf^%i\n", 2, (i-2), i, theta, i);
+    tanTheta += (power(2, (i - 2)) / factorial(i)) * power(theta, i);
+  }
+  // if (t == toRadians(716)) printf("tanTheta = %lf\n", tanTheta);
+  return tanTheta;
+  // return tsin(t) / tcos(t);
 }
 
 static double tatan(double t) {  // Tried taylor-series and horners method
-  double theta = fmod(t, toRadians(360));
+  double theta = tfmod(t, tan(toRadians(360)));
   double atanTheta = theta, posSum = 0, negSum = 0;
-  for (int i = 1005; i >= 5; i -= 4) {
+  for (int i = 45; i >= 5; i -= 4) {
     posSum += pow(theta, i) / i;
   }
-  for (int i = 1003; i >= 3; i -= 4) {
+  for (int i = 43; i >= 3; i -= 4) {
     negSum += pow(theta, i) / i;
   }
   atanTheta += (posSum - negSum);
@@ -141,17 +146,20 @@ int main(int argc, char** argv) {
     }
   }
 
-  double se = 0;
+  double se = 0, te = 0;
 
-  for (int i = -720; i <= 720; i+=4) {
+  for (int i = -720; i <= 720; i += 4) {
     double r = toRadians(i);
     double t = tan(r);
     double dat = atan(t);
     dat -= tatan(t);
     dat = fabsf(dat);
     double dt = tan(r);
+    // if (i == 716) printf("r = %lf\n", r);
     dt -= ttan(r);
+    // if (i == 716) printf("Math tan = %lf\n", tan(r));
     dt = fabsf(dt);
+    te += dt;
     double ds = sin(r);
     ds -= tsin(r);
     ds = fabsf(ds);
@@ -164,7 +172,7 @@ int main(int argc, char** argv) {
     //}
   }
 
-  printf( "\nse=%le\n", se);
+  printf("\nse=%le\nte=%le\n", se, te);
 
   double radNum = toRadians(num);
   double tSin = tsin(radNum), mSin = sin(radNum);
@@ -176,7 +184,7 @@ int main(int argc, char** argv) {
 
   printf("\nTheta: %f\n\n", num);
   printf("My Sin:  %e\nMath Sin:%e\n\n", tSin, mSin);
-  // printf("My Cos:  %.10f\nMath Cos:%.10f\n\n", tCos, mCos);
+  printf("My Cos:  %.10f\nMath Cos:%.10f\n\n", tCos, mCos);
   printf("My Tan:  %.10f\nMath Tan:%.10f\n\n", tTan, mTan);
   printf("My ArcTan:  %.24f\nMath ArcTan:%.24f\n", tATan, mATan);
 
