@@ -75,13 +75,10 @@ static double tfmod(double t, double divisor) {
 static double tsin(double t) {
   double theta = tfmod(t, toRadians(360));
   double sinTheta = 0, posSum = 0, negSum = 0;
-  for (int i = 381; i >= 1; i -= 4) {
-    posSum += power(theta, i) / factorial(i);
-  }
   for (int i = 383; i >= 3; i -= 4) {
-    negSum += power(theta, i) / factorial(i);
+    sinTheta -= power(theta, i) / factorial(i);
+    sinTheta += power(theta, i-2) / factorial(i-2);
   }
-  sinTheta = posSum - negSum;
   return sinTheta;
 }
 
@@ -144,6 +141,8 @@ int main(int argc, char** argv) {
     }
   }
 
+  double se = 0;
+
   for (int i = -720; i <= 720; i+=4) {
     double r = toRadians(i);
     double t = tan(r);
@@ -156,6 +155,7 @@ int main(int argc, char** argv) {
     double ds = sin(r);
     ds -= tsin(r);
     ds = fabsf(ds);
+    se += ds;
     double dc = cos(r);
     dc -= tcos(r);
     dc = fabsf(dc);
@@ -163,6 +163,8 @@ int main(int argc, char** argv) {
     printf("Theta: %i\tdiffs: at: %e t: %e s: %e c: %e\n", i, dat, dt, ds, dc);
     //}
   }
+
+  printf( "\nse=%le\n", se);
 
   double radNum = toRadians(num);
   double tSin = tsin(radNum), mSin = sin(radNum);
