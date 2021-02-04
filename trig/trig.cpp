@@ -113,6 +113,24 @@ static double ttan(double t) {
     cosTheta += (power(theta, (i - 1)) / factorial((i - 1))) - (power(theta, (i - 3)) / factorial((i - 3)));
   }
   return sinTheta / cosTheta;
+  /*
+  // theta is only valid on [-pi/2, pi/2]
+  double theta = tfmod(t + toRadians(90), toRadians(180)) - toRadians(90);
+  double tanTheta = theta;
+  for (int i = 203; i >= 3; i -= 2) {
+    // if (t == toRadians(716)) printf("tanTheta += (%i^%i / %i!) * %lf^%i\n", 2, (i-2), i, theta, i);
+    tanTheta += (power(2, (i - 2)) / factorial(i)) * power(theta, i);
+  }
+
+  // tanTheta = 0
+  //   + theta
+  //   + (1.0/3.0) * power(theta, 3)
+  //   + (2.0/15.0) * power(theta, 5)
+  //   + (17.0/315.0) * power(theta, 7)
+  //   + (62.0/2835.0) * power(theta, 9);
+  
+  return tanTheta;
+  */
 }
 
 static double tatan(double t) {  // Tried taylor-series and horners method
