@@ -63,8 +63,8 @@ static void findPrimes() {
       pushPrime(checkNum);
     }
   }
-  printf("checkPrimeCalls: %i\nPrimes Found: %i\n\n", checkPrimeCalls, primesFound);
   // Print thread work load.
+  printf("checkPrimeCalls: %i\nPrimes Found: %i\n\n", checkPrimeCalls, primesFound);
 }
 
 int main(int argc, char** argv) {
@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
         if (optarg) numThreads = atoi(optarg);
         break;
       default: /* '?' */
-        fprintf(stderr, "Usage: %s [-a algorithm (l|c|b)] [-n numPrimes] [-t numThreads]\n", argv[0]);
+        fprintf(stderr, "Usage: %s [-n numPrimes] [-t numThreads]\n", argv[0]);
         exit(EXIT_FAILURE);
     }
   }
