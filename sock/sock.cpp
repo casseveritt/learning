@@ -10,8 +10,9 @@
 #include <thread>
 #include <vector>
 
-//#include "socket.h"
+#include "socket.h"
 
+using namespace r3;
 using namespace std;
 
 /*
@@ -20,6 +21,7 @@ using namespace std;
 */
 
 bool isServer = false;
+Socket s;
 
 int main(int argc, char** argv) {
   if ((string)argv[0] == "./server") isServer = true;
