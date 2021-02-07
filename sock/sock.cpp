@@ -37,15 +37,15 @@ int main(int argc, char** argv) {
     printf("Server created!\n");
     Listener server;
     t0 = getTimeInSeconds();
-    while (server.Listen(127.0.0.1) == false) {
-      if (getTimeInSeconds() - t0 >= 10) {
-        printf("Waiting...\n");
-        t0 = getTimeInSeconds();
-      }
-    }
-    s = server.Accept(127.0.0.1);
+    server.Listen(2113);
+    printf("Waiting...\n");
+    s = server.Accept();
+    printf("Connected!\tExiting\n");
   } else {
     printf("Client created!\n");
+    printf("Attempting connection...\n");
+    s.Connect(GetIpAddress("luc"), 2113);
+    printf("Connected!\tExiting\n");
   }
 
   return 0;

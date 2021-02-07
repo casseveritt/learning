@@ -42,7 +42,7 @@
  */
 
 
-#include "r3/socket.h"
+#include "socket.h"
 
 #if ! R3_OUTPUT_ABSENT
 //# include "r3/output.h"

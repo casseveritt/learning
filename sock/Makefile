@@ -8,7 +8,7 @@ all: server client
 
 H := $(wildcard *.h)
 
-SRC := sock.cpp
+SRC := sock.cpp socket.cpp
 
 OBJ := $(patsubst %.cpp, %.o, $(SRC))
 
