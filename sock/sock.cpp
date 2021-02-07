@@ -40,12 +40,20 @@ int main(int argc, char** argv) {
     server.Listen(2113);
     printf("Waiting...\n");
     s = server.Accept();
-    printf("Connected!\tExiting\n");
+    printf("Connected!\n");
+    char* input;
+    s.Read(*input);
+    printf("Recieved '%s'\nSent back.\n", input);
+    s.Write(input);
   } else {
     printf("Client created!\n");
     printf("Attempting connection...\n");
     s.Connect(GetIpAddress("luc"), 2113);
-    printf("Connected!\tExiting\n");
+    printf("Connected!\nSending 'Echo'\n");
+    s.Write("Echo");
+    char* input;
+    s.Read(*input);
+    printf("Receiving '%s'\n", input);
   }
 
   return 0;
