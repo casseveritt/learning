@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
   isServer = strcmp(argv[0], "./server") == 0;
 
   const char* hostname = "localhost";
-  if (argc == 2) {
+  if (argc >= 2) {
     hostname = argv[1];
   }
   const char* message = "echo";
