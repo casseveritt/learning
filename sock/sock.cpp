@@ -23,6 +23,7 @@ using namespace std;
 bool isServer = false;
 double t0, t1;
 Socket s;
+int port = 2113;
 
 static double getTimeInSeconds() {
   timespec ts;
@@ -46,18 +47,25 @@ int main(int argc, char** argv) {
     printf("Server created!\n");
     Listener server;
     t0 = getTimeInSeconds();
-    server.Listen(2113);
+    server.Listen(port);
     printf("Waiting...\n");
     s = server.Accept();
     printf("Connected!\n");
     char input[100];
     int bytes = s.ReadPartial(input, 100);
-    printf("Recieved '%s'\nSent back.\n", input);
-    s.Write(input, bytes);
+    printf("Received '%s'\n", input);
+    if ((string)input == (string)"quit") {
+      message = "Quitting";
+      s.Write(message, strlen(message) + 1);
+      s.Close();
+    } else {
+      message = "Invalid command";
+      s.Write(message, strlen(message) + 1);
+    }
   } else {
     printf("Client created!\n");
     printf("Attempting connection...\n");
-    s.Connect(GetIpAddress(hostname), 2113);
+    s.Connect(GetIpAddress(hostname), port);
     printf("Connected!\nSending '%s'\n", message);
     bool success = s.Write(message, strlen(message) + 1);
     printf("Write to socket %s.\n", success ? "succeeded" : "failed");
