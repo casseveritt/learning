@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #include <cstring>
 #include <thread>
@@ -38,16 +39,28 @@ static double getTimeInSeconds() {
 
 // Server
 
-static void serverCommand(char* command, Socket& sock) {
+static void serverCommand(char* command, Socket &sock) {
   if (strcmp(command, "quit") == 0) {
-    sock.Close();
-    for (const int i = 0; i < connections.size(); i++) {
-      if (connections[i] == sock) {
-        sock.Close();
-        connections.erase(i);
+    shouldClose = true;
+  } if (strcmp(command, "ls") == 0) {
+    DIR *dir = opendir("sock");
+    if (dir) {
+      string dirContents;
+      struct dirent *en;
+      while ((en = readdir(dir)) != NULL) {
+        dirContents.append(en->d_name);
+        dirContents.append("\n");
       }
+      closedir(dir);
+      string wave = "Dir found contents:";
+      wave.append(to_string(dirContents.size() + 1));
+      const char* cwave = wave.substr(0, wave.size()-1);
+      sock.Write(cwave, wave.size() + 1);
+      sock.Write(dirContents, strlen(dirContents) + 1);
+    } else {
+      const char* wave = "Error";
+      sock.Write(wave, strlen(wave) + 1);
     }
-    if (connections.size() == 0) shouldClose = true;
   }
 }
 
@@ -75,7 +88,7 @@ static void serverMain() {
     for (Socket conn : connections) {
       if (conn.CanRead()) {
         conn.ReadPartial(input, bytes);
-        printf("Input: '%s'\n", input);
+        //printf("Input: '%s'\n", input);
         serverCommand(input, conn);
       }
     }
@@ -87,10 +100,23 @@ static void serverMain() {
 
 static void clientCommand(string command) {
   const char* comm;
-  if (command == "quit") {
+  if (command == string("quit")) {
     comm = "quit";
     s.Write(comm, strlen(comm) + 1);
     shouldClose = true;
+  } if (command == string("ls")) {
+    comm = "ls";
+    s.Write(comm, strlen(comm) + 1);
+    char wave[100];
+    s.ReadPartial(wave, 100);
+    if (string(wave) != string("Error")) {
+      int bytes = atoi(string(wave).substr(19,99));
+      char contents[bytes];
+      s.ReadPartial(contents, bytes);
+      printf("%s", contents);
+    } else {
+      printf("Error\n", wave);
+    }
   }
 }
 
@@ -101,9 +127,10 @@ static void clientMain() {
   printf("Connected!\n");
   string command;
   while (!shouldClose) {
-    cin >> command;
+    std::cin >> command;
     clientCommand(command);
   }
+  s.Close();
 }
 
 // Main
