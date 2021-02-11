@@ -1,11 +1,11 @@
 #include <arpa/inet.h>
 #include <bits/stdc++.h>
+#include <dirent.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-#include <dirent.h>
 
 #include <cstring>
 #include <thread>
@@ -39,28 +39,62 @@ static double getTimeInSeconds() {
 
 // Server
 
-static void serverCommand(char* command, Socket &sock) {
+static void serverCommand(char* command, Socket& sock) {
   if (strcmp(command, "quit") == 0) {
     shouldClose = true;
-  } if (strcmp(command, "ls") == 0) {
-    DIR *dir = opendir("sock");
+  }
+  if (strcmp(command, "ls") == 0) {
+    DIR* dir = opendir(".");
     if (dir) {
       string dirContents;
-      struct dirent *en;
+      struct dirent* en;
       while ((en = readdir(dir)) != NULL) {
         dirContents.append(en->d_name);
-        dirContents.append("\n");
+        dirContents.append("\t");
       }
       closedir(dir);
-      string wave = "Dir found contents:";
-      wave.append(to_string(dirContents.size() + 1));
-      const char* cwave = wave.substr(0, wave.size()-1);
-      sock.Write(cwave, wave.size() + 1);
-      sock.Write(dirContents, strlen(dirContents) + 1);
-    } else {
-      const char* wave = "Error";
-      sock.Write(wave, strlen(wave) + 1);
-    }
+      dirContents.append("\n");
+      string out;
+      for (int i = 3; i > 0; i--) {
+        if (dirContents.size() < pow(10, i)) out.append("0");
+      }
+      out.append(to_string(dirContents.size()));
+      out.append(dirContents);
+      sock.Write(out.c_str(), int(out.size()) + 1);
+    } else
+      sock.Write("0000", 5);
+  }
+  if (string(command).substr(0, 3) == string("get")) {
+    string comm(command);
+    FILE* file = fopen(string(command).substr(4, strlen(command) - 1).c_str(), "r");
+    if (file != NULL) {
+      fseek(file, 0L, SEEK_END);
+      int fileSize = ftell(file);
+      rewind(file);
+      string totalSize;
+      for (int i = 19; i > 1; i--) {
+        if (fileSize < pow(10, i)) totalSize.append("0");
+      }
+      totalSize.append(to_string(fileSize));
+      sock.Write(totalSize.c_str(), 21);
+      char* readBuffer;
+      int iterations = (fileSize - (fileSize % 8000)) / 8000;
+      if (fileSize % 8000 > 0) iterations++;
+      printf("iterations: %i\n", iterations);
+      for (int i = 0; i < iterations; i++) {
+        if (i == iterations - 1 && fileSize % 8000 != 0)
+          fread(readBuffer, 1, fileSize % 8000, file);
+        else
+          fread(readBuffer, 1, 8000, file);
+        // printf("'%s'\n", readBuffer);
+        // sock.Write(to_string(strlen(readBuffer)).c_str(), 5);
+        // sock.Write(string(readBuffer).c_str(), strlen(readBuffer)+1);
+        // printf("Size: %i\n", int(strlen(readBuffer)));
+      }
+      printf("Jesus\n");
+      fclose(file);
+    } else
+      sock.Write("00000000000000000000", 21);
   }
 }
 
@@ -71,8 +105,8 @@ static void makeConnections() {
       connections.push_back(server.Accept());
       connections.back().SetNonblocking();
       printf("Connection made!\n");
-    } else
-      printf("Connection attempted! (Full)\n");
+    }  // else
+       // printf("Connection attempted! (Full)\n");
   }
 }
 
@@ -88,7 +122,6 @@ static void serverMain() {
     for (Socket conn : connections) {
       if (conn.CanRead()) {
         conn.ReadPartial(input, bytes);
-        //printf("Input: '%s'\n", input);
         serverCommand(input, conn);
       }
     }
@@ -99,24 +132,41 @@ static void serverMain() {
 // Client
 
 static void clientCommand(string command) {
-  const char* comm;
   if (command == string("quit")) {
-    comm = "quit";
-    s.Write(comm, strlen(comm) + 1);
+    s.Write(command.c_str(), command.size() + 1);
     shouldClose = true;
-  } if (command == string("ls")) {
-    comm = "ls";
-    s.Write(comm, strlen(comm) + 1);
-    char wave[100];
-    s.ReadPartial(wave, 100);
-    if (string(wave) != string("Error")) {
-      int bytes = atoi(string(wave).substr(19,99));
-      char contents[bytes];
-      s.ReadPartial(contents, bytes);
-      printf("%s", contents);
-    } else {
-      printf("Error\n", wave);
-    }
+  }
+  if (command == string("ls")) {
+    s.Write(command.c_str(), command.size() + 1);
+    char size[4];
+    s.ReadPartial(size, 4);
+    int bytes = atoi(size);
+    char cont[bytes + 1];
+    if (string(size) != string("0000")) {
+      s.ReadPartial(cont, bytes + 1);
+      printf("%s", cont);
+    } else
+      printf("Error\n");
+  }
+  if (command.substr(0, 3) == string("get")) {
+    s.Write(command.c_str(), command.size() + 1);
+    char fileSize[20];
+    s.ReadPartial(fileSize, 20);
+    int bytes = atoi(fileSize);
+    char file[bytes + 1];
+    if (string(fileSize) != string("00000000000000000000")) {
+      int iterations = (bytes - (bytes % 8000)) / 8000;
+      if (bytes % 8000 > 0) iterations++;
+      for (int i = 0; i < iterations; i++) {
+        char size[5];
+        s.ReadPartial(size, 5);
+        int fbytes = atoi(size);
+        char fileFrag[fbytes + 1];
+        s.ReadPartial(fileFrag, fbytes);
+        bytes -= fbytes;
+      }
+    } else
+      printf("Error\n");
   }
 }
 
@@ -127,7 +177,7 @@ static void clientMain() {
   printf("Connected!\n");
   string command;
   while (!shouldClose) {
-    std::cin >> command;
+    getline(cin, command);
     clientCommand(command);
   }
   s.Close();
