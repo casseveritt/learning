@@ -1,3 +1,6 @@
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #include <arpa/inet.h>
 #include <bits/stdc++.h>
 #include <dirent.h>
@@ -53,16 +56,11 @@ static void serverCommand(char* command, Socket& sock) {
         dirContents.append("\t");
       }
       closedir(dir);
-      dirContents.append("\n");
-      string out;
-      for (int i = 3; i > 0; i--) {
-        if (dirContents.size() < pow(10, i)) out.append("0");
-      }
-      out.append(to_string(dirContents.size()));
-      out.append(dirContents);
-      sock.Write(out.c_str(), int(out.size()) + 1);
+      int lsLength = dirContents.size();
+      sock.Write(lsLength);
+      sock.Write(dirContents.c_str(), (dirContents.size() + 1));
     } else
-      sock.Write("0000", 5);
+      sock.Write(0);
   }
   if (string(command).substr(0, 3) == string("get")) {
     string comm(command);
@@ -72,25 +70,20 @@ static void serverCommand(char* command, Socket& sock) {
       int fileSize = ftell(file);
       rewind(file);
       constexpr int size = 8000;
-      char readBuffer[size+1];
+      char readBuffer[size + 1];
       sock.Write(fileSize);
-      int iterations = (fileSize - (fileSize % size)) / size;
-      if (fileSize % size > 0) iterations++;
-      for (int i = 0; i < iterations; i++) {
+      sock.Write(size);
+      while (fileSize > 0) {
         int cSize = size;
-        if (i == iterations - 1 && fileSize % size != 0) cSize = fileSize % size;
-        printf("Chunk Size int: %d\n", cSize);
+        if (fileSize < size) cSize = fileSize;
         fread(&readBuffer, 1, cSize, file);
-        // printf("\nChunk %i: Size = %i\nEnd\n", i, size);
-        // printf("%s\n\n%i : %i\n\n", readBuffer, (size*i)+cSize, int(ftell(file)));
-        sock.Write(cSize);
+        printf("Fragment size %i\n", int(ftell(file)));
         sock.Write(readBuffer, cSize);
-        // printf("Size: %i\n", int(strlen(readBuffer)));
+        fileSize -= cSize;
       }
-      printf("Transfered\n");
       fclose(file);
     } else
-      sock.Write("00000000000000000000", 21);
+      sock.Write(0);
   }
 }
 
@@ -101,8 +94,7 @@ static void makeConnections() {
       connections.push_back(server.Accept());
       connections.back().SetNonblocking();
       printf("Connection made!\n");
-    }  // else
-       // printf("Connection attempted! (Full)\n");
+    }
   }
 }
 
@@ -112,11 +104,12 @@ static void serverMain() {
   printf("Server created!\n");
   t0 = getTimeInSeconds();
   thread connect = thread(makeConnections);
-  int bytes = 100;
   while (!shouldClose) {
-    char input[bytes];
     for (Socket conn : connections) {
       if (conn.CanRead()) {
+        int bytes = 0;
+        conn.Read(bytes);
+        char input[bytes + 1];
         memset(input, 0, 100);
         conn.ReadPartial(input, bytes);
         serverCommand(input, conn);
@@ -130,44 +123,40 @@ static void serverMain() {
 
 static void clientCommand(string command) {
   if (command == string("quit")) {
+    s.Write(int(command.size()));
     s.Write(command.c_str(), command.size() + 1);
     shouldClose = true;
   }
   if (command == string("ls")) {
+    s.Write(int(command.size()));
     s.Write(command.c_str(), command.size() + 1);
-    char size[4];
-    s.ReadPartial(size, 4);
-    int bytes = atoi(size);
-    char cont[bytes + 1];
-    if (string(size) != string("0000")) {
-      s.ReadPartial(cont, bytes + 1);
-      printf("%s", cont);
+    int lsLength = 0;
+    s.Read(lsLength);
+    char cont[lsLength + 1];
+    if (lsLength > 0) {
+      s.ReadPartial(cont, lsLength + 1);
+      printf("%s\n", cont);
     } else
       printf("Error\n");
   }
   if (command.substr(0, 3) == string("get")) {
+    s.Write(int(command.size()));
     s.Write(command.c_str(), command.size() + 1);
     constexpr int size = 8000;
-    char fileFrag[size+1];
-    int fileSize = 0;
-    s.Read(fileSize);
-    int bytes = fileSize;
-    printf("Total Size: %i\n", bytes);
-    char file[bytes + 1];
+    int bytes = 0;
+    s.Read(bytes);
+    s.Read(size);
+    char fileFrag[size + 1];
     if (bytes > 0) {
-      int iterations = (bytes - (bytes % 8000)) / 8000;
-      if (bytes % 8000 > 0) iterations++;
-      for (int i = 0; i < iterations; i++) {
-        int fbytes = 0;
-        s.Read(fbytes);
+      // FILE* out = fopen("out.txt", "w");
+      while (bytes > 0) {
+        int fbytes = size;
+        if (bytes < size) fbytes = bytes;
         printf("Chunk Size: %i\n", fbytes);
-        if (fbytes > size) {
-          printf("Chunk size exceeds buffer size - fbytes=%d, chunkSize=%d!\n", fbytes, size);
-        }
+        if (fbytes > size) printf("Chunk size exceeds buffer size - fbytes=%d, chunkSize=%d!\n", fbytes, size);
         int actualBytes = s.ReadPartial(fileFrag, fbytes);
-        if (fbytes != actualBytes) {
-          printf( "We received fewer bytes than expected!\n");
-        }
+        if (fbytes != actualBytes) printf("We received fewer bytes than expected!\n");
+        // fwrite(fileFrag, 1, fbytes, out);
         bytes -= fbytes;
       }
     } else
