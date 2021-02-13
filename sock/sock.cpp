@@ -11,8 +11,8 @@
 #include <unistd.h>
 
 #include <cstring>
-#include <thread>
 #include <mutex>
+#include <thread>
 #include <vector>
 
 #include "socket.h"
@@ -95,21 +95,20 @@ static void makeConnections() {
   server.SetNonblocking();
   while (!shouldClose) {
     if (int(connections.size()) < connectionLimit) {
-      Socket s = server.Accept();
-      if ( s.s != -1 ) {
+      Socket conn = server.Accept();
+      if (conn.s != -1) {
         const lock_guard<mutex> lock(connectionsMutex);
-        connections.push_back(s);
-        //connections.back().SetNonblocking();
+        connections.push_back(conn);
         printf("Connection made!\n");
       } else {
-        usleep(1000*1000); // sleep for 1 second on failed accept
+        usleep(1000 * 1000);  // sleep for 1 second on failed accept
       }
     }
   }
 }
 
 static void serverMain() {
-  //server.SetNonblocking();
+  // server.SetNonblocking();
 
   printf("Server created!\n");
   t0 = getTimeInSeconds();
@@ -122,10 +121,10 @@ static void serverMain() {
       if (conn.CanRead()) {
         int cbytes = 0;
         conn.Read(cbytes);
-        printf("command bytes = %d\n", cbytes);
+        // printf("command bytes = %d\n", cbytes);
         memset(input, 0, 100 + 1);
         conn.ReadPartial(input, bytes);
-        printf("command read: %d, %s\n", conn.s, input);
+        // printf("command read: %d, %s\n", conn.s, input);
         serverCommand(input, conn);
       }
     }
@@ -168,7 +167,7 @@ static void clientCommand(string command) {
     s.Read(size);
     char fileFrag[size + 1];
     if (bytes > 0) {
-      // FILE* out = fopen("out.txt", "w");
+      FILE* out = fopen("out.txt", "w");
       while (bytes > 0) {
         int fbytes = size;
         if (bytes < size) fbytes = bytes;
@@ -176,9 +175,10 @@ static void clientCommand(string command) {
         if (fbytes > size) printf("Chunk size exceeds buffer size - fbytes=%d, chunkSize=%d!\n", fbytes, size);
         int actualBytes = s.ReadPartial(fileFrag, fbytes);
         if (fbytes != actualBytes) printf("We received fewer bytes than expected!\n");
-        // fwrite(fileFrag, 1, fbytes, out);
+        fwrite(fileFrag, 1, fbytes, out);
         bytes -= fbytes;
       }
+      fclose(out);
     } else
       printf("Error\n");
   }
