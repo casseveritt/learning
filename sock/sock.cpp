@@ -57,6 +57,7 @@ static void serverCommand(char* command, Socket& sock) {
       }
       closedir(dir);
       int lsLength = dirContents.size();
+      printf("len: %d, val: %s\n", lsLength, dirContents.c_str());
       sock.Write(lsLength);
       sock.Write(dirContents.c_str(), (dirContents.size() + 1));
     } else
@@ -92,14 +93,14 @@ static void makeConnections() {
     server.Listen(port);
     if (int(connections.size()) < connectionLimit) {
       connections.push_back(server.Accept());
-      connections.back().SetNonblocking();
+      //connections.back().SetNonblocking();
       printf("Connection made!\n");
     }
   }
 }
 
 static void serverMain() {
-  server.SetNonblocking();
+  //server.SetNonblocking();
 
   printf("Server created!\n");
   t0 = getTimeInSeconds();
@@ -111,6 +112,7 @@ static void serverMain() {
       if (conn.CanRead()) {
         int cbytes = 0;
         conn.Read(cbytes);
+        printf("command bytes = %d\n", cbytes);
         memset(input, 0, 100);
         conn.ReadPartial(input, bytes);
         serverCommand(input, conn);
@@ -181,7 +183,7 @@ static void clientMain() {
 // Main
 
 int main(int argc, char** argv) {
-  isServer = strcmp(argv[0], "./server") == 0;
+  isServer = strstr(argv[0], "server") != 0;
 
   if (argc >= 2) hostname = argv[1];
 
