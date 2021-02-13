@@ -104,12 +104,13 @@ static void serverMain() {
   printf("Server created!\n");
   t0 = getTimeInSeconds();
   thread connect = thread(makeConnections);
+  int bytes = 100;
+  char input[bytes + 1];
   while (!shouldClose) {
     for (Socket conn : connections) {
       if (conn.CanRead()) {
-        int bytes = 0;
-        conn.Read(bytes);
-        char input[bytes + 1];
+        int cbytes = 0;
+        conn.Read(cbytes);
         memset(input, 0, 100);
         conn.ReadPartial(input, bytes);
         serverCommand(input, conn);
