@@ -12,6 +12,7 @@
 
 #include <cstring>
 #include <thread>
+#include <mutex>
 #include <vector>
 
 #include "socket.h"
@@ -32,6 +33,7 @@ Socket s;
 
 Listener server;
 vector<Socket> connections;
+mutex connectionsMutex;
 int connectionLimit = 4;
 
 static double getTimeInSeconds() {
@@ -89,12 +91,19 @@ static void serverCommand(char* command, Socket& sock) {
 }
 
 static void makeConnections() {
+  server.Listen(port);
+  server.SetNonblocking();
   while (!shouldClose) {
-    server.Listen(port);
     if (int(connections.size()) < connectionLimit) {
-      connections.push_back(server.Accept());
-      //connections.back().SetNonblocking();
-      printf("Connection made!\n");
+      Socket s = server.Accept();
+      if ( s.s != -1 ) {
+        const lock_guard<mutex> lock(connectionsMutex);
+        connections.push_back(s);
+        //connections.back().SetNonblocking();
+        printf("Connection made!\n");
+      } else {
+        usleep(1000*1000); // sleep for 1 second on failed accept
+      }
     }
   }
 }
@@ -108,18 +117,26 @@ static void serverMain() {
   int bytes = 100;
   char input[bytes + 1];
   while (!shouldClose) {
+    const lock_guard<mutex> lock(connectionsMutex);
     for (Socket conn : connections) {
       if (conn.CanRead()) {
         int cbytes = 0;
         conn.Read(cbytes);
         printf("command bytes = %d\n", cbytes);
-        memset(input, 0, 100);
+        memset(input, 0, 100 + 1);
         conn.ReadPartial(input, bytes);
+        printf("command read: %d, %s\n", conn.s, input);
         serverCommand(input, conn);
       }
     }
   }
-  for (Socket conn : connections) conn.Close();
+  {
+    const lock_guard<mutex> lock(connectionsMutex);
+    for (Socket conn : connections) conn.Close();
+    if (connect.joinable()) {
+      connect.join();
+    }
+  }
 }
 
 // Client

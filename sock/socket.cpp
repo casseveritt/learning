@@ -446,7 +446,9 @@ Socket Listener::Accept() {
       Close();
     }
 #else
-    perror("Accept failed.");
+    if(errno != EWOULDBLOCK) {
+      perror("Accept failed.");
+    }
 #endif
     return Socket(-1);
   }
