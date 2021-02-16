@@ -108,7 +108,22 @@ static void makeConnections() {
 }
 
 static void serverMain() {
-  // server.SetNonblocking();
+  union finley {
+    int8_t num;
+    uint8_t unum;
+  };
+  finley ex;
+  ex.num = -128;
+  string bits;
+  int number = ex.num;
+  for (int i = 0; i < 8; i++) {
+    if (number % 2 == 0)
+      bits.insert(0, "0");
+    else
+      bits.insert(0, "1");
+    number /= 2;
+  }
+  printf("Bits:     %s\nUnsigned: %i\nSigned:   %i\n", bits.c_str(), ex.unum, ex.num);
 
   printf("Server created!\n");
   t0 = getTimeInSeconds();
