@@ -113,7 +113,8 @@ static void serverMain() {
     uint8_t unum;
   };
   finley ex;
-  ex.num = -128;
+  ex.num = 0;
+
   string bits;
   int number = ex.num;
   for (int i = 0; i < 8; i++) {
@@ -174,15 +175,25 @@ static void clientCommand(string command) {
       printf("Error\n");
   }
   if (command.substr(0, 3) == string("get")) {
-    s.Write(int(command.size()));
-    s.Write(command.c_str(), command.size() + 1);
+    string fileName;
+    string fileType = ".txt";
+    for (int i = 3; i < int(command.size()); i++) {
+      if (command[i] != ' ') fileName.push_back(command[i]);
+      if (command[i] == '.') fileType = command.substr(i, (command.size() - 1));
+    }
+    string comm = "get ";
+    comm.append(fileName);
+    s.Write(int(comm.size()));
+    s.Write(comm.c_str(), comm.size() + 1);
     constexpr int size = 8000;
     int bytes = 0;
     s.Read(bytes);
     s.Read(size);
     char fileFrag[size + 1];
     if (bytes > 0) {
-      FILE* out = fopen("out.txt", "w");
+      string writeFile = "out";
+      writeFile.append(fileType);
+      FILE* out = fopen(writeFile.c_str(), "w");
       while (bytes > 0) {
         int fbytes = size;
         if (bytes < size) fbytes = bytes;
