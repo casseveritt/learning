@@ -48,7 +48,7 @@ static Block8x8<RGBA32F> DCTransform(Block8x8<RGBA8> inMat) {
 				for (int j=0;j<8;j++) {
 					double cosineWave = cos((2 * i + 1) * u * PI / 16.0) * cos((2 * j + 1) * v * PI / 16.0);
                     // Level around 0
-                    RGBA8 pixel = inMat.element[i][j];
+					RGBA8 pixel = inMat.element[i][j];
 					sumr += pixel.r*cosineWave;
 					sumg += pixel.g*cosineWave;
 					sumb += pixel.b*cosineWave;
@@ -119,20 +119,13 @@ int main(int argc, char** argv) {
   RGBA8* pix = reinterpret_cast<RGBA8*>(img);
   for (int i = 0; i < h; i += 8) {
     for (int j = 0; j < w; j += 8) {
-      RGBA8 avgCol = pix[(i * w) + j];
       Block8x8<RGBA8> macroblock;
       for (int ii = 0; ii < 8; ii++) {
       	for(int jj = 0; jj < 8; jj++) {
-	        int coords = ((i + ii) * w) + (j + jj);
-	        macroblock.element[jj][ii] = pix[coords];
-	        avgCol.r = (avgCol.r + pix[coords].r) / 2;
-	        avgCol.g = (avgCol.g + pix[coords].g) / 2;
-	        avgCol.b = (avgCol.b + pix[coords].b) / 2;
-	        avgCol.a = (avgCol.a + pix[coords].a) / 2;
+	        macroblock.element[jj][ii] = pix[((i + ii) * w) + (j + jj)];
       	}
       }
-      Block8x8<RGBA32F> dctMat = DCTransform(macroblock);
-      macroblock = IDCTransform(dctMat);
+      macroblock = IDCTransform(DCTransform(macroblock));
       for (int ii = 0; ii < 8; ii++) {
       	for(int jj = 0; jj < 8; jj++) {
 	        pix[((i + ii) * w) + (j + jj)] = macroblock.element[jj][ii];
