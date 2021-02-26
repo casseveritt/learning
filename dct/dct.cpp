@@ -9,14 +9,67 @@
 
 #include "stb.h"
 
+#define PI 3.14
+
 using namespace std;
+
+struct RGBA8 {
+   union {
+       uint32_t i;
+       struct {
+           uint8_t r,g,b,a;
+       };
+    };
+};
+
+struct RGBA32F {
+    float r,g,b,a;
+};
+
+template <typename T> struct Block8x8 {
+   T element[8][8];
+};
+
+static Block8x8<float> DCTransform(Block8x8<RGBA8> inMat) {
+	Block8x8<float> dctMat;
+
+	double dct, sum, Cu, Cv;
+
+	int i, j, u, v;
+
+	float redLevel;
+
+	for (u = 0; u < 8; ++u) {
+		for (v = 0; v < 8; ++v) {
+
+			if (u == 0) Cu = 1.0 / sqrt(2.0);
+			else Cu = 1.0;
+			if (v == 0) Cv = 1.0 / sqrt(2.0);
+			else Cu = (1.0);  
+
+			sum = 0.0;  
+
+			for (i=0;i<8;i++) {
+				for (j=0;j<8;j++) {
+
+                    // Level around 0
+                    double cosineWave = cos((2 * i + 1) * u * PI / 16.0) * cos((2 * j + 1) * v * PI / 16.0);
+                    RGBA8 pixel = inMat.element[i][j];
+					redLevel = pixel.r;
+					dct = redLevel*cosineWave;
+					sum += dct;
+
+				}               
+			}
+			dctMat.element[u][v] = 0.25 * Cu * Cv * sum;
+		}
+	}
+	return dctMat;
+};
 
 int main(int argc, char** argv) {
   string imgName = "Lenna.png";
   if (argc >= 2) imgName = argv[1];
-
-  int mbd = 8;          // Macroblock dimensions
-  int mbv = mbd * mbd;  // Macroblock volume
 
   int w, h, n;
   const char* im = "images/";
@@ -30,40 +83,25 @@ int main(int argc, char** argv) {
   if (n != 4) {
     // printf("warning: need 4-component pixels. n=%d\n", n);
   }
-  union pixel {
-    uint32_t i;
-    struct {
-      uint8_t r;
-      uint8_t g;
-      uint8_t b;
-      uint8_t a;
-    };
-  };
-  pixel* pix = reinterpret_cast<pixel*>(img);
-  for (int i = 0; i < h; i += mbd) {
-    for (int j = 0; j < w; j += mbd) {
-      pixel avgCol = pix[(i * w) + j];
-      for (int l = 1; l < mbv; l++) {
-        int x = l % mbd, y = l / mbd;
-        int coords = ((i + y) * w) + (j + x);
-        avgCol.r = (avgCol.r + pix[coords].r) / 2;
-        avgCol.g = (avgCol.g + pix[coords].g) / 2;
-        avgCol.b = (avgCol.b + pix[coords].b) / 2;
-        avgCol.a = (avgCol.a + pix[coords].a) / 2;
-        float cx, cy;
-        if (x == 0)
-          cx = 1 / sqrt(mbd);
-        else
-          cx = sqrt(2) / sqrt(mbd);
-        if (y == 0)
-          cy = 1 / sqrt(mbd);
-        else
-          cy = sqrt(2) / sqrt(mbd);
-        // dct[x][y] = cx * cy (sum(k=0 to m-1) sum(l=0 to n-1) pix[coords] * cos((2*k+1) *i*pi/2*m) * cos((2*l+1) *j*pi/2*n)
+  RGBA8* pix = reinterpret_cast<RGBA8*>(img);
+  for (int i = 0; i < h; i += 8) {
+    for (int j = 0; j < w; j += 8) {
+      RGBA8 avgCol = pix[(i * w) + j];
+      Block8x8<RGBA8> macroblock;
+      for (int ii = 0; ii < 8; ii++) {
+      	for(int jj = 0; jj < 8; jj++) {
+	        int coords = ((i + ii) * w) + (j + jj);
+	        macroblock.element[jj][ii] = pix[coords];
+	        avgCol.r = (avgCol.r + pix[coords].r) / 2;
+	        avgCol.g = (avgCol.g + pix[coords].g) / 2;
+	        avgCol.b = (avgCol.b + pix[coords].b) / 2;
+	        avgCol.a = (avgCol.a + pix[coords].a) / 2;
+      	}
       }
-      for (int l = 0; l < mbv; l++) {
-        int x = l % mbd, y = l / mbd;
-        pix[((i + y) * w) + (j + x)] = avgCol;
+      for (int ii = 0; ii < 8; ii++) {
+      	for(int jj = 0; jj < 8; jj++) {
+	        pix[((i + ii) * w) + (j + jj)] = avgCol;
+	    }
       }
     }
   }
