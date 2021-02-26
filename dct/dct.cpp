@@ -30,13 +30,14 @@ template <typename T> struct Block8x8 {
    T element[8][8];
 };
 
-static Block8x8<float> DCTransform(Block8x8<RGBA8> inMat) {
-	Block8x8<float> dctMat;
+static Block8x8<RGBA32F> DCTransform(Block8x8<RGBA8> inMat) {
+	Block8x8<RGBA32F> dctMat;
 
 	for (int u=0;u<8;++u) {
 		for (int v=0;v<8;++v) {
-			float redLevel;
-			double Cu, Cv, sum = 0.0;
+			double Cu, Cv;
+			double sumr, sumg, sumb, suma;
+			sumr = sumg = sumb = suma = 0.0;
 
 			if (u == 0) Cu = 1.0 / sqrt(2.0);
 			else Cu = 1.0;
@@ -45,50 +46,55 @@ static Block8x8<float> DCTransform(Block8x8<RGBA8> inMat) {
 
 			for (int i=0;i<8;i++) {
 				for (int j=0;j<8;j++) {
-					double dct;
-                    double cosineWave = cos((2 * i + 1) * u * PI / 16.0) * cos((2 * j + 1) * v * PI / 16.0);
+					double cosineWave = cos((2 * i + 1) * u * PI / 16.0) * cos((2 * j + 1) * v * PI / 16.0);
                     // Level around 0
                     RGBA8 pixel = inMat.element[i][j];
-					redLevel = pixel.r;
-					dct = redLevel*cosineWave;
-					sum += dct;
+					sumr += pixel.r*cosineWave;
+					sumg += pixel.g*cosineWave;
+					sumb += pixel.b*cosineWave;
+					suma += pixel.a*cosineWave;
 				}
 			}
-			dctMat.element[u][v] = 0.25*Cu*Cv*sum;
+			dctMat.element[u][v].r = (0.25 * Cu * Cv * sumr);
+			dctMat.element[u][v].g = (0.25 * Cu * Cv * sumg);
+			dctMat.element[u][v].b = (0.25 * Cu * Cv * sumb);
+			dctMat.element[u][v].a = (0.25 * Cu * Cv * suma);
 		}
 	}
 	return dctMat;
 };
 
-static Block8x8<RGBA8> IDCTransform(Block8x8<float> dctMat) {
+static Block8x8<RGBA8> IDCTransform(Block8x8<RGBA32F> dctMat) {
 	Block8x8<RGBA8> outMat;
 
 	for (int i=0;i<8;++i) {
 		for (int j=0;j<8;++j) { 
-			float redLevel;
-			double Cu, Cv, sum = 0.0;
+			double Cu, Cv;
+			double sumr, sumg, sumb, suma;
+			sumr = sumg = sumb = suma = 0.0;
 
 			for (int u=0;u<8;u++) {
 				for (int v=0;v<8;v++) {
-					double idct;
 					double cosineWave = cos((2 * i + 1) * u * PI / 16.0) * cos((2 * j + 1) * v * PI / 16.0);
 
-					if (u == 0) Cu = 1.0 / sqrt(2.0);
-					else Cu = 1.0;
-					if (v == 0) Cv = 1.0 / sqrt(2.0);
-					else Cv = (1.0);
+					if (u == 0) Cu = 1.0;
+					else Cu = 1.0 / sqrt(2.0);
+					if (v == 0) Cv = 1.0;
+					else Cv = (1.0 / sqrt(2.0));
 
 					// Level around 0
 
-					float dctElement = dctMat.element[u][v];
-					redLevel = dctElement;
-					idct = redLevel * cosineWave;
-					sum += idct;
+					RGBA32F dctElement = dctMat.element[u][v];
+					sumr += dctElement.r * cosineWave;
+					sumg += dctElement.g * cosineWave;
+					sumb += dctElement.b * cosineWave;
+					suma += dctElement.a * cosineWave;
 				}
 			}
-			outMat.element[i][j].r = (0.25 * Cu * Cv * sum);
-			outMat.element[i][j].g = 0;
-			outMat.element[i][j].b = 0;
+			outMat.element[i][j].r = (0.25 * Cu * Cv * sumr);
+			outMat.element[i][j].g = (0.25 * Cu * Cv * sumg);
+			outMat.element[i][j].b = (0.25 * Cu * Cv * sumb);
+			outMat.element[i][j].a = (0.25 * Cu * Cv * suma);
 		}
 	}
 	return outMat;
@@ -125,7 +131,7 @@ int main(int argc, char** argv) {
 	        avgCol.a = (avgCol.a + pix[coords].a) / 2;
       	}
       }
-      Block8x8<float> dctMat = DCTransform(macroblock);
+      Block8x8<RGBA32F> dctMat = DCTransform(macroblock);
       macroblock = IDCTransform(dctMat);
       for (int ii = 0; ii < 8; ii++) {
       	for(int jj = 0; jj < 8; jj++) {
