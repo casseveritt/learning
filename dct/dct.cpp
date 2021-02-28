@@ -23,9 +23,47 @@ struct RGBA8 {
   };
 };
 
+template <typename RGBA>
+static RGBA rgbasum(const RGBA& a, const RGBA& b) {
+  RGBA d = a;
+  d.r += b.r;
+  d.g += b.g;
+  d.b += b.b;
+  d.a += b.a;
+  return d;
+}
+
+template <typename RGBA>
+static RGBA rgbadiff(const RGBA& a, const RGBA& b) {
+  RGBA d = a;
+  d.r -= b.r;
+  d.g -= b.g;
+  d.b -= b.b;
+  d.a -= b.a;
+  return d;
+}
+
+static RGBA8 operator+(const RGBA8& a, const RGBA8& b) {
+  return rgbasum(a,b);
+}
+
+static RGBA8 operator-(const RGBA8& a, const RGBA8& b) {
+  return rgbadiff(a,b);
+}
+
 struct RGBA32F {
   float r, g, b, a;
 };
+
+static RGBA32F operator+(const RGBA32F& a, const RGBA32F& b) {
+  return rgbasum(a,b);
+}
+
+static RGBA32F operator-(const RGBA32F& a, const RGBA32F& b) {
+  return rgbadiff(a,b);
+}
+
+
 
 template <typename T>
 struct Block8x8 {
@@ -122,6 +160,10 @@ int main(int argc, char** argv) {
     // printf("warning: need 4-component pixels. n=%d\n", n);
   }
   RGBA8* pix = reinterpret_cast<RGBA8*>(img);
+  auto dif = new RGBA8[w*h]; 
+  RGBA8 grey;
+  grey.r = grey.g = grey.b = grey.a = 127;
+
   for (int i = 0; i < h; i += 8) {
     for (int j = 0; j < w; j += 8) {
       Block8x8<RGBA8> b;
@@ -133,10 +175,17 @@ int main(int argc, char** argv) {
       b = IDCTransform(DCTransform(b));
       for (int ii = 0; ii < 8; ii++) {
         for (int jj = 0; jj < 8; jj++) {
-          pix[((i + ii) * w) + (j + jj)] = b.el(ii, jj);
+          auto& ip = pix[((i + ii) * w) + (j + jj)];
+          auto& dp = dif[((i + ii) * w) + (j + jj)];
+          const auto& bp = b.el(ii,jj);
+          dp = ip - bp + grey;
+          dp.a = 255;
+          ip = bp;
         }
       }
     }
   }
   image_store_png("out.png", w, h, 4, img);
+  image_store_png("dif.png", w, h, 4, reinterpret_cast<unsigned char*>(dif));
+  delete [] dif;
 }
