@@ -77,10 +77,10 @@ static Block8x8<RGBA8> IDCTransform(Block8x8<RGBA32F> dctMat) {
 				for (int v=0;v<8;v++) {
 					double cosineWave = cos((2 * i + 1) * u * PI / 16.0) * cos((2 * j + 1) * v * PI / 16.0);
 
-					if (u == 0) Cu = 1.0;
-					else Cu = 1.0 / sqrt(2.0);
-					if (v == 0) Cv = 1.0;
-					else Cv = (1.0 / sqrt(2.0));
+					if (u == 0) Cu = sqrt(2.0);
+					else Cu = 1.0;
+					if (v == 0) Cv = sqrt(2.0);
+					else Cv = (1.0);
 
 					// Level around 0
 
@@ -95,10 +95,46 @@ static Block8x8<RGBA8> IDCTransform(Block8x8<RGBA32F> dctMat) {
 			outMat.element[i][j].g = (0.25 * Cu * Cv * sumg);
 			outMat.element[i][j].b = (0.25 * Cu * Cv * sumb);
 			outMat.element[i][j].a = (0.25 * Cu * Cv * suma);
+			if (i == 6 && j == 6) outMat.element[i][j].a = 255;
 		}
 	}
 	return outMat;
 };
+
+/*
+static Block8x8<RGBA32F> DCTransform(Block8x8<RGBA8> inMat) {
+	Block8x8<RGBA32F> dctMat;
+	for (int u=0;u<8;++u) {
+		for (int v=0;v<8;++v) {
+			dctMat.element[u][v] = 0;
+			for (int i=0;i<8;i++) {
+				for (int j=0;j<8;j++) {
+					dctMat.element[u][v] += inMat[i][j] * cos(M_PI/8*(i+0.5)*u)*cos(M_PI/8*(j+0.5)*v);
+				}               
+			}
+		}
+	}
+	return dctMat;  
+};
+
+static Block8x8<RGBA8> IDCTransform(Block8x8<RGBA32F> dctMat) {
+	Block8x8<RGBA8> outMat;
+	for (int u=0;u<8;++u) {
+		for (int v=0;v<8;++v) {
+			outMat.element[u][v] = 0.25*dctMat.element[0][0];
+			for(int i=1;i<8;i++) Matrix[u][v] += 0.5*DCTMatrix[i][0];
+			for(int j=1;j<8;j++) Matrix[u][v] += 0.5*DCTMatrix[0][j];
+			for (int i=1;i<8;i++) {
+				for (int j=1;j<8;j++) {
+					outMat.element[u][v] += dctMat.element[i][j] * cos(M_PI/8*(u+0.5)*i)*cos(M_PI/8*(v+0.5)*j);
+				}
+			}
+			outMat.element[u][v] *= (0.25*0.25);
+		}
+	}
+	return outMat;
+};
+*/
 
 int main(int argc, char** argv) {
   string imgName = "Lenna.png";
