@@ -32,29 +32,23 @@ template <typename T> struct Block8x8 {
    T el(int i, int j) const { return element[j][i]; }
 };
 
-static float dct2(int n, int k) {
-	return (n == 0 ? 1.0f / sqrt(2.0f) : 1.0f ) * 0.5f * cos( (M_PI / 8.0) * (n + 0.5) * k);
+template <int N> static float dct2( int n, int k) {
+	return cos( (M_PI / N) * (n + 0.5) * k);
 }
-
-static float dct3(int n, int k) {
-	if (n == 0) {
-		return 0.5 / sqrt(2.0f);
-	}
-	return 0.5f * cos( (M_PI / 8.0) * n * (k + 0.5));
-}
-
 
 static Block8x8<RGBA32F> DCTransform(Block8x8<RGBA8> spatialdom) {
 	Block8x8<RGBA32F> freqdom;
 
 	for (int u=0;u<8;++u) {
+		float cu = (u == 0) ? 0.5f / sqrt(2.0f) : 0.5f;
 		for (int v=0;v<8;++v) {
+		float cv = (v == 0) ? 0.5f / sqrt(2.0f) : 0.5f;
 			RGBA32F s = {};
 
 			for (int i=0;i<8;i++) {
-				float ci = dct2(i, u);
+				float ci = dct2<8>(i, u);
 				for (int j=0;j<8;j++) {
-					auto c = ci * dct2(j, v);
+					auto c = ci * dct2<8>(j, v);
 					auto& pix = spatialdom.el(i,j);
 					s.r += pix.r * c;
 					s.g += pix.g * c;
@@ -62,6 +56,10 @@ static Block8x8<RGBA32F> DCTransform(Block8x8<RGBA8> spatialdom) {
 					s.a += pix.a * c;
 				}
 			}
+			s.r *= cu * cv;
+			s.g *= cu * cv;
+			s.b *= cu * cv;
+			s.a *= cu * cv;
 			freqdom.el(u,v) = s;
 		}
 	}
@@ -76,9 +74,10 @@ static Block8x8<RGBA8> IDCTransform(Block8x8<RGBA32F> freqdom) {
 			RGBA32F s = {};
 
 			for (int u=0;u<8;u++) {
-				float cu = dct3(u, i);
+				float cu = (u == 0) ? 0.5 / sqrt(2.0f) : 0.5;
 				for (int v=0;v<8;v++) {
-					float c =  cu * dct3(v, j);
+					float cv = (v == 0) ? 0.5 / sqrt(2.0f) : 0.5;
+					float c = cu * cv * dct2<8>(i, u) * dct2<8>(j, v);
 
 					const auto& pix = freqdom.el(u, v);
 					s.r += pix.r * c;
@@ -88,10 +87,10 @@ static Block8x8<RGBA8> IDCTransform(Block8x8<RGBA32F> freqdom) {
 				}
 			}
 			RGBA8 si;
-			si.r = std::max(0.0f, std::min(255.0f, s.r));
-			si.g = std::max(0.0f, std::min(255.0f, s.g));
-			si.b = std::max(0.0f, std::min(255.0f, s.b));
-			si.a = std::max(0.0f, std::min(255.0f, s.a));
+			si.r = s.r + 0.5f;
+			si.g = s.g + 0.5f;
+			si.b = s.b + 0.5f;
+			si.a = s.a + 0.5f;
 
 			spatialdom.el(i,j) = si;
 		}
