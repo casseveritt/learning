@@ -14,6 +14,15 @@
 
 using namespace std;
 
+/*
+To Do -
+Color space transformation
+Downsampling
+Block Splitting
+Quantization
+Entropy Coding
+*/
+
 struct RGBA8 {
   union {
     uint32_t i;
@@ -62,8 +71,6 @@ static RGBA32F operator+(const RGBA32F& a, const RGBA32F& b) {
 static RGBA32F operator-(const RGBA32F& a, const RGBA32F& b) {
   return rgbadiff(a,b);
 }
-
-
 
 template <typename T>
 struct Block8x8 {
