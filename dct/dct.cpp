@@ -16,11 +16,13 @@ using namespace std;
 
 /*
 To Do -
-Color space transformation
-Downsampling
-Block Splitting
-Quantization
-Entropy Coding
+https://en.wikipedia.org/wiki/JPEG#:~:text=JPEG%20for%20distribution.-,JPEG%20compression,transform%20domain).
+Color space transformation	- Incomplete
+Downsampling				- Incomplete
+Block Splitting				- Incomplete
+DCT 						- Completed
+Quantization				- Incomplete
+Entropy Coding				- Incomplete
 */
 
 struct RGBA8 {
