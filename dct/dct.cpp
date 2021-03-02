@@ -26,11 +26,10 @@ Entropy Coding				- Incomplete
 
 Matrix4f YCBCRfromRGB;
 Matrix4f RGBfromYCBCR;
-int quantMat[8][8] = {
-    {16, 11, 10, 16, 25, 40, 51, 61},     {12, 12, 14, 19, 26, 58, 60, 55},    {14, 13, 16, 24, 40, 57, 69, 56},
-    {14, 17, 22, 29, 51, 87, 80, 62},     {18, 22, 37, 56, 68, 109, 103, 77},  {24, 35, 55, 64, 81, 104, 113, 92},
-    {49, 64, 78, 87, 103, 121, 120, 101}, {72, 92, 95, 98, 112, 100, 103, 99},
-};
+int quantMat[8][8] = {{16, 11, 10, 16, 25, 40, 51, 61},     {12, 12, 14, 19, 26, 58, 60, 55},
+                      {14, 13, 16, 24, 40, 57, 69, 56},     {14, 17, 22, 29, 51, 87, 80, 62},
+                      {18, 22, 37, 56, 68, 109, 103, 77},   {24, 35, 55, 64, 81, 104, 113, 92},
+                      {49, 64, 78, 87, 103, 121, 120, 101}, {72, 92, 95, 98, 112, 100, 103, 99}};
 
 struct RGBA8 {
   union {
@@ -196,6 +195,25 @@ static Block8x8<float> IDCTransform(Block8x8<float> freqdom) {
   return spatialdom;
 };
 
+static void SetQuantMat(int* cond) {
+  for (int i = 0; i < 8; i++) {
+    int x = i, y = 0;
+    while (x >= 0) {
+      quantMat[x][y] = cond[i];
+      x--;
+      y++;
+    }
+  }
+  for (int i = 1; i < 8; i++) {
+    int x = 7, y = i;
+    while (y <= 7) {
+      quantMat[x][y] = cond[i + 7];
+      x--;
+      y++;
+    }
+  }
+}
+
 static void Quantization(Block8x8<float>* dct) {
   for (int i = 0; i < 8; ++i) {
     for (int j = 0; j < 8; ++j) {
@@ -224,6 +242,21 @@ int main(int argc, char** argv) {
   YCBCRfromRGB.SetRow(2, Vec4f(0.445, -0.367, -0.071, 128.0));
   YCBCRfromRGB.SetRow(3, Vec4f(0.0, 0.0, 0.0, 1.0));
   RGBfromYCBCR = YCBCRfromRGB.Inverted();
+  int quantValues[15] = {3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31};
+  SetQuantMat(quantValues);
+  /*
+  for (int i = 0; i < 8; i++) {
+    printf("{");
+    for (int j = 0; j < 8; j++) {
+      if (j != 7)
+        printf("%i, ", quantMat[i][j]);
+      else
+        printf("%i", quantMat[i][j]);
+    }
+    printf("}\n");
+  }
+  printf("\n");
+  */
   string imgName = "Lenna.png";
   if (argc >= 2) imgName = argv[1];
 
