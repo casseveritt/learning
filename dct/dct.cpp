@@ -8,15 +8,14 @@
 
 #include <cstring>
 
+#include "linear.h"
 #include "stb.h"
 
-#define PI 3.14
-
+using namespace r3;
 using namespace std;
 
 /*
 To Do -
-https://en.wikipedia.org/wiki/JPEG#:~:text=JPEG%20for%20distribution.-,JPEG%20compression,transform%20domain).
 Color space transformation	- Incomplete
 Downsampling				- Incomplete
 Block Splitting				- Incomplete
@@ -25,6 +24,9 @@ Quantization				- Incomplete
 Entropy Coding				- Incomplete
 */
 
+Matrix3f YCbCrConversion;
+Matrix3f RGBConversion;
+
 struct RGBA8 {
   union {
     uint32_t i;
@@ -32,6 +34,12 @@ struct RGBA8 {
       uint8_t r, g, b, a;
     };
   };
+};
+
+
+struct YCbCrA {
+	float y, cb, cr;
+	uint8_t a;
 };
 
 template <typename RGBA>
@@ -73,6 +81,28 @@ static RGBA32F operator+(const RGBA32F& a, const RGBA32F& b) {
 static RGBA32F operator-(const RGBA32F& a, const RGBA32F& b) {
   return rgbadiff(a,b);
 }
+
+static YCbCrA RGBA8toYCBCR(RGBA8 in){
+	Vec3f rgb(in.r, in.g, in.b);
+	Vec3f ycbcr = (YCbCrConversion * rgb) + Vec3f(16, 128, 128);
+	YCbCrA out;
+	out.y = ycbcr.x;
+	out.cb = ycbcr.y;
+	out.cr = ycbcr.z;
+	out.a = in.a;
+	return out;
+};
+
+static RGBA8 YCBCRtoRGB(YCbCrA in){
+	Vec3f ycbcr(in.y, in.cb, in.cr);
+	Vec3f rgb = RGBConversion * (ycbcr - Vec3f(16, 128, 128));
+	RGBA8 out;
+	out.r = rgb.x;
+	out.g = rgb.y;
+	out.b = rgb.z;
+	out.a = in.a;
+	return out;
+};
 
 template <typename T>
 struct Block8x8 {
@@ -147,12 +177,22 @@ static Block8x8<RGBA8> IDCTransform(Block8x8<RGBA32F> freqdom) {
       si.a = s.a + 0.5f;
 
       spatialdom.el(i, j) = si;
+
+      if (i==0 && j==0) {
+      	YCbCrA ycbcr = RGBA8toYCBCR(si);
+      	RGBA8 rgbaBack = YCBCRtoRGB(ycbcr);
+      	printf("R= %i\tY =%f\nG= %i\tCb=%f\nB= %i\tCr=%f\n\n", rgbaBack.r, ycbcr.y, rgbaBack.g, ycbcr.cb, rgbaBack.b, ycbcr.cr);
+      }
     }
   }
   return spatialdom;
 };
 
 int main(int argc, char** argv) {
+  YCbCrConversion.SetRow(0, Vec3f(0.258, 0.508, 0.0937));
+  YCbCrConversion.SetRow(1, Vec3f(-0.148, -0.289, 0.445));
+  YCbCrConversion.SetRow(2, Vec3f(0.445, -0.367, -0.071));
+  RGBConversion = YCbCrConversion.Inverted();
   string imgName = "Lenna.png";
   if (argc >= 2) imgName = argv[1];
 
