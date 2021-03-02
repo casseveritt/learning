@@ -16,7 +16,7 @@ using namespace std;
 
 /*
 To Do -
-Color space transformation	- Incomplete
+Color space transformation	- Completed
 Downsampling				- Incomplete
 Block Splitting				- Incomplete
 DCT 						- Completed
@@ -24,8 +24,8 @@ Quantization				- Incomplete
 Entropy Coding				- Incomplete
 */
 
-Matrix3f YCbCrConversion;
-Matrix3f RGBConversion;
+Matrix4f YCBCRfromRGB;
+Matrix4f RGBfromYCBCR;
 
 struct RGBA8 {
   union {
@@ -36,10 +36,8 @@ struct RGBA8 {
   };
 };
 
-
-struct YCbCrA {
-	float y, cb, cr;
-	uint8_t a;
+struct YCbCr32F {
+  float y, cb, cr;
 };
 
 template <typename RGBA>
@@ -63,11 +61,11 @@ static RGBA rgbadiff(const RGBA& a, const RGBA& b) {
 }
 
 static RGBA8 operator+(const RGBA8& a, const RGBA8& b) {
-  return rgbasum(a,b);
+  return rgbasum(a, b);
 }
 
 static RGBA8 operator-(const RGBA8& a, const RGBA8& b) {
-  return rgbadiff(a,b);
+  return rgbadiff(a, b);
 }
 
 struct RGBA32F {
@@ -75,34 +73,12 @@ struct RGBA32F {
 };
 
 static RGBA32F operator+(const RGBA32F& a, const RGBA32F& b) {
-  return rgbasum(a,b);
+  return rgbasum(a, b);
 }
 
 static RGBA32F operator-(const RGBA32F& a, const RGBA32F& b) {
-  return rgbadiff(a,b);
+  return rgbadiff(a, b);
 }
-
-static YCbCrA RGBA8toYCBCR(RGBA8 in){
-	Vec3f rgb(in.r, in.g, in.b);
-	Vec3f ycbcr = (YCbCrConversion * rgb) + Vec3f(16, 128, 128);
-	YCbCrA out;
-	out.y = ycbcr.x;
-	out.cb = ycbcr.y;
-	out.cr = ycbcr.z;
-	out.a = in.a;
-	return out;
-};
-
-static RGBA8 YCBCRtoRGB(YCbCrA in){
-	Vec3f ycbcr(in.y, in.cb, in.cr);
-	Vec3f rgb = RGBConversion * (ycbcr - Vec3f(16, 128, 128));
-	RGBA8 out;
-	out.r = rgb.x;
-	out.g = rgb.y;
-	out.b = rgb.z;
-	out.a = in.a;
-	return out;
-};
 
 template <typename T>
 struct Block8x8 {
@@ -112,6 +88,49 @@ struct Block8x8 {
   }
   T el(int i, int j) const {
     return element[j][i];
+  }
+};
+
+static Block8x8<YCbCr32F> RGBtoYCBCR(Block8x8<RGBA8> in) {
+  Block8x8<YCbCr32F> out = {};
+  YCbCr32F ycbcr;
+  for (int i = 0; i < 8; i++) {
+    for (int j = 0; j < 8; j++) {
+      RGBA8 rgb = in.el(i, j);
+      Vec4f ycbcrVec = YCBCRfromRGB * Vec4f(rgb.r, rgb.g, rgb.b, 1.0f);
+      ycbcr.y = ycbcrVec.x;
+      ycbcr.cb = ycbcrVec.y;
+      ycbcr.cr = ycbcrVec.z;
+      out.el(i, j) = ycbcr;
+    }
+  }
+  return out;
+};
+
+static Block8x8<RGBA8> YCBCRtoRGB(Block8x8<YCbCr32F> in) {
+  Block8x8<RGBA8> out = {};
+  RGBA8 rgb;
+  for (int i = 0; i < 8; i++) {
+    for (int j = 0; j < 8; j++) {
+      YCbCr32F ycbcr = in.el(i, j);
+      Vec4f rgbVec = RGBfromYCBCR * Vec4f(ycbcr.y, ycbcr.cb, ycbcr.cr, 1.0f);
+      rgb.r = rgbVec.x;
+      rgb.g = rgbVec.y;
+      rgb.b = rgbVec.z;
+      rgb.a = 255;
+      out.el(i, j) = rgb;
+    }
+  }
+  return out;
+};
+
+static void BlockSplitter(Block8x8<YCbCr32F> ycbcr, Block8x8<float>* yb, Block8x8<float>* cbb, Block8x8<float>* crb) {
+  for (int i = 0; i < 8; i++) {
+    for (int j = 0; j < 8; j++) {
+      yb->el(i, j) = ycbcr.el(i, j).y;
+      cbb->el(i, j) = ycbcr.el(i, j).cb;
+      crb->el(i, j) = ycbcr.el(i, j).cr;
+    }
   }
 };
 
@@ -177,22 +196,17 @@ static Block8x8<RGBA8> IDCTransform(Block8x8<RGBA32F> freqdom) {
       si.a = s.a + 0.5f;
 
       spatialdom.el(i, j) = si;
-
-      if (i==0 && j==0) {
-      	YCbCrA ycbcr = RGBA8toYCBCR(si);
-      	RGBA8 rgbaBack = YCBCRtoRGB(ycbcr);
-      	printf("R= %i\tY =%f\nG= %i\tCb=%f\nB= %i\tCr=%f\n\n", rgbaBack.r, ycbcr.y, rgbaBack.g, ycbcr.cb, rgbaBack.b, ycbcr.cr);
-      }
     }
   }
   return spatialdom;
 };
 
 int main(int argc, char** argv) {
-  YCbCrConversion.SetRow(0, Vec3f(0.258, 0.508, 0.0937));
-  YCbCrConversion.SetRow(1, Vec3f(-0.148, -0.289, 0.445));
-  YCbCrConversion.SetRow(2, Vec3f(0.445, -0.367, -0.071));
-  RGBConversion = YCbCrConversion.Inverted();
+  YCBCRfromRGB.SetRow(0, Vec4f(0.258, 0.508, 0.0937, 16.0));
+  YCBCRfromRGB.SetRow(1, Vec4f(-0.148, -0.289, 0.445, 128.0));
+  YCBCRfromRGB.SetRow(2, Vec4f(0.445, -0.367, -0.071, 128.0));
+  YCBCRfromRGB.SetRow(3, Vec4f(0.0, 0.0, 0.0, 1.0));
+  RGBfromYCBCR = YCBCRfromRGB.Inverted();
   string imgName = "Lenna.png";
   if (argc >= 2) imgName = argv[1];
 
@@ -209,7 +223,7 @@ int main(int argc, char** argv) {
     // printf("warning: need 4-component pixels. n=%d\n", n);
   }
   RGBA8* pix = reinterpret_cast<RGBA8*>(img);
-  auto dif = new RGBA8[w*h]; 
+  auto dif = new RGBA8[w * h];
   RGBA8 grey;
   grey.r = grey.g = grey.b = grey.a = 127;
 
@@ -221,12 +235,15 @@ int main(int argc, char** argv) {
           b.el(ii, jj) = pix[((i + ii) * w) + (j + jj)];
         }
       }
+      Block8x8<YCbCr32F> ctb = RGBtoYCBCR(b);
+      Block8x8<float> yBlock, cbBlock, crBlock;
+      BlockSplitter(ctb, &yBlock, &cbBlock, &crBlock);
       b = IDCTransform(DCTransform(b));
       for (int ii = 0; ii < 8; ii++) {
         for (int jj = 0; jj < 8; jj++) {
           auto& ip = pix[((i + ii) * w) + (j + jj)];
           auto& dp = dif[((i + ii) * w) + (j + jj)];
-          const auto& bp = b.el(ii,jj);
+          const auto& bp = b.el(ii, jj);
           dp = ip - bp + grey;
           dp.a = 255;
           ip = bp;
@@ -236,5 +253,5 @@ int main(int argc, char** argv) {
   }
   image_store_png("out.png", w, h, 4, img);
   image_store_png("dif.png", w, h, 4, reinterpret_cast<unsigned char*>(dif));
-  delete [] dif;
+  delete[] dif;
 }
