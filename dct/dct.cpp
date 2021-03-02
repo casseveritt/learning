@@ -20,7 +20,7 @@ Color space transformation	- Completed
 Downsampling				- Incomplete
 Block Splitting				- Completed
 DCT 						- Completed
-Quantization				- Completed?
+Quantization				- Completed
 Entropy Coding				- Incomplete
 */
 
@@ -118,9 +118,9 @@ static Block8x8<RGBA8> YCBCRtoRGB(Block8x8<YCbCr32F> in) {
     for (int j = 0; j < 8; j++) {
       YCbCr32F ycbcr = in.el(i, j);
       Vec4f rgbVec = RGBfromYCBCR * Vec4f(ycbcr.y, ycbcr.cb, ycbcr.cr, 1.0f);
-      rgb.r = rgbVec.x;
-      rgb.g = rgbVec.y;
-      rgb.b = rgbVec.z;
+      rgb.r = max(0.0f, min(255.0f, rgbVec.x));
+      rgb.g = max(0.0f, min(255.0f, rgbVec.y));
+      rgb.b = max(0.0f, min(255.0f, rgbVec.z));
       rgb.a = 255;
       out.el(i, j) = rgb;
     }
@@ -195,45 +195,20 @@ static Block8x8<float> IDCTransform(Block8x8<float> freqdom) {
   return spatialdom;
 };
 
-static void SetQuantMat(int* cond) {
-  for (int i = 0; i < 8; i++) {
-    int x = i, y = 0;
-    while (x >= 0) {
-      quantMat[x][y] = cond[i];
-      x--;
-      y++;
-    }
-  }
-  for (int i = 1; i < 8; i++) {
-    int x = 7, y = i;
-    while (y <= 7) {
-      quantMat[x][y] = cond[i + 7];
-      x--;
-      y++;
-    }
-  }
-}
-
 static void Quantization(Block8x8<float>* dct) {
   for (int i = 0; i < 8; ++i) {
     for (int j = 0; j < 8; ++j) {
       dct->el(i, j) = round(dct->el(i, j) / quantMat[i][j]);
     }
   }
-}
+};
 
-static void printFloatBlock(Block8x8<float> block) {
-  for (int i = 0; i < 8; i++) {
-    printf("{");
-    for (int j = 0; j < 8; j++) {
-      if (j != 7)
-        printf("%f, ", block.el(i, j));
-      else
-        printf("%f", block.el(i, j));
+static void Unquantize(Block8x8<float>* quantdct) {
+  for (int i = 0; i < 8; ++i) {
+    for (int j = 0; j < 8; ++j) {
+      quantdct->el(i, j) = round(quantdct->el(i, j) * quantMat[i][j]);
     }
-    printf("}\n");
   }
-  printf("\n");
 }
 
 int main(int argc, char** argv) {
@@ -242,21 +217,6 @@ int main(int argc, char** argv) {
   YCBCRfromRGB.SetRow(2, Vec4f(0.445, -0.367, -0.071, 128.0));
   YCBCRfromRGB.SetRow(3, Vec4f(0.0, 0.0, 0.0, 1.0));
   RGBfromYCBCR = YCBCRfromRGB.Inverted();
-  int quantValues[15] = {3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31};
-  SetQuantMat(quantValues);
-  /*
-  for (int i = 0; i < 8; i++) {
-    printf("{");
-    for (int j = 0; j < 8; j++) {
-      if (j != 7)
-        printf("%i, ", quantMat[i][j]);
-      else
-        printf("%i", quantMat[i][j]);
-    }
-    printf("}\n");
-  }
-  printf("\n");
-  */
   string imgName = "Lenna.png";
   if (argc >= 2) imgName = argv[1];
 
@@ -291,11 +251,12 @@ int main(int argc, char** argv) {
       yBlock = DCTransform(yBlock);
       cbBlock = DCTransform(cbBlock);
       crBlock = DCTransform(crBlock);
-      // if (i==128 && j==128) printFloatBlock(yBlock);
       Quantization(&yBlock);
       Quantization(&cbBlock);
       Quantization(&crBlock);
-      // if (i==128 && j==128) printFloatBlock(yBlock);
+      Unquantize(&yBlock);
+      Unquantize(&cbBlock);
+      Unquantize(&crBlock);
       yBlock = IDCTransform(yBlock);
       cbBlock = IDCTransform(cbBlock);
       crBlock = IDCTransform(crBlock);
