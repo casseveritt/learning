@@ -18,14 +18,19 @@ using namespace std;
 To Do -
 Color space transformation	- Completed
 Downsampling				- Incomplete
-Block Splitting				- Incomplete
+Block Splitting				- Completed
 DCT 						- Completed
-Quantization				- Incomplete
+Quantization				- Completed?
 Entropy Coding				- Incomplete
 */
 
 Matrix4f YCBCRfromRGB;
 Matrix4f RGBfromYCBCR;
+int quantMat[8][8] = {
+    {16, 11, 10, 16, 25, 40, 51, 61},     {12, 12, 14, 19, 26, 58, 60, 55},    {14, 13, 16, 24, 40, 57, 69, 56},
+    {14, 17, 22, 29, 51, 87, 80, 62},     {18, 22, 37, 56, 68, 109, 103, 77},  {24, 35, 55, 64, 81, 104, 113, 92},
+    {49, 64, 78, 87, 103, 121, 120, 101}, {72, 92, 95, 98, 112, 100, 103, 99},
+};
 
 struct RGBA8 {
   union {
@@ -134,72 +139,84 @@ static void BlockSplitter(Block8x8<YCbCr32F> ycbcr, Block8x8<float>* yb, Block8x
   }
 };
 
+static void BlockJoiner(Block8x8<YCbCr32F>* ycbcr, Block8x8<float> yb, Block8x8<float> cbb, Block8x8<float> crb) {
+  for (int i = 0; i < 8; i++) {
+    for (int j = 0; j < 8; j++) {
+      ycbcr->el(i, j).y = yb.el(i, j);
+      ycbcr->el(i, j).cb = cbb.el(i, j);
+      ycbcr->el(i, j).cr = crb.el(i, j);
+    }
+  }
+};
+
 template <int N>
 static float dct2(int n, int k) {
   return cos((M_PI / N) * (n + 0.5) * k);
 }
 
-static Block8x8<RGBA32F> DCTransform(Block8x8<RGBA8> spatialdom) {
-  Block8x8<RGBA32F> freqdom;
+static Block8x8<float> DCTransform(Block8x8<float> spatialdom) {
+  Block8x8<float> freqdom;
 
   for (int u = 0; u < 8; ++u) {
     float cu = (u == 0) ? 0.5f / sqrt(2.0f) : 0.5f;
     for (int v = 0; v < 8; ++v) {
       float cv = (v == 0) ? 0.5f / sqrt(2.0f) : 0.5f;
-      RGBA32F s = {};
+      float s = 0.0f;
 
       for (int i = 0; i < 8; i++) {
         float ci = dct2<8>(i, u);
         for (int j = 0; j < 8; j++) {
-          auto c = ci * dct2<8>(j, v);
-          auto& pix = spatialdom.el(i, j);
-          s.r += pix.r * c;
-          s.g += pix.g * c;
-          s.b += pix.b * c;
-          s.a += pix.a * c;
+          s += spatialdom.el(i, j) * (ci * dct2<8>(j, v));
         }
       }
-      s.r *= cu * cv;
-      s.g *= cu * cv;
-      s.b *= cu * cv;
-      s.a *= cu * cv;
+      s *= cu * cv;
       freqdom.el(u, v) = s;
     }
   }
   return freqdom;
 };
 
-static Block8x8<RGBA8> IDCTransform(Block8x8<RGBA32F> freqdom) {
-  Block8x8<RGBA8> spatialdom;
+static Block8x8<float> IDCTransform(Block8x8<float> freqdom) {
+  Block8x8<float> spatialdom;
 
   for (int i = 0; i < 8; ++i) {
     for (int j = 0; j < 8; ++j) {
-      RGBA32F s = {};
+      float s = 0.0f;
 
       for (int u = 0; u < 8; u++) {
         float cu = (u == 0) ? 0.5 / sqrt(2.0f) : 0.5;
         for (int v = 0; v < 8; v++) {
           float cv = (v == 0) ? 0.5 / sqrt(2.0f) : 0.5;
-          float c = cu * cv * dct2<8>(i, u) * dct2<8>(j, v);
-
-          const auto& pix = freqdom.el(u, v);
-          s.r += pix.r * c;
-          s.g += pix.g * c;
-          s.b += pix.b * c;
-          s.a += pix.a * c;
+          s += freqdom.el(u, v) * (cu * cv * dct2<8>(i, u) * dct2<8>(j, v));
         }
       }
-      RGBA8 si;
-      si.r = s.r + 0.5f;
-      si.g = s.g + 0.5f;
-      si.b = s.b + 0.5f;
-      si.a = s.a + 0.5f;
-
-      spatialdom.el(i, j) = si;
+      spatialdom.el(i, j) = s + 0.5f;
     }
   }
   return spatialdom;
 };
+
+static void Quantization(Block8x8<float>* dct) {
+  for (int i = 0; i < 8; ++i) {
+    for (int j = 0; j < 8; ++j) {
+      dct->el(i, j) = round(dct->el(i, j) / quantMat[i][j]);
+    }
+  }
+}
+
+static void printFloatBlock(Block8x8<float> block) {
+  for (int i = 0; i < 8; i++) {
+    printf("{");
+    for (int j = 0; j < 8; j++) {
+      if (j != 7)
+        printf("%f, ", block.el(i, j));
+      else
+        printf("%f", block.el(i, j));
+    }
+    printf("}\n");
+  }
+  printf("\n");
+}
 
 int main(int argc, char** argv) {
   YCBCRfromRGB.SetRow(0, Vec4f(0.258, 0.508, 0.0937, 16.0));
@@ -238,7 +255,19 @@ int main(int argc, char** argv) {
       Block8x8<YCbCr32F> ctb = RGBtoYCBCR(b);
       Block8x8<float> yBlock, cbBlock, crBlock;
       BlockSplitter(ctb, &yBlock, &cbBlock, &crBlock);
-      b = IDCTransform(DCTransform(b));
+      yBlock = DCTransform(yBlock);
+      cbBlock = DCTransform(cbBlock);
+      crBlock = DCTransform(crBlock);
+      // if (i==128 && j==128) printFloatBlock(yBlock);
+      Quantization(&yBlock);
+      Quantization(&cbBlock);
+      Quantization(&crBlock);
+      // if (i==128 && j==128) printFloatBlock(yBlock);
+      yBlock = IDCTransform(yBlock);
+      cbBlock = IDCTransform(cbBlock);
+      crBlock = IDCTransform(crBlock);
+      BlockJoiner(&ctb, yBlock, cbBlock, crBlock);
+      b = YCBCRtoRGB(ctb);
       for (int ii = 0; ii < 8; ii++) {
         for (int jj = 0; jj < 8; jj++) {
           auto& ip = pix[((i + ii) * w) + (j + jj)];
