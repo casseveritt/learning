@@ -198,6 +198,7 @@ static Block8x8<float> IDCTransform(Block8x8<float> freqdom) {
 static void Quantization(Block8x8<float>* dct) {
   for (int i = 0; i < 8; ++i) {
     for (int j = 0; j < 8; ++j) {
+      // Divides the DCT matrix element by the corresponding quant matrix element.
       dct->el(i, j) = round(dct->el(i, j) / quantMat[i][j]);
     }
   }
@@ -206,17 +207,82 @@ static void Quantization(Block8x8<float>* dct) {
 static void Unquantize(Block8x8<float>* quantdct) {
   for (int i = 0; i < 8; ++i) {
     for (int j = 0; j < 8; ++j) {
+      // Multiplies the quantized matrix element by the corresponding quant matrix element.
       quantdct->el(i, j) = round(quantdct->el(i, j) * quantMat[i][j]);
     }
   }
-}
+};
+
+static void RLEncoding(Block8x8<float> quantizedMat) {
+  int r = 0, c = 0;
+  bool rowInc = false;            // True toincrement row, false for col
+  for (int i = 1; i <= 8; ++i) {  // Lower half zig-zag pattern
+    for (int j = 0; j < i; ++j) {
+      printf("%f ", quantizedMat.el(r, c));
+      if (j + 1 == i) break;
+      if (rowInc)
+        r++, c--;
+      else
+        r--, c++;
+    }
+    if (i == 8) break;
+    if (rowInc) {
+      r++;
+      rowInc = false;
+    } else {
+      c++;
+      rowInc = true;
+    }
+    printf("\n");
+  }
+  // Update the indexes of row and col variable
+  if (r == 0) {
+    if (c == 7)
+      ++r;
+    else
+      ++c;
+    rowInc = true;
+  } else {
+    if (r == 7)
+      ++c;
+    else
+      ++r;
+    rowInc = false;
+  }
+  for (int i = 7; i > 0; --i) {  // Upper half zig-zag pattern
+    for (int j = 0; j < i; ++j) {
+      printf("%f ", quantizedMat.el(r, c));
+      if (j + 1 == i) break;
+      if (rowInc)
+        r++, c--;
+      else
+        c++, r--;
+    }
+    if (r == 0 || c == 7) {
+      if (c == 7)
+        ++r;
+      else
+        ++c;
+      rowInc = true;
+    } else if (c == 0 || r == 7) {
+      if (r == 7)
+        ++c;
+      else
+        ++r;
+      rowInc = false;
+    }
+    printf("\n");
+  }
+};
 
 int main(int argc, char** argv) {
+  // Setting color space transform matricies
   YCBCRfromRGB.SetRow(0, Vec4f(0.258, 0.508, 0.0937, 16.0));
   YCBCRfromRGB.SetRow(1, Vec4f(-0.148, -0.289, 0.445, 128.0));
   YCBCRfromRGB.SetRow(2, Vec4f(0.445, -0.367, -0.071, 128.0));
   YCBCRfromRGB.SetRow(3, Vec4f(0.0, 0.0, 0.0, 1.0));
   RGBfromYCBCR = YCBCRfromRGB.Inverted();
+
   string imgName = "Lenna.png";
   if (argc >= 2) imgName = argv[1];
 
@@ -245,6 +311,7 @@ int main(int argc, char** argv) {
           b.el(ii, jj) = pix[((i + ii) * w) + (j + jj)];
         }
       }
+      // Image encoding
       Block8x8<YCbCr32F> ctb = RGBtoYCBCR(b);
       Block8x8<float> yBlock, cbBlock, crBlock;
       BlockSplitter(ctb, &yBlock, &cbBlock, &crBlock);
@@ -254,6 +321,8 @@ int main(int argc, char** argv) {
       Quantization(&yBlock);
       Quantization(&cbBlock);
       Quantization(&crBlock);
+      if (i == 256 && j == 256) RLEncoding(yBlock);
+      // Image decoding
       Unquantize(&yBlock);
       Unquantize(&cbBlock);
       Unquantize(&crBlock);
