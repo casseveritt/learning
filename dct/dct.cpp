@@ -21,7 +21,7 @@ Downsampling				- Incomplete
 Block Splitting				- Completed
 DCT 						- Completed
 Quantization				- Completed
-Entropy Coding				- Incomplete
+Entropy Coding				- Completed
 */
 
 Matrix4f YCBCRfromRGB;
@@ -42,6 +42,10 @@ struct RGBA8 {
 
 struct YCbCr32F {
   float y, cb, cr;
+};
+
+struct RLEJam {
+  int v, l;
 };
 
 template <typename RGBA>
@@ -213,10 +217,21 @@ static void Unquantize(Block8x8<float>* quantdct) {
   }
 };
 
-static void RLEncoding(Block8x8<float> quantizedMat) {
+static vector<RLEJam> RLEncoding(Block8x8<float> quantizedMat) {
   int r = 0, c = 0, f = 0;  // Row, Column, and increment behavior flag
+  int num = quantizedMat.el(r, c), length = 0;
+  vector<RLEJam> out;
+  RLEJam jam;
   for (int i = 0; i < 64; i++) {
-    printf("%.0f ", quantizedMat.el(r, c), f);
+    if (num == quantizedMat.el(r, c))
+      length++;
+    else {
+      jam.v = num;
+      jam.l = length;
+      out.push_back(jam);
+      num = quantizedMat.el(r, c);
+      length = 1;
+    }
     switch (f) {
       case 0:              // Hit wall
         if (r % 7 == 0) {  // Top or bottom wall
@@ -226,7 +241,6 @@ static void RLEncoding(Block8x8<float> quantizedMat) {
           if (c == 0) r++, f = 1;
           if (c == 7) r++, f = -1;
         }
-        printf("\n");
         break;
       case 1:  // Up-Right diagonal
         r--, c++;
@@ -240,7 +254,43 @@ static void RLEncoding(Block8x8<float> quantizedMat) {
         break;
     }
   }
-  printf("\n");
+  jam.v = num;
+  jam.l = length;
+  out.push_back(jam);
+  return out;
+};
+
+static Block8x8<float> RLDecoding(vector<RLEJam> encodedBlock) {
+  int r = 7, c = 7, f = 0;  // Row, Column, and increment behavior flag
+  Block8x8<float> out;
+  for (int i = encodedBlock.size() - 1; i >= 0; i--) {
+    RLEJam jam = encodedBlock[i];
+    for (int j = 0; j < jam.l; j++) {
+      out.element[c][r] = jam.v;
+      switch (f) {
+        case 0:              // Hit wall
+          if (r % 7 == 0) {  // Top or bottom wall
+            if (r == 0) c--, f = -1;
+            if (r == 7) c--, f = 1;
+          } else {  // Side wall
+            if (c == 0) r--, f = 1;
+            if (c == 7) r--, f = -1;
+          }
+          break;
+        case 1:  // Up-Right diagonal
+          r--, c++;
+          if (r % 7 == 0 || c % 7 == 0) f = 0;
+          break;
+        case -1:  // Down-Left diagonal
+          r++, c--;
+          if (r % 7 == 0 || c % 7 == 0) f = 0;
+          break;
+        default:
+          break;
+      }
+    }
+  }
+  return out;
 };
 
 int main(int argc, char** argv) {
@@ -268,20 +318,19 @@ int main(int argc, char** argv) {
   }
   RGBA8* pix = reinterpret_cast<RGBA8*>(img);
   auto dif = new RGBA8[w * h];
-  RGBA8 grey;
-  grey.r = grey.g = grey.b = grey.a = 127;
-
   for (int i = 0; i < h; i += 8) {
     for (int j = 0; j < w; j += 8) {
       Block8x8<RGBA8> b;
+      Block8x8<YCbCr32F> ctb;
+      Block8x8<float> yBlock, cbBlock, crBlock;
+      vector<RLEJam> yEBlock, cbEBlock, crEBlock;
       for (int ii = 0; ii < 8; ii++) {
         for (int jj = 0; jj < 8; jj++) {
           b.el(ii, jj) = pix[((i + ii) * w) + (j + jj)];
         }
       }
       // Image encoding
-      Block8x8<YCbCr32F> ctb = RGBtoYCBCR(b);
-      Block8x8<float> yBlock, cbBlock, crBlock;
+      ctb = RGBtoYCBCR(b);
       BlockSplitter(ctb, &yBlock, &cbBlock, &crBlock);
       yBlock = DCTransform(yBlock);
       cbBlock = DCTransform(cbBlock);
@@ -289,8 +338,13 @@ int main(int argc, char** argv) {
       Quantization(&yBlock);
       Quantization(&cbBlock);
       Quantization(&crBlock);
-      if (i == 256 && j == 256) RLEncoding(yBlock);
+      yEBlock = RLEncoding(yBlock);
+      cbEBlock = RLEncoding(cbBlock);
+      crEBlock = RLEncoding(crBlock);
       // Image decoding
+      yBlock = RLDecoding(yEBlock);
+      cbBlock = RLDecoding(cbEBlock);
+      crBlock = RLDecoding(crEBlock);
       Unquantize(&yBlock);
       Unquantize(&cbBlock);
       Unquantize(&crBlock);
@@ -304,7 +358,9 @@ int main(int argc, char** argv) {
           auto& ip = pix[((i + ii) * w) + (j + jj)];
           auto& dp = dif[((i + ii) * w) + (j + jj)];
           const auto& bp = b.el(ii, jj);
-          dp = ip - bp + grey;
+          dp.r = min(255, (int)pow(2, abs(ip.r - bp.r)));
+          dp.g = min(255, (int)pow(2, abs(ip.g - bp.g)));
+          dp.b = min(255, (int)pow(2, abs(ip.b - bp.b)));
           dp.a = 255;
           ip = bp;
         }
