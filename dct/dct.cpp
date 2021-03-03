@@ -214,65 +214,33 @@ static void Unquantize(Block8x8<float>* quantdct) {
 };
 
 static void RLEncoding(Block8x8<float> quantizedMat) {
-  int r = 0, c = 0;
-  bool rowInc = false;            // True toincrement row, false for col
-  for (int i = 1; i <= 8; ++i) {  // Lower half zig-zag pattern
-    for (int j = 0; j < i; ++j) {
-      printf("%f ", quantizedMat.el(r, c));
-      if (j + 1 == i) break;
-      if (rowInc)
-        r++, c--;
-      else
+  int r = 0, c = 0, f = 0;  // Row, Column, and increment behavior flag
+  for (int i = 0; i < 64; i++) {
+    printf("%.0f ", quantizedMat.el(r, c), f);
+    switch (f) {
+      case 0:              // Hit wall
+        if (r % 7 == 0) {  // Top or bottom wall
+          if (r == 0) c++, f = -1;
+          if (r == 7) c++, f = 1;
+        } else {  // Side wall
+          if (c == 0) r++, f = 1;
+          if (c == 7) r++, f = -1;
+        }
+        printf("\n");
+        break;
+      case 1:  // Up-Right diagonal
         r--, c++;
-    }
-    if (i == 8) break;
-    if (rowInc) {
-      r++;
-      rowInc = false;
-    } else {
-      c++;
-      rowInc = true;
-    }
-    printf("\n");
-  }
-  // Update the indexes of row and col variable
-  if (r == 0) {
-    if (c == 7)
-      ++r;
-    else
-      ++c;
-    rowInc = true;
-  } else {
-    if (r == 7)
-      ++c;
-    else
-      ++r;
-    rowInc = false;
-  }
-  for (int i = 7; i > 0; --i) {  // Upper half zig-zag pattern
-    for (int j = 0; j < i; ++j) {
-      printf("%f ", quantizedMat.el(r, c));
-      if (j + 1 == i) break;
-      if (rowInc)
+        if (r % 7 == 0 || c % 7 == 0) f = 0;
+        break;
+      case -1:  // Down-Left diagonal
         r++, c--;
-      else
-        c++, r--;
+        if (r % 7 == 0 || c % 7 == 0) f = 0;
+        break;
+      default:
+        break;
     }
-    if (r == 0 || c == 7) {
-      if (c == 7)
-        ++r;
-      else
-        ++c;
-      rowInc = true;
-    } else if (c == 0 || r == 7) {
-      if (r == 7)
-        ++c;
-      else
-        ++r;
-      rowInc = false;
-    }
-    printf("\n");
   }
+  printf("\n");
 };
 
 int main(int argc, char** argv) {
