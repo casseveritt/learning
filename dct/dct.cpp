@@ -102,18 +102,6 @@ static RGBA8 operator-(const RGBA8& a, const RGBA8& b) {
   return rgbadiff(a, b);
 }
 
-struct RGBA32F {
-  float r, g, b, a;
-};
-
-static RGBA32F operator+(const RGBA32F& a, const RGBA32F& b) {
-  return rgbasum(a, b);
-}
-
-static RGBA32F operator-(const RGBA32F& a, const RGBA32F& b) {
-  return rgbadiff(a, b);
-}
-
 template <typename T>
 struct Block8x8 {
   T element[8][8];
@@ -125,32 +113,26 @@ struct Block8x8 {
   }
 };
 
-static float FToUint8t(float number) {
+static uint8_t FToUint8t(float number) { // Float to uint8_t range
   return max(0.0f, min(255.0f, number));
 };
 
-static Block8x8<YCbCr32F> RGBtoYCBCR(Block8x8<RGBA8> in) {
+static Block8x8<YCbCr32F> RGBtoYCBCR(Block8x8<RGBA8> in) { // RGB color-space to YCbCr
   Block8x8<YCbCr32F> out = {};
-  YCbCr32F ycbcr;
   for (int i = 0; i < 8; i++) {
     for (int j = 0; j < 8; j++) {
-      RGBA8 rgb = in.el(i, j);
-      Vec4f ycbcrVec = YCBCRfromRGB * Vec4f(rgb.r, rgb.g, rgb.b, 1.0f);
-      ycbcr.y = ycbcrVec.x;
-      ycbcr.cb = ycbcrVec.y;
-      ycbcr.cr = ycbcrVec.z;
-      out.el(i, j) = ycbcr;
+      Vec4f ycbcrVec = YCBCRfromRGB * Vec4f(in.el(i, j).r, in.el(i, j).g, in.el(i, j).b, 1.0f);
+      out.el(i, j) = YCbCr32F(ycbcrVec.x, ycbcrVec.y, ycbcrVec.z);
     }
   }
   return out;
 };
 
-static Block8x8<RGBA8> YCBCRtoRGB(Block8x8<YCbCr32F> in) {
+static Block8x8<RGBA8> YCBCRtoRGB(Block8x8<YCbCr32F> in) { // YCbCr color-space to RGB
   Block8x8<RGBA8> out = {};
   for (int i = 0; i < 8; i++) {
     for (int j = 0; j < 8; j++) {
-      YCbCr32F ycbcr = in.el(i, j);
-      Vec4f rgbVec = RGBfromYCBCR * Vec4f(ycbcr.y, ycbcr.cb, ycbcr.cr, 1.0f);
+      Vec4f rgbVec = RGBfromYCBCR * Vec4f(in.el(i, j).y, in.el(i, j).cb, in.el(i, j).cr, 1.0f);
       out.el(i, j) = RGBA8(FToUint8t(rgbVec.x), FToUint8t(rgbVec.y), FToUint8t(rgbVec.z));
     }
   }
@@ -312,13 +294,11 @@ int main(int argc, char** argv) {
       Matrix4f(0.258, 0.508, 0.0937, 16.0, -0.148, -0.289, 0.445, 128.0, 0.445, -0.367, -0.071, 128.0, 0.0, 0.0, 0.0, 1.0);
   RGBfromYCBCR = YCBCRfromRGB.Inverted();
 
-  char* imgName = "images/Lenna.png";
-  if (argc >= 2) {
-    imgName = "images/";
-    strcat(imgName, argv[1]);
-  }
-  char* imgLocation = new char[sizeof(imgName) + 1];
-  strcpy(imgLocation, imgName);
+  string imgName = "images/";
+  if (argc >= 2) imgName.append(argv[1]);
+  else imgName.append("Lenna.png");
+  char* imgLocation = new char[imgName.size() + 1];
+  strcpy(imgLocation, imgName.c_str());
   int w, h, n;
 
   unsigned char* img;
@@ -357,12 +337,12 @@ int main(int argc, char** argv) {
       for (int ii = 0; ii < 8; ii++) {
         for (int jj = 0; jj < 8; jj++) {
           auto& ip = pix[((i + ii) * w) + (j + jj)];
-          auto& dp = dif[((i + ii) * w) + (j + jj)];
+          auto& dp = dif[((i + ii) * w) + (j + jj)] = RGBA8(0,0,0);
           const auto& bp = b.el(ii, jj);
           int diffR = pow(2, abs(ip.r - bp.r));
           int diffG = pow(2, abs(ip.g - bp.g));
           int diffB = pow(2, abs(ip.b - bp.b));
-          dp = RGBA8(min(255, diffR), min(255, diffG), min(255, diffB));
+          dp = dp + RGBA8(min(255, diffR), min(255, diffG), min(255, diffB));
           ip = bp;
         }
       }
