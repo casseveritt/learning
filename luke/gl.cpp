@@ -10,7 +10,7 @@
 #include "learning.h"
 #include "linear.h"
 #include "prog.h"
-#include "rectprism.h"
+//#include "rectprism.h"
 #include "render.h"
 #include "scene.h"
 #include "sphere.h"
@@ -281,7 +281,7 @@ void RendererImpl::Init() {
   plyObj = fopen("models/fracttree.ply", "r");
   for (int i = 0; i < 10; i++) {
     string line = nextLine();
-    printf("%i\n", strcmp(line.c_str(), "end_header\n"));
+    printf("%i: %s\n", strcmp(line.c_str(), "end_header\n"), line.c_str());
   }
 
   plyWireframe.begin(GL_LINES);
