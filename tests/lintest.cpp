@@ -19,8 +19,7 @@ void printVec4(const float *v) {
 void printMatrix4(const float *m) {
   printf("%.3f, %.3f, %.3f, %.3f\n%.3f, %.3f, %.3f, %.3f\n%.3f, %.3f, %.3f, "
          "%.3f\n%.3f, %.3f, %.3f, %.3f\n\n",
-         m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9], m[10],
-         m[11], m[12], m[13], m[14], m[15]);
+         m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9], m[10], m[11], m[12], m[13], m[14], m[15]);
 }
 
 lVec3f ToL(const Vector3f &svec) {
@@ -47,10 +46,6 @@ int main(int argc, char **argv) {
   lVec3f axis1(1.0f, 0.0f, 1.0f);
   AngleAxis<float> sAA0(lToRadians(angle0), ToS(axis0));
   AngleAxis<float> sAA1(lToRadians(angle1), ToS(axis1));
-  // lMatrix4f lRotMat;
-  // lRotMat = lRotMat.Rotate(axis1, lToRadians(angle1));
-  // Matrix4f r3RotMat = Quaternionf(ToR3(axis1),
-  // lToRadians(angle1)).GetMatrix4();
   lVec3f lPoint0(2.0f, 3.0f, 5.0f);
   lVec3f lPoint1(7.0f, 1.0f, 6.0f);
   Vector3f sPoint0 = ToS(lPoint0);

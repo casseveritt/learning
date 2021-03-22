@@ -3,27 +3,31 @@
 #include <stdlib.h>
 
 #include <cstring>
+#include <string>
 
 #include "cube.h"
 #include "geom.h"
 #include "learning.h"
 #include "linear.h"
 #include "prog.h"
+#include "rectprism.h"
 #include "render.h"
 #include "scene.h"
 #include "sphere.h"
 #include "square.h"
-#include "rectprism.h"
 #include "stb.h"
 #include "tetra.h"
 #include "torus.h"
 
 using namespace r3;
+using namespace std;
 
 /*
   You need dev packages to build and run this:
   sudo apt install libgles2-mesa-dev libglfw3-dev
 */
+
+FILE* plyObj;
 
 struct RendererImpl : public Renderer {
   RendererImpl() {}
@@ -40,12 +44,7 @@ struct RendererImpl : public Renderer {
   Tetra dots;
   GLuint defaultVab;
 
-  Prog program;
-  Prog litProgram;
-  Prog texProgram;
-  Prog coordProgram;
-  Prog litTexProgram;
-  Prog spotProgram;
+  Prog program, litProgram, texProgram, coordProgram, litTexProgram, spotProgram;
 
   GLuint check, brick, stone, wood;
 
@@ -55,18 +54,15 @@ struct RendererImpl : public Renderer {
   std::vector<Shape*> list;
 
   std::vector<Vec3f> points;
-  Geom hull;
-  Geom curve;
-  Geom ray;
+  Geom hull, curve, ray, plyWireframe;
   Sphere intPoint;
 
   Shape* hitShape;
-  Vec3f intObjLoc;
+  // Vec3f intObjLoc;
 
   Vec2d currPos;
 
-  Vec3f nearInWorld3;
-  Vec3f farInWorld3;
+  Vec3f nearInWorld3, farInWorld3;
 };
 
 Renderer* CreateRenderer() {
@@ -92,16 +88,14 @@ static GLuint load_image(const char* imgName) {
 
   for (int j = 0; j < h; j++) {
     for (int i = 0; i < w; i++) {
-      int ij = i+j*w;
+      int ij = i + j * w;
       /*
       if( (i % 32) == 0 ) {
         imgi[ij] = 0xff00ff00;
       } else if ( (j % 32) == 0) {
         imgi[ij] = 0xff0000ff;
       } else */
-      {
-        imgi[ij] = uint32_t(img[ij * n + 0]) << 0 | uint32_t(img[ij * n + 1]) << 8 | uint32_t(img[ij * n + 2]) << 16;
-      }
+      { imgi[ij] = uint32_t(img[ij * n + 0]) << 0 | uint32_t(img[ij * n + 1]) << 8 | uint32_t(img[ij * n + 2]) << 16; }
     }
   }
 
@@ -132,6 +126,18 @@ static Vec3f evalDeCast(const std::vector<Vec3f>& p, float t) {
     k.push_back(p[j] + ((p[j + 1] - p[j]) * t));
   }
   return evalDeCast(k, t);
+}
+
+static string nextLine() {
+  string lineOut;
+  char buffer[1];
+  bool read = true;
+  while (read) {
+    fread(buffer, 1, 1, plyObj);
+    if (buffer[0] == '\n') read = false;
+    lineOut.append(1, buffer[0]);
+  }
+  return lineOut;
 }
 
 void RendererImpl::Init() {
@@ -227,6 +233,7 @@ void RendererImpl::Init() {
     list.back()->obj.tex = wood;
   }
 
+  /*
   {
     auto prism = new RectPrism; // Rectangular Prism
     prism->build(0.5, 0.75, 0.8);
@@ -237,6 +244,7 @@ void RendererImpl::Init() {
     list.back()->obj.shiny = 4.0f;
     list.back()->obj.tex = stone;
   }
+  */
 
   {
     auto light = new Sphere;  // Light Sphere
@@ -266,6 +274,18 @@ void RendererImpl::Init() {
 
   dots.build(50);
   dots.move(Vec3f(-0.75, 0.5, 0.75));
+
+  bool pastHeader = false;
+  int indexNumber = 0;
+  string headerEnd("end_header");
+  plyObj = fopen("models/fracttree.ply", "r");
+  for (int i = 0; i < 10; i++) {
+    string line = nextLine();
+    printf("%i\n", strcmp(line.c_str(), "end_header\n"));
+  }
+
+  plyWireframe.begin(GL_LINES);
+  plyWireframe.color(0.0f, 0.0f, 1.0f);
 
   glLineWidth(3);
 
@@ -311,7 +331,7 @@ void RendererImpl::Intersect() {
     if (shape->intersect(nIW3, fIW3, objIntLoc)) {
       if ((objIntLoc - nIW3).Length() < distance) {
         distance = (objIntLoc - nIW3).Length();
-        intObjLoc = shape->obj.modelPose.t - objIntLoc;
+        // intObjLoc = shape->obj.modelPose.t - objIntLoc;
         intLoc = objIntLoc;
         hitShape = shape;
       }
@@ -340,21 +360,12 @@ void RendererImpl::Draw() {
   scene.camPose = camera;
   scene.camPos = scene.camPose.t;
 
-  /*
-  if (intersect) {
-    Vec3f i;
-    Planef plane(Vec3f(0, 1, 0), intPoint.obj.modelPose.t.y);
-    Linef line(nearInWorld3, farInWorld3);
-    plane.Intersect(line, i);
-    hitShape->obj.modelPose.t.x += diffPos.x * 0.0125;
-    hitShape->obj.modelPose.t.z += diffPos.y * 0.0125;
-  }
-  */
-
   glViewport(0, 0, width, height);
 
   glClearColor(0.05f, 0.05f, 0.05f, 0);
-  if(!trackCamera) { glClearColor(0.5f, 0.5f, 0.5f, 0); }
+  if (!trackCamera) {
+    glClearColor(0.5f, 0.5f, 0.5f, 0);
+  }
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
@@ -371,12 +382,12 @@ void RendererImpl::Draw() {
   if (intersect) {
     intPoint.draw(scene, program);
   }
-  for (int i = 1; i < 5; i++) {
+  for (int i = 1; i < 4; i++) {
     list[i]->draw(scene, texProgram);
   }
 
-  scene.lightPose.t = list[5]->obj.modelPose.t;
-  list[5]->draw(scene, program);
+  scene.lightPose.t = list[4]->obj.modelPose.t;
+  list[4]->draw(scene, program);
 
   hull.draw(scene, program);
   curve.draw(scene, program);

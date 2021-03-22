@@ -19,7 +19,7 @@ Renderer* rend = nullptr;
 int frame = 0, dragTime = 0;
 bool leftDrag = false, rightDrag = false;
 bool leftClick = false, rightClick = false;
-Vec2d anchor; // Anchored location on the screen from inital click for drag functionality
+Vec2d anchor;  // Anchored location on the screen from inital click for drag functionality
 float rad = 2.5;
 Vec3f cameraLocation;
 Vec2d diffPos, prevPos, currPos;
@@ -33,7 +33,7 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
     return;
   }
   if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-    //frame = 0;
+    // frame = 0;
     switch (key) {
       case GLFW_KEY_ESCAPE:
         glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -53,8 +53,8 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
         break;
       case GLFW_KEY_D:
         break;
-      
-      case GLFW_KEY_V: // Need to check why this breaks if left on
+
+      case GLFW_KEY_V:  // Need to check why this breaks if left on
         rend->iterate++;
         rend->iterate &= 1;
         break;
@@ -94,7 +94,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 }
 
 static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-  if (rend->intersect) { // I believe I wanted this to scale down selected objects
+  if (rend->intersect) {  // I believe I wanted this to scale down selected objects
   } else {
     rad -= 0.1 * yoffset;
   }
@@ -136,8 +136,8 @@ int main(void) {
     glfwGetFramebufferSize(window, &rend->width, &rend->height);
 
     double dist;
-    if (leftClick ^ rightClick) { // Click functionality (caret^ is boolean XOR gate)
-      if (dragTime < 8) { // Checking if click is a drag
+    if (leftClick ^ rightClick) {  // Click functionality (caret^ is boolean XOR gate)
+      if (dragTime < 8) {          // Checking if click is a drag
         dragTime++;
       }
       Vec2d newPos;
@@ -145,18 +145,18 @@ int main(void) {
       double x = fabs(anchor.x - newPos.x);
       double y = fabs(anchor.y - newPos.y);
       dist = sqrt((x * x) + (y * y));
-    } else { // Release of click/drag
+    } else {  // Release of click/drag
       dragTime = 0;
       dist = 0;
     }
-    leftDrag = (leftClick && (dragTime == 8 || dist >= 15));  // Determines if there is a left click drag
-    rightDrag = (rightClick && (dragTime == 8 || dist >= 15));// Determines if there is a right click drag
+    leftDrag = (leftClick && (dragTime == 8 || dist >= 15));    // Determines if there is a left click drag
+    rightDrag = (rightClick && (dragTime == 8 || dist >= 15));  // Determines if there is a right click drag
 
     glfwGetCursorPos(window, &currPos.x, &currPos.y);
     diffPos = currPos - prevPos;
     prevPos = currPos;
 
-    if (leftDrag || rightDrag) { // Drag functionality
+    if (leftDrag || rightDrag) {  // Drag functionality
       if (leftDrag && rend->intersect) {
         Vec3f i;
         Vec3f nIW3, fIW3;
