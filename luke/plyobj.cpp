@@ -20,47 +20,64 @@ string Plyobj::nextLine(FILE* f, int offset) {
 
 void Plyobj::build(FILE* f, Matrix4f m) {
   plyFile = f;
+  std::vector<Vec3f> verticies;
+  std::vector<Vec3f> normals;
+  vector<Vec3i> faces;
   fseek(f, 0, SEEK_SET);
-  vector<Vec3f> verticies;
   int vertSize = atoi(nextLine(f, 36).c_str());
+  verticies.resize(vertSize);
+  normals.resize(vertSize);
   int faceSize = atoi(nextLine(f, 70).c_str());
+  faces.resize(faceSize);
   while (strcmp(nextLine(f).c_str(), "end_header") != 0)
     ;
   for (int i = 0; i < vertSize; i++) {
-    Vec3f item;
+    Vec3f vertPos;
     int ind = 0;
     string sNumber, line = nextLine(f);
     for (size_t j = 0; j < line.size(); j++) {
       if (line[j] == ' ') {
-        item[ind] = stof(sNumber);
+        vertPos[ind] = stof(sNumber);
         sNumber.resize(0);
         ind++;
       } else {
         sNumber.append(1, line[j]);
       }
     }
-    verticies.push_back(item);
+    verticies[i] = vertPos;
+    normals[i] = Vec3f(0.0f, 0.0f, 0.0f);
   }
-  obj.begin(GL_TRIANGLES);
-  obj.color(1.0f, 1.0f, 1.0f);
-  vector<Vec3f> triVerts;
-  triVerts.resize(3);
   for (int i = 0; i < faceSize; i++) {
+    Vec3i face;
     int ind = 0;
     string sNumber, line = nextLine(f, 2);
     for (size_t j = 0; j < line.size(); j++) {
       if (line[j] == ' ') {
-        triVerts[ind] = verticies[atoi(sNumber.c_str())];
+        face[ind] = atoi(sNumber.c_str());
         sNumber.resize(0);
         ind++;
       } else {
         sNumber.append(1, line[j]);
       }
     }
-    for (int j=0;j<3;j++) {
-      obj.normal((triVerts[(j+1)%3] - triVerts[j]).Cross((triVerts[(j+2)%3] - triVerts[j])));
+    faces[i] = face;
+    Vec3f faceNorm = (verticies[face[0]] - verticies[face[2]]).Cross((verticies[face[1]] - verticies[face[2]])).Normalized();
+    for (int j = 0; j < 3; j++) {  // Sets normals when not there, and averages when set
+      // Not great because it smooths every single vertex regardless of how sharp the difference is
+      if (normals[face[j]] == Vec3f(0.0f, 0.0f, 0.0f))
+        normals[face[j]] = faceNorm;
+      else
+        normals[face[j]] = (normals[face[j]] + faceNorm) / 2;
+    }
+  }
+  obj.begin(GL_TRIANGLES);
+  obj.color(1.0f, 1.0f, 1.0f);
+  for (int i = 0; i < faceSize; i++) {
+    Vec3i face = faces[i];
+    for (int j = 0; j < 3; j++) {
+      obj.normal(normals[face[j]]);
       // obj.texCoord();
-      obj.position((m * triVerts[j]));
+      obj.position((m * verticies[face[j]]));
     }
   }
   obj.end();

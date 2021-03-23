@@ -46,6 +46,7 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
         break;
 
       case GLFW_KEY_W:
+        rend->Advance();
         break;
       case GLFW_KEY_A:
         break;

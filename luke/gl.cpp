@@ -221,6 +221,9 @@ void RendererImpl::Init() {
     cow->build(fopen("models/cow.ply", "r"), Matrix4f::Scale(0.25f));
     list.push_back(cow);
     list.back()->obj.modelPose.t = Vec3f(-0.8f, 0.0f, 1.0f);
+    list.back()->obj.matDifCol = Vec3f(0.2f, 0.1f, 0.8f);
+    list.back()->obj.matSpcCol = Vec3f(0.25f, 0.25f, 0.95f);
+    list.back()->obj.shiny = 1.5f;
   }
 
   {
