@@ -218,7 +218,7 @@ void RendererImpl::Init() {
 
   {
     auto cow = new Plyobj;  // COW
-    cow->build(fopen("models/cow.ply", "r"), Matrix4f::Scale(0.25f), Vec3f(0.3, 0.2, 0.9));
+    cow->build(fopen("models/cow.ply", "r"), Matrix4f::Scale(0.25f));
     list.push_back(cow);
     list.back()->obj.modelPose.t = Vec3f(-0.8f, 0.0f, 1.0f);
   }
@@ -348,7 +348,7 @@ void RendererImpl::Draw() {
     list[i]->draw(scene, litTexProgram);
   }
 
-  list[4]->draw(scene, texProgram);
+  list[4]->draw(scene, litProgram);
 
   scene.lightPose.t = list[5]->obj.modelPose.t;
   list[5]->draw(scene, program);

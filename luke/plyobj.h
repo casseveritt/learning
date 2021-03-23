@@ -19,7 +19,7 @@ class Plyobj : public Shape {
 
   std::string nextLine(FILE* f, int offset = 0);
 
-  void build(FILE* f, Matrix4f m, Vec3f col = Vec3f(0.9f, 0.9f, 0.9f));
+  void build(FILE* f, Matrix4f m);
 
   virtual void draw(const Scene& scene, Prog p) override;
 

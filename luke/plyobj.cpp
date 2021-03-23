@@ -18,7 +18,7 @@ string Plyobj::nextLine(FILE* f, int offset) {
   return lineOut;
 }
 
-void Plyobj::build(FILE* f, Matrix4f m, Vec3f col) {
+void Plyobj::build(FILE* f, Matrix4f m) {
   plyFile = f;
   fseek(f, 0, SEEK_SET);
   vector<Vec3f> verticies;
@@ -42,16 +42,25 @@ void Plyobj::build(FILE* f, Matrix4f m, Vec3f col) {
     verticies.push_back(item);
   }
   obj.begin(GL_TRIANGLES);
-  obj.color(0.0f, 0.0f, 1.0f);
+  obj.color(1.0f, 1.0f, 1.0f);
+  vector<Vec3f> triVerts;
+  triVerts.resize(3);
   for (int i = 0; i < faceSize; i++) {
+    int ind = 0;
     string sNumber, line = nextLine(f, 2);
     for (size_t j = 0; j < line.size(); j++) {
       if (line[j] == ' ') {
-        obj.position((m * verticies[atoi(sNumber.c_str())]));
+        triVerts[ind] = verticies[atoi(sNumber.c_str())];
         sNumber.resize(0);
+        ind++;
       } else {
         sNumber.append(1, line[j]);
       }
+    }
+    for (int j=0;j<3;j++) {
+      obj.normal((triVerts[(j+1)%3] - triVerts[j]).Cross((triVerts[(j+2)%3] - triVerts[j])));
+      // obj.texCoord();
+      obj.position((m * triVerts[j]));
     }
   }
   obj.end();
