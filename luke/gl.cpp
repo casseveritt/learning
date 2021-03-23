@@ -28,6 +28,7 @@ using namespace std;
 */
 
 FILE* plyObj;
+vector<Vec3f> verticies;
 
 struct RendererImpl : public Renderer {
   RendererImpl() {}
@@ -134,8 +135,10 @@ static string nextLine() {
   bool read = true;
   while (read) {
     fread(buffer, 1, 1, plyObj);
-    if (buffer[0] == '\n') read = false;
-    lineOut.append(1, buffer[0]);
+    if (buffer[0] == '\n')
+      read = false;
+    else
+      lineOut.append(1, buffer[0]);
   }
   return lineOut;
 }
@@ -275,17 +278,47 @@ void RendererImpl::Init() {
   dots.build(50);
   dots.move(Vec3f(-0.75, 0.5, 0.75));
 
-  bool pastHeader = false;
-  int indexNumber = 0;
-  string headerEnd("end_header");
-  plyObj = fopen("models/fracttree.ply", "r");
-  for (int i = 0; i < 10; i++) {
-    string line = nextLine();
-    printf("%i: %s\n", strcmp(line.c_str(), "end_header\n"), line.c_str());
+  plyObj = fopen("models/cow.ply", "r");
+  fseek(plyObj, 0, SEEK_END);
+  int plySize = ftell(plyObj);
+  fseek(plyObj, 36, SEEK_SET);
+  int vertSize = atoi(nextLine().c_str());
+  fseek(plyObj, 70, SEEK_CUR);
+  int faceSize = atoi(nextLine().c_str());
+  while (strcmp(nextLine().c_str(), "end_header") != 0)
+    ;
+  for (int i = 0; i < vertSize; i++) {
+    Vec3f item;
+    int ind = 0;
+    string sNumber, line = nextLine();
+    for (int j = 0; j < line.size(); j++) {
+      if (line[j] == ' ') {
+        item[ind] = stof(sNumber);
+        sNumber.resize(0);
+        ind++;
+      } else {
+        sNumber.append(1, line[j]);
+      }
+    }
+    verticies.push_back(item);
   }
-
-  plyWireframe.begin(GL_LINES);
+  plyWireframe.begin(GL_TRIANGLES);
   plyWireframe.color(0.0f, 0.0f, 1.0f);
+  for (int i = 0; i < faceSize; i++) {
+    fseek(plyObj, 2, SEEK_CUR);
+    string sNumber, line = nextLine();
+    if (i == 0) printf("%s\n", line.c_str());
+    for (int j = 0; j < line.size(); j++) {
+      if (line[j] == ' ') {
+        if (i == 0) printf("'%s'\n", sNumber.c_str());
+        plyWireframe.position(verticies[atoi(sNumber.c_str())]);
+        sNumber.resize(0);
+      } else {
+        sNumber.append(1, line[j]);
+      }
+    }
+  }
+  plyWireframe.end();
 
   glLineWidth(3);
 
@@ -391,6 +424,7 @@ void RendererImpl::Draw() {
 
   hull.draw(scene, program);
   curve.draw(scene, program);
+  plyWireframe.draw(scene, program);
 
   dots.draw(scene, litProgram, iterate);
 }
