@@ -9,8 +9,8 @@
 #include "geom.h"
 #include "learning.h"
 #include "linear.h"
+#include "plyobj.h"
 #include "prog.h"
-//#include "rectprism.h"
 #include "render.h"
 #include "scene.h"
 #include "sphere.h"
@@ -55,7 +55,7 @@ struct RendererImpl : public Renderer {
   std::vector<Shape*> list;
 
   std::vector<Vec3f> points;
-  Geom hull, curve, ray, plyWireframe;
+  Geom hull, curve, ray;
   Sphere intPoint;
 
   Shape* hitShape;
@@ -127,20 +127,6 @@ static Vec3f evalDeCast(const std::vector<Vec3f>& p, float t) {
     k.push_back(p[j] + ((p[j + 1] - p[j]) * t));
   }
   return evalDeCast(k, t);
-}
-
-static string nextLine() {
-  string lineOut;
-  char buffer[1];
-  bool read = true;
-  while (read) {
-    fread(buffer, 1, 1, plyObj);
-    if (buffer[0] == '\n')
-      read = false;
-    else
-      lineOut.append(1, buffer[0]);
-  }
-  return lineOut;
 }
 
 void RendererImpl::Init() {
@@ -236,24 +222,18 @@ void RendererImpl::Init() {
     list.back()->obj.tex = wood;
   }
 
-  /*
   {
-    auto prism = new RectPrism; // Rectangular Prism
-    prism->build(0.5, 0.75, 0.8);
-    list.push_back(prism);
-    list.back()->obj.modelPose.t = Vec3f(-1.0, 0.0, 1.0);
-    list.back()->obj.matDifCol = Vec3f(0.0f, 0.3f, 0.0f);
-    list.back()->obj.matSpcCol = Vec3f(0.2f, 1.0f, 0.2f);
-    list.back()->obj.shiny = 4.0f;
-    list.back()->obj.tex = stone;
+    auto cow = new Plyobj;  // COW
+    cow->build(fopen("models/cow.ply", "r"), Matrix4f::Scale(0.375f), Vec3f(0.3, 0.2, 0.9));
+    list.push_back(cow);
+    list.back()->obj.modelPose.t = Vec3f(0.0f, 0.0f, 0.0f);
   }
-  */
 
   {
     auto light = new Sphere;  // Light Sphere
     light->build(0.03125f);
     list.push_back(light);
-    list.back()->obj.modelPose.t = Vec3f(0.0f, 1.0f, 0.0f);
+    list.back()->obj.modelPose.t = Vec3f(1.0f, 0.0f, 1.0f);
   }
 
   points.push_back(Vec3f(-1.0f, 0.0f, 1.0f));
@@ -277,48 +257,6 @@ void RendererImpl::Init() {
 
   dots.build(50);
   dots.move(Vec3f(-0.75, 0.5, 0.75));
-
-  plyObj = fopen("models/cow.ply", "r");
-  fseek(plyObj, 0, SEEK_END);
-  int plySize = ftell(plyObj);
-  fseek(plyObj, 36, SEEK_SET);
-  int vertSize = atoi(nextLine().c_str());
-  fseek(plyObj, 70, SEEK_CUR);
-  int faceSize = atoi(nextLine().c_str());
-  while (strcmp(nextLine().c_str(), "end_header") != 0)
-    ;
-  for (int i = 0; i < vertSize; i++) {
-    Vec3f item;
-    int ind = 0;
-    string sNumber, line = nextLine();
-    for (int j = 0; j < line.size(); j++) {
-      if (line[j] == ' ') {
-        item[ind] = stof(sNumber);
-        sNumber.resize(0);
-        ind++;
-      } else {
-        sNumber.append(1, line[j]);
-      }
-    }
-    verticies.push_back(item);
-  }
-  plyWireframe.begin(GL_TRIANGLES);
-  plyWireframe.color(0.0f, 0.0f, 1.0f);
-  for (int i = 0; i < faceSize; i++) {
-    fseek(plyObj, 2, SEEK_CUR);
-    string sNumber, line = nextLine();
-    if (i == 0) printf("%s\n", line.c_str());
-    for (int j = 0; j < line.size(); j++) {
-      if (line[j] == ' ') {
-        if (i == 0) printf("'%s'\n", sNumber.c_str());
-        plyWireframe.position(verticies[atoi(sNumber.c_str())]);
-        sNumber.resize(0);
-      } else {
-        sNumber.append(1, line[j]);
-      }
-    }
-  }
-  plyWireframe.end();
 
   glLineWidth(3);
 
@@ -415,16 +353,15 @@ void RendererImpl::Draw() {
   if (intersect) {
     intPoint.draw(scene, program);
   }
-  for (int i = 1; i < 4; i++) {
+  for (int i = 1; i < 5; i++) {
     list[i]->draw(scene, texProgram);
   }
 
-  scene.lightPose.t = list[4]->obj.modelPose.t;
-  list[4]->draw(scene, program);
+  scene.lightPose.t = list[5]->obj.modelPose.t;
+  list[5]->draw(scene, program);
 
   hull.draw(scene, program);
   curve.draw(scene, program);
-  plyWireframe.draw(scene, program);
 
   dots.draw(scene, litProgram, iterate);
 }
