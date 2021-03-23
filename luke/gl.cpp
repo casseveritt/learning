@@ -27,9 +27,6 @@ using namespace std;
   sudo apt install libgles2-mesa-dev libglfw3-dev
 */
 
-FILE* plyObj;
-vector<Vec3f> verticies;
-
 struct RendererImpl : public Renderer {
   RendererImpl() {}
 
@@ -48,18 +45,15 @@ struct RendererImpl : public Renderer {
   Prog program, litProgram, texProgram, coordProgram, litTexProgram, spotProgram;
 
   GLuint check, brick, stone, wood;
-
-  Geom grid;
   Planef ground;
 
   std::vector<Shape*> list;
 
   std::vector<Vec3f> points;
-  Geom hull, curve, ray;
+  Geom grid, curve, ray;
   Sphere intPoint;
 
   Shape* hitShape;
-  // Vec3f intObjLoc;
 
   Vec2d currPos;
 
@@ -182,9 +176,9 @@ void RendererImpl::Init() {
     auto squ = new Square;  // Ground Square
     squ->build(sqrDime, sqrSize, side);
     list.push_back(squ);
-    list.back()->obj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
-    list.back()->obj.shiny = 40.0f;
-    list.back()->obj.tex = check;
+    squ->obj.matSpcCol = Vec3f(0.25f, 0.25f, 0.25f);
+    squ->obj.shiny = 40.0f;
+    squ->obj.tex = check;
   }
 
   ground = Planef(Vec3f(0, 1, 0), 0.0f);
@@ -224,16 +218,16 @@ void RendererImpl::Init() {
 
   {
     auto cow = new Plyobj;  // COW
-    cow->build(fopen("models/cow.ply", "r"), Matrix4f::Scale(0.375f), Vec3f(0.3, 0.2, 0.9));
+    cow->build(fopen("models/cow.ply", "r"), Matrix4f::Scale(0.25f), Vec3f(0.3, 0.2, 0.9));
     list.push_back(cow);
-    list.back()->obj.modelPose.t = Vec3f(0.0f, 0.0f, 0.0f);
+    list.back()->obj.modelPose.t = Vec3f(-0.8f, 0.0f, 1.0f);
   }
 
   {
     auto light = new Sphere;  // Light Sphere
     light->build(0.03125f);
     list.push_back(light);
-    list.back()->obj.modelPose.t = Vec3f(1.0f, 0.0f, 1.0f);
+    list.back()->obj.modelPose.t = Vec3f(0.0f, 1.0f, 0.0f);
   }
 
   points.push_back(Vec3f(-1.0f, 0.0f, 1.0f));
@@ -241,14 +235,11 @@ void RendererImpl::Init() {
   points.push_back(Vec3f(0.0f, 1.0f, 1.0f));
   points.push_back(Vec3f(0.0f, 0.0f, 1.0f));
 
-  hull.begin(GL_LINE_STRIP);
-  hull.color(0.0f, 0.0f, 0.0f);
-  for (auto v : points) {
-    hull.position(v);
-  }
-  hull.end();
-
   curve.begin(GL_LINE_STRIP);
+  curve.color(0.0f, 0.0f, 0.0f);
+  for (auto v : points) {
+    curve.position(v);
+  }
   curve.color(1.0f, 0.0f, 0.5f);
   for (int i = 0; i < 100; i++) {
     curve.position(evalDeCast(points, i / 99.0f));
@@ -353,15 +344,16 @@ void RendererImpl::Draw() {
   if (intersect) {
     intPoint.draw(scene, program);
   }
-  for (int i = 1; i < 5; i++) {
-    list[i]->draw(scene, texProgram);
+  for (int i = 1; i < 4; i++) {
+    list[i]->draw(scene, litTexProgram);
   }
+
+  list[4]->draw(scene, texProgram);
 
   scene.lightPose.t = list[5]->obj.modelPose.t;
   list[5]->draw(scene, program);
 
-  hull.draw(scene, program);
-  curve.draw(scene, program);
+  // curve.draw(scene, program);
 
-  dots.draw(scene, litProgram, iterate);
+  // dots.draw(scene, litProgram, iterate);
 }
