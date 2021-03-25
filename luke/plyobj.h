@@ -11,11 +11,14 @@ using namespace r3;
 class Plyobj : public Shape {
  public:
   struct Vert {
-    Vec3f col;
-    Vec3f norm;
+    Vec3f norm = Vec3f(0.0f, 0.0f, 0.0f);
     Vec3f pos;
+    std::vector<int> defFaces;
   };
-  FILE* plyFile;
+  struct Poly {
+    Vec3i points;
+    float area;
+  };
 
   std::string nextLine(FILE* f, int offset = 0);
 

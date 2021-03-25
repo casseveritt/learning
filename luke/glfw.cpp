@@ -44,9 +44,7 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
       case GLFW_KEY_DOWN:
         rend->fovy += 1.0;
         break;
-
       case GLFW_KEY_W:
-        rend->Advance();
         break;
       case GLFW_KEY_A:
         break;
@@ -95,10 +93,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
 }
 
 static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-  if (rend->intersect) {  // I believe I wanted this to scale down selected objects
-  } else {
-    rad -= 0.1 * yoffset;
-  }
+  if (rend->trackCamera) rad -= 0.1 * yoffset;
 }
 
 int main(void) {

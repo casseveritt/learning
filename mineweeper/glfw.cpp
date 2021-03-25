@@ -19,10 +19,21 @@ using namespace r3;
 */
 
 Renderer* rend = nullptr;
-int frame = 0;
-int width, height;
+int frame = 0, width, height;
 std::atomic<uint32_t> leftClick(0);
 std::atomic<uint32_t> rightClick(0);
+
+Board board;
+int bWidth = 10, bHeight = 10, mines = 10;
+
+bool MSARunning = false; // Minesweeper Algorithm
+double t0;
+
+static double getTimeInSeconds() {
+  timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return double(int64_t(ts.tv_sec) * int64_t(1e9) + int64_t(ts.tv_nsec)) * 1e-9;
+}
 
 static void error_callback(int error, const char* description) {
   fprintf(stderr, "Error: %d: %s\n", error, description);
@@ -37,6 +48,10 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
     switch (key) {
       case GLFW_KEY_ESCAPE:
         glfwSetWindowShouldClose(window, GLFW_TRUE);
+        break;
+      case GLFW_KEY_V:
+        MSARunning = !MSARunning;
+        t0 = getTimeInSeconds();
         break;
       default:
         break;
@@ -72,12 +87,6 @@ static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) 
 */
 
 int main(int argc, char** argv) {
-  Board board;
-
-  int bWidth = 10;
-  int bHeight = 10;
-  int mines = 10;
-
   timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
 
@@ -95,7 +104,7 @@ int main(int argc, char** argv) {
   // seed = 0;
   srand(seed);
 
-  printf("w=%d, h=%d, mines=%d\n", bWidth, bHeight, mines);
+  // printf("w=%d, h=%d, mines=%d\n", bWidth, bHeight, mines);
 
   rend = CreateRenderer();
 
@@ -149,6 +158,10 @@ int main(int argc, char** argv) {
       int row = board.height * (p.y / height);
       int col = board.width * (p.x / width);
       board.flag(col, row);
+    }
+
+    if (MSARunning && ) {
+
     }
 
     rend->SetWindowSize(width, height);
