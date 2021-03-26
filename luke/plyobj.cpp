@@ -3,7 +3,7 @@
 using namespace r3;
 using namespace std;
 
-float mag(Vec3f vecIn) {
+float Plyobj::mag(Vec3f vecIn) {
   return sqrt((vecIn.x * vecIn.x) + (vecIn.y * vecIn.y) + (vecIn.z * vecIn.z));
 }
 
@@ -22,16 +22,80 @@ string Plyobj::nextLine(FILE* f, int offset) {
   return lineOut;
 }
 
+void Plyobj::removeEdge(int p0, int p1, int f0, int f1) {
+  faces[f0] = faces[faceSize - 1];
+  faces[f1] = faces[faceSize - 2];
+  faceSize -= 2;
+  faces.resize(faceSize);
+  for (int i = 0; i < faceSize; i++) {
+    Poly pol = faces[i];
+    for (int j = 0; j < 3; j++) {
+      if (pol.pInd[j] == p1) pol.pInd[j] = p0;
+    }
+  }
+}
+
+void Plyobj::simplify(int endFaces) {
+  while (faceSize > endFaces) {
+    float area = 0.0f;
+    int fe0, fe1, p0i, p1i;
+    for (int i = 0; i < faceSize; i++) {
+      Poly f0 = faces[i], f1;
+      for (int j = 0; j < 3; j++) {
+        int f1ind;
+        Vert p0 = vertices[f0.pInd[j]], p1 = vertices[f0.pInd[(j + 1) % 3]];
+        Vec3f a0, a1, pm = Vec3f((p0.pos.x + p1.pos.x) / 2, (p0.pos.y + p1.pos.y) / 2, (p0.pos.z + p1.pos.z) / 2);
+        a0 = vertices[f0.pInd[(j + 2) % 3]].pos - pm;
+        for (int k = 0; k < faceSize; k++) {
+          int sim = 0;
+          Poly pol = faces[k];
+          for (int l = 0; l < 3; l++) {
+            if (pol.pInd[l] == f0.pInd[j] || pol.pInd[l] == f0.pInd[(j + 1) % 3]) {
+              printf("AHHHHHHHHHHH\n");
+              sim++;
+            }
+            if (sim == 2) {
+              f1ind = pol.pInd[l];
+              f1 = faces[f1ind];
+            }
+          }
+          if (sim == 2) break;
+        }
+        if (ToDegrees(acos((a0.Dot(a1)) / (mag(a0) * mag(a1)))) > 135) {
+          if (area == 0.0f || (f0.area + f1.area) < area) {
+            area = (f0.area + f1.area);
+            p0i = f0.pInd[j];
+            p1i = f0.pInd[(j + 1) % 3];
+            fe0 = i;
+            fe1 = f1ind;
+          }
+        }
+      }
+    }
+    removeEdge(p0i, p1i, fe0, fe1);
+  }
+}
+
 void Plyobj::build(FILE* f, Matrix4f m) {
-  std::vector<Vert> vertices;
-  vector<Poly> faces;
   fseek(f, 0, SEEK_SET);
-  int vertSize = atoi(nextLine(f, 36).c_str());
+  string searchStr = nextLine(f);
+  while (int(searchStr.size()) <= 14) searchStr = nextLine(f);
+  while (strcmp(searchStr.substr(0, 14).c_str(), "element vertex") != 0) {
+    searchStr = nextLine(f);
+    while (int(searchStr.size()) <= 14) searchStr = nextLine(f);
+  }
+  vertSize = atoi(searchStr.substr(15, int(searchStr.size())).c_str());
   vertices.resize(vertSize);
-  int faceSize = atoi(nextLine(f, 70).c_str());
+  while (strcmp(searchStr.substr(0, 12).c_str(), "element face") != 0) {
+    searchStr = nextLine(f);
+    while (int(searchStr.size()) <= 12) searchStr = nextLine(f);
+  }
+  faceSize = atoi(searchStr.substr(13, int(searchStr.size())).c_str());
   faces.resize(faceSize);
   while (strcmp(nextLine(f).c_str(), "end_header") != 0)
     ;
+
+  printf("Verts: %i\nFaces: %i\n", vertSize, faceSize);
 
   for (int i = 0; i < vertSize; i++) {
     Vert vertex;
@@ -61,100 +125,27 @@ void Plyobj::build(FILE* f, Matrix4f m) {
         sNumber.append(1, line[j]);
       }
     }
-    faces[i].points = face;
+    faces[i].pInd = face;
     Vec3f faceNorm =
         (vertices[face[0]].pos - vertices[face[2]].pos).Cross((vertices[face[1]].pos - vertices[face[2]].pos)).Normalized();
     faces[i].area = mag(faceNorm) / 2;
     for (int j = 0; j < 3; j++) {  // Sets normals when not there, and averages when set
-      vertices[face[j]].defFaces.push_back(i);
       if (vertices[face[j]].norm == Vec3f(0.0f, 0.0f, 0.0f))
         vertices[face[j]].norm = faceNorm;
       else
         vertices[face[j]].norm = (vertices[face[j]].norm + faceNorm) / 2;
     }
   }
-  int oldFaceSize = faceSize;
-  while (faceSize > (oldFaceSize / 2)) {
-    float area = 0.0f;
-    int fe0, fe1, p0i, p1i;
-    for (int i = 0; i < faceSize; i++) {
-      Vert p0, p1;
-      Poly f0, f1;
-      f0 = faces[i];
-      for (int j = 0; j < 3; j++) {
-        int f1ind;
-        p0 = vertices[f0.points[j]];
-        p1 = vertices[f0.points[(j + 1) % 3]];
-        Vec3f a0, a1, pm = Vec3f((p0.pos.x + p1.pos.x) / 2, (p0.pos.y + p1.pos.y) / 2, (p0.pos.z + p1.pos.z) / 2);
-        a0 = vertices[f0.points[(j + 2) % 3]].pos - pm;
-        for (int ii = 0; ii < int(p0.defFaces.size()); ii++) {
-          for (int jj = 0; jj < int(p1.defFaces.size()); jj++) {
-            if (p0.defFaces[ii] == p1.defFaces[jj] && p0.defFaces[ii] != i) {
-              f1ind = p0.defFaces[ii];
-              f1 = faces[f1ind];
-              for (int k = 0; k < 3; k++) {
-                if (f1.points[k] != f0.points[j] && f1.points[k] != f0.points[(j + 1) % 3]) {
-                  a1 = vertices[f1.points[k]].pos - pm;
-                }
-              }
-            }
-          }
-        }
-        if (ToDegrees(acos((a0.Dot(a1)) / (mag(a0) * mag(a1)))) > 135) {
-          if (area == 0.0f || (f0.area + f1.area) < area) {
-            area = (f0.area + f1.area);
-            p0i = f0.points[j];
-            p1i = f0.points[(j + 1) % 3];
-            fe0 = i;
-            fe1 = f1ind;
-          }
-        }
-      }
-    }
-    for (int i = 0; i < int(vertices[p1i].defFaces.size()); i++) {
-      int faceIndex = vertices[p1i].defFaces[i];
-      if (faceIndex != fe0 && faceIndex != fe1) {
-        vertices[p0i].defFaces.push_back(faceIndex);
-        for (int j = 0; j < 3; j++) {
-          if (faces[faceIndex].points[j] == p1i) {
-            faces[faceIndex].points[j] = p0i;
-          }
-        }
-      }
-    }
-    for (int i = 0; i < 3; i++) {
-      int vertIndex = faces[fe0].points[i];
-      if (vertIndex != p0i && vertIndex != p1i) {
-        for (int j = 0; j < int(vertices[vertIndex].defFaces.size()); j++) {
-          if (vertices[vertIndex].defFaces[j] == fe0) {
-            vertices[vertIndex].defFaces[j] = vertices[vertIndex].defFaces[int(vertices[vertIndex].defFaces.size())];
-            vertices[vertIndex].defFaces.resize(int(vertices[vertIndex].defFaces.size()) - 2);
-          }
-        }
-      }
-    }
-    for (int i = 0; i < 3; i++) {
-      int vertIndex = faces[fe1].points[i];
-      if (vertIndex != p0i && vertIndex != p1i) {
-        for (int j = 0; j < int(vertices[vertIndex].defFaces.size()); j++) {
-          if (vertices[vertIndex].defFaces[j] == fe1) {
-            vertices[vertIndex].defFaces[j] = vertices[vertIndex].defFaces[int(vertices[vertIndex].defFaces.size())];
-            vertices[vertIndex].defFaces.resize(int(vertices[vertIndex].defFaces.size()) - 2);
-          }
-        }
-      }
-    }
-    faceSize -= 2;
-    printf("%i\n", faceSize);
-  }
+
+  simplify(faceSize - 2);
+
   obj.begin(GL_TRIANGLES);
   obj.color(1.0f, 1.0f, 1.0f);
   for (int i = 0; i < faceSize; i++) {
-    Poly face = faces[i];
     for (int j = 0; j < 3; j++) {
-      obj.normal(vertices[face.points[j]].norm);
+      obj.normal(vertices[faces[i].pInd[j]].norm);
       // obj.texCoord();
-      obj.position((m * vertices[face.points[j]].pos));
+      obj.position((m * vertices[faces[i].pInd[j]].pos));
     }
   }
   obj.end();

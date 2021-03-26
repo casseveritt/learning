@@ -13,14 +13,21 @@ class Plyobj : public Shape {
   struct Vert {
     Vec3f norm = Vec3f(0.0f, 0.0f, 0.0f);
     Vec3f pos;
-    std::vector<int> defFaces;
   };
   struct Poly {
-    Vec3i points;
+    Vec3i pInd;
     float area;
   };
+  int vertSize, faceSize;
+  std::vector<Vert> vertices;
+  std::vector<Poly> faces;
+
+  float mag(Vec3f vecIn);
 
   std::string nextLine(FILE* f, int offset = 0);
+
+  void removeEdge(int p0, int p1, int f0, int f1);
+  void simplify(int endFaces);
 
   void build(FILE* f, Matrix4f m);
 
