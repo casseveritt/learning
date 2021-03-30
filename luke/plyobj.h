@@ -26,7 +26,7 @@ class Plyobj : public Shape {
 
   std::string nextLine(FILE* f, int offset = 0);
 
-  void removeEdge(int p0, int p1, int f0, int f1);
+  void removeEdge(int f0, int f1, int p0, int p1);
   void simplify(int endFaces);
 
   void build(FILE* f, Matrix4f m);

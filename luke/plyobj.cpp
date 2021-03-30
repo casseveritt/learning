@@ -3,6 +3,10 @@
 using namespace r3;
 using namespace std;
 
+float lineLen(Vec3f v0, Vec3f v1) {
+  return sqrt((v0.x-v1.x)*(v0.x-v1.x) + (v0.y-v1.y)*(v0.y-v1.y) + (v0.z-v1.z)*(v0.z-v1.z));
+}
+
 float Plyobj::mag(Vec3f vecIn) {
   return sqrt((vecIn.x * vecIn.x) + (vecIn.y * vecIn.y) + (vecIn.z * vecIn.z));
 }
@@ -22,7 +26,7 @@ string Plyobj::nextLine(FILE* f, int offset) {
   return lineOut;
 }
 
-void Plyobj::removeEdge(int p0, int p1, int f0, int f1) {
+void Plyobj::removeEdge(int f0, int f1, int p0, int p1) {
   faces[f0] = faces[faceSize - 1];
   faces[f1] = faces[faceSize - 2];
   faceSize -= 2;
@@ -37,8 +41,9 @@ void Plyobj::removeEdge(int p0, int p1, int f0, int f1) {
 
 void Plyobj::simplify(int endFaces) {
   while (faceSize > endFaces) {
-    float area = 0.0f;
-    int fe0, fe1, p0i, p1i;
+    float edgeLength = 0.0f;
+    int fe0, fe1, pe0, pe1;
+
     for (int i = 0; i < faceSize; i++) {
       Poly f0 = faces[i], f1;
       for (int j = 0; j < 3; j++) {
@@ -46,33 +51,33 @@ void Plyobj::simplify(int endFaces) {
         Vert p0 = vertices[f0.pInd[j]], p1 = vertices[f0.pInd[(j + 1) % 3]];
         Vec3f a0, a1, pm = Vec3f((p0.pos.x + p1.pos.x) / 2, (p0.pos.y + p1.pos.y) / 2, (p0.pos.z + p1.pos.z) / 2);
         a0 = vertices[f0.pInd[(j + 2) % 3]].pos - pm;
-        for (int k = 0; k < faceSize; k++) {
-          int sim = 0;
+
+        for (int k = 0; k < faceSize; k++) { // Finding matching face with edge
           Poly pol = faces[k];
           for (int l = 0; l < 3; l++) {
-            if (pol.pInd[l] == f0.pInd[j] || pol.pInd[l] == f0.pInd[(j + 1) % 3]) {
-              printf("AHHHHHHHHHHH\n");
-              sim++;
-            }
-            if (sim == 2) {
-              f1ind = pol.pInd[l];
-              f1 = faces[f1ind];
+            int pk0 = pol.pInd[l], pk1 = pol.pInd[(l + 1) % 3];
+            if (k != i) {
+              if ((pk0 == f0.pInd[j] || pk1 == f0.pInd[j]) && (pk0 == f0.pInd[(j + 1) % 3] || pk1 == f0.pInd[(j + 1) % 3])) {
+                f1ind = k;
+                f1 = faces[k];
+                break;
+              }
             }
           }
-          if (sim == 2) break;
         }
-        if (ToDegrees(acos((a0.Dot(a1)) / (mag(a0) * mag(a1)))) > 135) {
-          if (area == 0.0f || (f0.area + f1.area) < area) {
-            area = (f0.area + f1.area);
-            p0i = f0.pInd[j];
-            p1i = f0.pInd[(j + 1) % 3];
-            fe0 = i;
-            fe1 = f1ind;
-          }
+
+        //
+
+        if (lineLen(p0.pos, p1.pos) > edgeLength) {
+          edgeLength = lineLen(p0.pos, p1.pos);
+          fe0 = i;
+          fe1 = f1ind;
+          pe0 = f0.pInd[j];
+          pe1 = f0.pInd[(j + 1) % 3];
         }
       }
     }
-    removeEdge(p0i, p1i, fe0, fe1);
+    removeEdge(fe0, fe1, pe0, pe1);
   }
 }
 
