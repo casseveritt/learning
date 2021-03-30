@@ -4,7 +4,7 @@ using namespace r3;
 using namespace std;
 
 float lineLen(Vec3f v0, Vec3f v1) {
-  return sqrt((v0.x-v1.x)*(v0.x-v1.x) + (v0.y-v1.y)*(v0.y-v1.y) + (v0.z-v1.z)*(v0.z-v1.z));
+  return sqrt((v0.x - v1.x) * (v0.x - v1.x) + (v0.y - v1.y) * (v0.y - v1.y) + (v0.z - v1.z) * (v0.z - v1.z));
 }
 
 float Plyobj::mag(Vec3f vecIn) {
@@ -34,14 +34,17 @@ void Plyobj::removeEdge(int f0, int f1, int p0, int p1) {
   for (int i = 0; i < faceSize; i++) {
     Poly pol = faces[i];
     for (int j = 0; j < 3; j++) {
-      if (pol.pInd[j] == p1) pol.pInd[j] = p0;
+      if (pol.pInd[j] == p1) {
+        faces[i].pInd[j] = p0;
+      }
     }
   }
+  printf("FaceSize: %i\n", faceSize);
 }
 
 void Plyobj::simplify(int endFaces) {
   while (faceSize > endFaces) {
-    float edgeLength = 0.0f;
+    float edgeLength = 10000.0f;
     int fe0, fe1, pe0, pe1;
 
     for (int i = 0; i < faceSize; i++) {
@@ -52,7 +55,7 @@ void Plyobj::simplify(int endFaces) {
         Vec3f a0, a1, pm = Vec3f((p0.pos.x + p1.pos.x) / 2, (p0.pos.y + p1.pos.y) / 2, (p0.pos.z + p1.pos.z) / 2);
         a0 = vertices[f0.pInd[(j + 2) % 3]].pos - pm;
 
-        for (int k = 0; k < faceSize; k++) { // Finding matching face with edge
+        for (int k = 0; k < faceSize; k++) {  // Finding matching face with edge
           Poly pol = faces[k];
           for (int l = 0; l < 3; l++) {
             int pk0 = pol.pInd[l], pk1 = pol.pInd[(l + 1) % 3];
@@ -60,6 +63,7 @@ void Plyobj::simplify(int endFaces) {
               if ((pk0 == f0.pInd[j] || pk1 == f0.pInd[j]) && (pk0 == f0.pInd[(j + 1) % 3] || pk1 == f0.pInd[(j + 1) % 3])) {
                 f1ind = k;
                 f1 = faces[k];
+                a1 = vertices[f1.pInd[(k + 2) % 3]].pos - pm;
                 break;
               }
             }
@@ -68,12 +72,14 @@ void Plyobj::simplify(int endFaces) {
 
         //
 
-        if (lineLen(p0.pos, p1.pos) > edgeLength) {
-          edgeLength = lineLen(p0.pos, p1.pos);
-          fe0 = i;
-          fe1 = f1ind;
-          pe0 = f0.pInd[j];
-          pe1 = f0.pInd[(j + 1) % 3];
+        if (ToDegrees(acos((a0.Dot(a1)) / (mag(a0) * mag(a1)))) > 135) {
+          if (lineLen(p0.pos, p1.pos) < edgeLength) {
+            edgeLength = lineLen(p0.pos, p1.pos);
+            fe0 = i;
+            fe1 = f1ind;
+            pe0 = f0.pInd[j];
+            pe1 = f0.pInd[(j + 1) % 3];
+          }
         }
       }
     }
@@ -142,7 +148,7 @@ void Plyobj::build(FILE* f, Matrix4f m) {
     }
   }
 
-  simplify(faceSize - 2);
+  simplify(faceSize - 50);
 
   obj.begin(GL_TRIANGLES);
   obj.color(1.0f, 1.0f, 1.0f);
