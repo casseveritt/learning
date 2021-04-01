@@ -3,6 +3,8 @@
 using namespace r3;
 using namespace std;
 
+
+uint64_t mapInd(int v0, int v1);
 uint64_t mapInd(int v0, int v1) {
   uint64_t e0 = v0, e1 = v1;
   uint64_t e = e0 | (e1 << 32);
@@ -30,15 +32,15 @@ string Plyobj::nextLine(FILE* f, int offset) {
 
 void Plyobj::removeEdge(int eInt) {
   Edge e = edges[eInt];
-  faces[e.f0] = faces[faceSize - 1];
-  faces[e.f1] = faces[faceSize - 2];
+  tris[e.f0] = tris[faceSize - 1];
+  tris[e.f1] = tris[faceSize - 2];
   faceSize -= 2;
-  faces.resize(faceSize);
+  tris.resize(faceSize);
   for (int i = 0; i < faceSize; i++) {
-    Poly pol = faces[i];
+    Tri pol = tris[i];
     for (int j = 0; j < 3; j++) {
-      if (pol.pInd[j] == e.p1) {
-        faces[i].pInd[j] = e.p0;
+      if (pol.v[j] == e.v1) {
+        tris[i].v[j] = e.v0;
       }
     }
   }
@@ -50,43 +52,59 @@ void Plyobj::simplify(int endFaces) {
   }
 }
 
-void Plyobj::findEdges() {
-  for (int i = 0; i < faceSize; i++) {  // Pass over all the faces
-    Poly f0 = faces[i], f1;
+static uint64_t make_key(int a, int b) {
+  if (a > b) {
+    std::swap(a, b);
+  }
+  return (uint64_t(a) << 32) | uint64_t(b);
+}
+
+void Plyobj::buildEdgeList() {
+  edges.clear();
+  int b[] = {1, 2, 0};
+  for (size_t i = 0; i < tris.size(); i++) {  // Pass over all the tris
+    const auto& t = tris[i];
     for (int j = 0; j < 3; j++) {  // Pass over every edge of the face
-      int f0p0 = f0.pInd[j], f0p1 = f0.pInd[(j + 1) % 3];
-      for (int k = 0; k < faceSize; k++) {  // Checking every face
-        Poly pol = faces[k];
-        for (int l = 0; l < 3; l++) {  // Checking every edge of face to find match
-          int f1p0 = pol.pInd[l], f1p1 = pol.pInd[(l + 1) % 3];
-          if (k != i) {
-            if (f1p0 == f0p1 && f1p1 == f0p0) {  // Adds edge to vector if a match is found
-              Vec3f v0 = vertices[f0p0].pos, v1 = vertices[f0p1].pos;
-              Edge e;
-              e.len = sqrt((v0.x - v1.x) * (v0.x - v1.x) + (v0.y - v1.y) * (v0.y - v1.y) + (v0.z - v1.z) * (v0.z - v1.z));
-              e.p0 = f0p0;
-              e.p1 = f0p1;
-              e.f0 = i;
-              e.f1 = k;
-              edges.push_back(e);
-              uint64_t eInd = mapInd(f0p0, f0p1);
-              map[eInd] = e;  // Crashes program
-              edgeSize++;
-            }
-          }
+      int va = t.v[j];
+      int vb = t.v[b[j]];
+      int ei = -1;
+      {
+        uint64_t k = make_key(va, vb);
+        auto it = vertsToEdgeIndex.find(k);
+        if (it != vertsToEdgeIndex.end()) {
+          ei = it->second;
+        } else {
+          ei = int(edges.size());
+          edges.push_back(Edge());
+          vertsToEdgeIndex[k] = ei;
         }
+      }
+      auto& e = edges[ei];
+      if (e.v0 < 0) {
+        if (va < vb) {
+          e.v0 = va;
+          e.v1 = vb;
+        } else {
+          e.v0 = vb;
+          e.v1 = va;
+        }
+      }
+
+      if (va < vb) {
+        e.f0 = i;
+      } else {
+        e.f1 = i;
       }
     }
   }
-  printf("Edges: %i\n", edgeSize);
-  for (int i = 0; i < edgeSize - 1; i++) {  // Sorts edges by length
-    int mind = i;
-    for (int j = i; j < edgeSize; j++) {
-      if (edges[j].len < edges[mind].len) mind = j;
+
+  printf("Edges: %d\n", int(edges.size()));
+  for (size_t i = 0; i < edges.size(); i++) {
+    const auto& e = edges[i];
+    if (e.f0 < 0 || e.f1 < 0) {
+      printf("e=%d has invalid face indexes\n", int(i));
+      printf("  f0=%d, f1=%d, v0=%d, v1=%d\n", e.f0, e.f1, e.v0, e.v1);
     }
-    Edge e = edges[i];
-    edges[i] = edges[mind];
-    edges[mind] = e;
   }
 }
 
@@ -105,7 +123,7 @@ void Plyobj::build(FILE* f, Matrix4f m) {
     while (int(searchStr.size()) <= 12) searchStr = nextLine(f);
   }
   faceSize = atoi(searchStr.substr(13, int(searchStr.size())).c_str());
-  faces.resize(faceSize);
+  tris.resize(faceSize);
   while (strcmp(nextLine(f).c_str(), "end_header") != 0)
     ;
 
@@ -125,43 +143,42 @@ void Plyobj::build(FILE* f, Matrix4f m) {
     vertices[i] = vertex;
   }
   for (int i = 0; i < faceSize; i++) {  // Get face data
-    Vec3i face;
+    auto& t = tris[i];
     int ind = 0;
     string sNumber, line = nextLine(f, 2);
     for (size_t j = 0; j < line.size(); j++) {
       if (line[j] == ' ') {
-        face[ind] = atoi(sNumber.c_str());
+        t.v[ind] = atoi(sNumber.c_str());
         sNumber.resize(0);
         ind++;
       } else {
         sNumber.append(1, line[j]);
       }
     }
-    faces[i].pInd = face;
-    Vec3f faceNorm = (vertices[face[0]].pos - vertices[face[2]].pos).Cross((vertices[face[1]].pos - vertices[face[2]].pos));
-    faces[i].area = mag(faceNorm) / 2;
+    Vec3f faceNorm = (vertices[t.v[0]].pos - vertices[t.v[2]].pos).Cross((vertices[t.v[1]].pos - vertices[t.v[2]].pos));
+    t.area = mag(faceNorm) / 2;
     faceNorm.Normalize();
     for (int j = 0; j < 3; j++) {  // Sets normals when not there, and averages when Sets
-      if (vertices[face[j]].norm == Vec3f(0.0f, 0.0f, 0.0f))
-        vertices[face[j]].norm = faceNorm;
+      if (vertices[t.v[j]].norm == Vec3f(0.0f, 0.0f, 0.0f))
+        vertices[t.v[j]].norm = faceNorm;
       else
-        vertices[face[j]].norm = (vertices[face[j]].norm + faceNorm) / 2;
+        vertices[t.v[j]].norm = (vertices[t.v[j]].norm + faceNorm) / 2;
     }
   }
 
-  findEdges();
-  // printf("Faces: %i\n", int(faces.size()));
+  buildEdgeList();
+  // printf("Faces: %i\n", int(tris.size()));
   // removeEdge(edgeSize-1);
-  // printf("Faces: %i\n", int(faces.size()));
+  // printf("Faces: %i\n", int(tris.size()));
   // simplify(faceSize);
 
   obj.begin(GL_TRIANGLES);
   obj.color(1.0f, 1.0f, 1.0f);
   for (int i = 0; i < faceSize; i++) {
     for (int j = 0; j < 3; j++) {
-      obj.normal(vertices[faces[i].pInd[j]].norm);
+      obj.normal(vertices[tris[i].v[j]].norm);
       // obj.texCoord();
-      obj.position((m * vertices[faces[i].pInd[j]].pos));
+      obj.position((m * vertices[tris[i].v[j]].pos));
     }
   }
   obj.end();

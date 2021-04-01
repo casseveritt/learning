@@ -16,18 +16,22 @@ class Plyobj : public Shape {
     Vec3f pos;
   };
   struct Edge {
+    int f0 = -1;
+    int f1 = -1;
+    int v0 = -1;
+    int v1 = -1;
     float len;
-    int f0, f1, p0, p1, influencer = -1;
+    int influencer = -1;
   };
-  struct Poly {
-    Vec3i pInd;
+  struct Tri {
+    int v[3];
     float area;
   };
   int vertSize, faceSize, edgeSize = 0;
   std::vector<Vert> vertices;
   std::vector<Edge> edges;
-  std::vector<Poly> faces;
-  std::unordered_map<uint64_t, Plyobj::Edge> map;
+  std::vector<Tri> tris;
+  std::unordered_map<uint64_t, int> vertsToEdgeIndex;
 
   float mag(Vec3f vecIn);
 
@@ -35,7 +39,7 @@ class Plyobj : public Shape {
 
   void removeEdge(int eInt);
   void simplify(int endFaces);
-  void findEdges();
+  void buildEdgeList();
 
   void build(FILE* f, Matrix4f m);
 
