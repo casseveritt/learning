@@ -3,6 +3,12 @@
 using namespace r3;
 using namespace std;
 
+uint64_t mapInd(int v0, int v1) {
+  uint64_t e0 = v0, e1 = v1;
+  uint64_t e = e0 | (e1 << 32);
+  return e;
+}
+
 float Plyobj::mag(Vec3f vecIn) {
   return sqrt((vecIn.x * vecIn.x) + (vecIn.y * vecIn.y) + (vecIn.z * vecIn.z));
 }
@@ -22,20 +28,20 @@ string Plyobj::nextLine(FILE* f, int offset) {
   return lineOut;
 }
 
-void Plyobj::removeEdge(int f0, int f1, int p0, int p1) {
-  faces[f0] = faces[faceSize - 1];
-  faces[f1] = faces[faceSize - 2];
+void Plyobj::removeEdge(int eInt) {
+  Edge e = edges[eInt];
+  faces[e.f0] = faces[faceSize - 1];
+  faces[e.f1] = faces[faceSize - 2];
   faceSize -= 2;
   faces.resize(faceSize);
   for (int i = 0; i < faceSize; i++) {
     Poly pol = faces[i];
     for (int j = 0; j < 3; j++) {
-      if (pol.pInd[j] == p1) {
-        faces[i].pInd[j] = p0;
+      if (pol.pInd[j] == e.p1) {
+        faces[i].pInd[j] = e.p0;
       }
     }
   }
-  printf("FaceSize: %i\n", faceSize);
 }
 
 void Plyobj::simplify(int endFaces) {
@@ -63,6 +69,8 @@ void Plyobj::findEdges() {
               e.f0 = i;
               e.f1 = k;
               edges.push_back(e);
+              uint64_t eInd = mapInd(f0p0, f0p1);
+              map[eInd] = e;  // Crashes program
               edgeSize++;
             }
           }
@@ -142,7 +150,10 @@ void Plyobj::build(FILE* f, Matrix4f m) {
   }
 
   findEdges();
-  simplify(faceSize);
+  // printf("Faces: %i\n", int(faces.size()));
+  // removeEdge(edgeSize-1);
+  // printf("Faces: %i\n", int(faces.size()));
+  // simplify(faceSize);
 
   obj.begin(GL_TRIANGLES);
   obj.color(1.0f, 1.0f, 1.0f);

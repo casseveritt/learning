@@ -27,12 +27,13 @@ class Plyobj : public Shape {
   std::vector<Vert> vertices;
   std::vector<Edge> edges;
   std::vector<Poly> faces;
+  std::unordered_map<uint64_t, Plyobj::Edge> map;
 
   float mag(Vec3f vecIn);
 
   std::string nextLine(FILE* f, int offset = 0);
 
-  void removeEdge(int f0, int f1, int p0, int p1);
+  void removeEdge(int eInt);
   void simplify(int endFaces);
   void findEdges();
 
