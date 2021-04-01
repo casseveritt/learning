@@ -3,6 +3,7 @@
 using namespace r3;
 using namespace std;
 
+int edgeSize;
 
 uint64_t mapInd(int v0, int v1);
 uint64_t mapInd(int v0, int v1) {
@@ -61,6 +62,7 @@ static uint64_t make_key(int a, int b) {
 
 void Plyobj::buildEdgeList() {
   edges.clear();
+  vertsToEdgeIndex.clear();
   int b[] = {1, 2, 0};
   for (size_t i = 0; i < tris.size(); i++) {  // Pass over all the tris
     const auto& t = tris[i];
@@ -76,6 +78,7 @@ void Plyobj::buildEdgeList() {
         } else {
           ei = int(edges.size());
           edges.push_back(Edge());
+          edgeSize++;
           vertsToEdgeIndex[k] = ei;
         }
       }
@@ -91,21 +94,33 @@ void Plyobj::buildEdgeList() {
       }
 
       if (va < vb) {
+        if (e.f0 != -1) {
+          tris[e.f0].probs++;
+          tris[i].probs++;
+        }
         e.f0 = i;
       } else {
+        if (e.f1 != -1) {
+          tris[e.f1].probs++;
+          tris[i].probs++;
+        }
         e.f1 = i;
       }
     }
   }
-
-  printf("Edges: %d\n", int(edges.size()));
-  for (size_t i = 0; i < edges.size(); i++) {
-    const auto& e = edges[i];
-    if (e.f0 < 0 || e.f1 < 0) {
-      printf("e=%d has invalid face indexes\n", int(i));
-      printf("  f0=%d, f1=%d, v0=%d, v1=%d\n", e.f0, e.f1, e.v0, e.v1);
+  int probs = 0;
+  for (size_t i = 0; i < tris.size(); i++) {
+    if (tris[i].probs == 1) {
+      probs++;
+      tris[i].probs = 0;
+    }
+    if (tris[i].probs == 3) {
+      probs += 3;
+      swap(tris[i].v[0], tris[i].v[1]);
+      tris[i].probs = 0;
     }
   }
+  if (probs != 0) buildEdgeList();
 }
 
 void Plyobj::build(FILE* f, Matrix4f m) {

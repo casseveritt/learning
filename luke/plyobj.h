@@ -16,18 +16,15 @@ class Plyobj : public Shape {
     Vec3f pos;
   };
   struct Edge {
-    int f0 = -1;
-    int f1 = -1;
-    int v0 = -1;
-    int v1 = -1;
     float len;
+    int f0 = -1, f1 = -1, v0 = -1, v1 = -1;
     int influencer = -1;
   };
   struct Tri {
-    int v[3];
+    int v[3], probs;
     float area;
   };
-  int vertSize, faceSize, edgeSize = 0;
+  int vertSize, faceSize;
   std::vector<Vert> vertices;
   std::vector<Edge> edges;
   std::vector<Tri> tris;
