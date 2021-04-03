@@ -24,24 +24,23 @@ string nextLine(FILE* f, int offset = 0) {
 
 }  // namespace
 
-void Plyobj::removeEdge(int eInt) {
+void Plyobj::removeEdge(size_t eInt) {
   Edge e = edges[eInt];
-  int f0 = min(e.f0, e.f1);
-  int f1 = max(e.f0, e.f1);
-  tris[e.f0] = tris[faceSize - 1];
-  tris[e.f1] = tris[faceSize - 2];
-  faceSize -= 2;
-  tris.resize(faceSize);
-  for (int i = 0; i < faceSize; i++) {
-    Tri pol = tris[i];
-    for (int j = 0; j < 3; j++) {
-      if (pol.v[j] == e.v1) {
-        tris[i].v[j] = e.v0;
-      } else {
-        vertices[tris[i].v[j]].col = Vec3f(1.0f, 0.0f, 0.0f);
+  // change every Tri that referred
+  // to e.v1 to now refer to e.v0
+  for (auto& t : tris) {
+    for (int i = 0; i < 3; i++) {
+      if (t.v[i] == e.v1) {
+        t.v[i] = e.v0;
       }
     }
   }
+
+  tris[e.f0] = tris[tris.size() - 2];
+  tris[e.f1] = tris[tris.size() - 1];
+  tris.resize(tris.size() - 2);
+  edges.clear();
+  vertsToEdgeIndex.clear();
 }
 
 int Plyobj::findShortestEdge() {
@@ -59,10 +58,10 @@ int Plyobj::findShortestEdge() {
   return smallestEdgeIndex;
 }
 
-void Plyobj::simplify(int endFaces) {
-  while (faceSize > endFaces && faceSize > 4) {
+void Plyobj::simplify(size_t endFaces) {
+  while (tris.size() > endFaces && tris.size() > 4) {
     removeEdge(findShortestEdge());
-    printf("%i\n", faceSize);
+    printf("%i\n", int(tris.size()));
     buildEdgeList();
     printf("Building...\n\n");
   }
@@ -131,18 +130,18 @@ void Plyobj::build(FILE* f, Matrix4f m) {
     searchStr = nextLine(f);
     while (int(searchStr.size()) <= 14) searchStr = nextLine(f);
   }
-  vertSize = atoi(searchStr.substr(15, int(searchStr.size())).c_str());
-  vertices.resize(vertSize);
+  int sz = atoi(searchStr.substr(15, int(searchStr.size())).c_str());
+  vertices.resize(sz);
   while (strcmp(searchStr.substr(0, 12).c_str(), "element face") != 0) {
     searchStr = nextLine(f);
     while (int(searchStr.size()) <= 12) searchStr = nextLine(f);
   }
-  faceSize = atoi(searchStr.substr(13, int(searchStr.size())).c_str());
-  tris.resize(faceSize);
+  sz = atoi(searchStr.substr(13, int(searchStr.size())).c_str());
+  tris.resize(sz);
   while (strcmp(nextLine(f).c_str(), "end_header") != 0)
     ;
 
-  for (int i = 0; i < vertSize; i++) {  // Get vertex data
+  for (size_t i = 0; i < vertices.size(); i++) {  // Get vertex data
     Vert vertex;
     int ind = 0;
     string sNumber, line = nextLine(f);
@@ -157,7 +156,7 @@ void Plyobj::build(FILE* f, Matrix4f m) {
     }
     vertices[i] = vertex;
   }
-  for (int i = 0; i < faceSize; i++) {  // Get face data
+  for (size_t i = 0; i < tris.size(); i++) {  // Get face data
     auto& t = tris[i];
     int ind = 0;
     string sNumber, line = nextLine(f, 2);
@@ -181,10 +180,10 @@ void Plyobj::build(FILE* f, Matrix4f m) {
   }
 
   buildEdgeList();
-  simplify(faceSize -50);
+  simplify(tris.size() -50);
 
   obj.begin(GL_TRIANGLES);
-  for (int i = 0; i < faceSize; i++) {
+  for (size_t i = 0; i < tris.size(); i++) {
     for (int j = 0; j < 3; j++) {
       obj.color(1.0f, 1.0f, 1.0f);
       obj.normal(vertices[tris[i].v[j]].norm);

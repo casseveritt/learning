@@ -68,15 +68,14 @@ class Plyobj : public Shape {
     int v[3];
   };
 
-  int vertSize, faceSize;
   std::vector<Vert> vertices;
   std::vector<Edge> edges;
   std::vector<Tri> tris;
   std::unordered_map<IndexPair, int> vertsToEdgeIndex;
 
-  void removeEdge(int eInt);
+  void removeEdge(size_t eInt);
   int findShortestEdge();
-  void simplify(int endFaces);
+  void simplify(size_t endFaces);
   void buildEdgeList();
 
   void build(FILE* f, Matrix4f m);
