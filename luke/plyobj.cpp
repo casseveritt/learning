@@ -12,10 +12,6 @@ uint64_t mapInd(int v0, int v1) {
   return e;
 }
 
-float Plyobj::mag(Vec3f vecIn) {
-  return sqrt((vecIn.x * vecIn.x) + (vecIn.y * vecIn.y) + (vecIn.z * vecIn.z));
-}
-
 string Plyobj::nextLine(FILE* f, int offset) {
   if (offset > 0) fseek(f, offset, SEEK_CUR);
   string lineOut;
@@ -172,7 +168,6 @@ void Plyobj::build(FILE* f, Matrix4f m) {
       }
     }
     Vec3f faceNorm = (vertices[t.v[0]].pos - vertices[t.v[2]].pos).Cross((vertices[t.v[1]].pos - vertices[t.v[2]].pos));
-    t.area = mag(faceNorm) / 2;
     faceNorm.Normalize();
     for (int j = 0; j < 3; j++) {  // Sets normals when not there, and averages when Sets
       if (vertices[t.v[j]].norm == Vec3f(0.0f, 0.0f, 0.0f))
