@@ -26,6 +26,8 @@ string nextLine(FILE* f, int offset = 0) {
 
 void Plyobj::removeEdge(int eInt) {
   Edge e = edges[eInt];
+  int f0 = min(e.f0, e.f1);
+  int f1 = max(e.f0, e.f1);
   tris[e.f0] = tris[faceSize - 1];
   tris[e.f1] = tris[faceSize - 2];
   faceSize -= 2;
@@ -39,9 +41,6 @@ void Plyobj::removeEdge(int eInt) {
         vertices[tris[i].v[j]].col = Vec3f(1.0f, 0.0f, 0.0f);
       }
     }
-  }
-  for (int i=0;i<int(edges.size());i++) {
-    
   }
 }
 
@@ -63,10 +62,14 @@ int Plyobj::findShortestEdge() {
 void Plyobj::simplify(int endFaces) {
   while (faceSize > endFaces && faceSize > 4) {
     removeEdge(findShortestEdge());
+    printf("%i\n", faceSize);
+    buildEdgeList();
+    printf("Building...\n\n");
   }
 }
 
 void Plyobj::buildEdgeList() {
+  vertsToEdgeIndex.clear();
   edges.clear();
   vertsToEdgeIndex.clear();
   unordered_map<int, int> probs;
@@ -115,7 +118,7 @@ void Plyobj::buildEdgeList() {
         fixed++;
       }
     }
-    printf("fixed %d face winding problems\n", fixed);
+    //printf("fixed %d face winding problems\n", fixed);
     buildEdgeList();
   }
 }
@@ -178,7 +181,7 @@ void Plyobj::build(FILE* f, Matrix4f m) {
   }
 
   buildEdgeList();
-  simplify(faceSize - 2);
+  simplify(faceSize -50);
 
   obj.begin(GL_TRIANGLES);
   for (int i = 0; i < faceSize; i++) {
