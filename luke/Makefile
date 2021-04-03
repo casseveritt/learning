@@ -44,4 +44,9 @@ clean:
 	rm -f *~
 	rm -f .*~
 
+depend:
+	rm -f .depend
+	touch .depend
+	makedepend -f.depend $(SRC)
 
+-include .depend
