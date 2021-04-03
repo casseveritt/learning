@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string.h>
+
 #include <unordered_map>
 
 #include "geom.h"
@@ -17,11 +18,14 @@ class Plyobj : public Shape {
   };
   struct Edge {
     float len;
-    int f0 = -1, f1 = -1, v0 = -1, v1 = -1;
+    int f0 = -1;
+    int f1 = -1;
+    int v0 = -1;
+    int v1 = -1;
     int influencer = -1;
   };
   struct Tri {
-    int v[3], probs;
+    int v[3];
     float area;
   };
   int vertSize, faceSize;
