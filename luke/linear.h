@@ -2178,6 +2178,8 @@ struct Pose {
     SetValue(rotation, translation);
   }
 
+  Pose& operator=(const Pose&) = default;
+
   void SetValue(const Q& rotation, const V& translation) {
     r = rotation;
     t = translation;

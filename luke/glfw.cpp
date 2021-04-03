@@ -28,7 +28,7 @@ static void error_callback(int error, const char* description) {
   fprintf(stderr, "Error: %d: %s\n", error, description);
 }
 
-static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int mods) {
+static void key_callback(GLFWwindow* window, int key, [[maybe_unused]] int scancode, int action, [[maybe_unused]] int mods) {
   if (rend == nullptr) {
     return;
   }
@@ -92,7 +92,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
   }
 }
 
-static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+static void scroll_callback([[maybe_unused]] GLFWwindow* window, [[maybe_unused]] double xoffset, double yoffset) {
   if (rend->trackCamera) rad -= 0.1 * yoffset;
 }
 

@@ -203,6 +203,6 @@ void Plyobj::draw(const Scene& scene, Prog p) {
   obj.draw(scene, p);
 }
 
-bool Plyobj::intersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
+bool Plyobj::intersect([[maybe_unused]] Vec3f p0, [[maybe_unused]] Vec3f p1, [[maybe_unused]] Vec3f& intersection) {
   return false;
 }
