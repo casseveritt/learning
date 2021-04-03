@@ -36,8 +36,6 @@ class Plyobj : public Shape {
   std::vector<Tri> tris;
   std::unordered_map<uint64_t, int> vertsToEdgeIndex;
 
-  std::string nextLine(FILE* f, int offset = 0);
-
   void removeEdge(int eInt);
   void simplify(int endFaces);
   void buildEdgeList();

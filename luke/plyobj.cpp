@@ -5,14 +5,9 @@ using namespace std;
 
 int edgeSize;
 
-uint64_t mapInd(int v0, int v1);
-uint64_t mapInd(int v0, int v1) {
-  uint64_t e0 = v0, e1 = v1;
-  uint64_t e = e0 | (e1 << 32);
-  return e;
-}
+namespace {
 
-string Plyobj::nextLine(FILE* f, int offset) {
+string nextLine(FILE* f, int offset = 0) {
   if (offset > 0) fseek(f, offset, SEEK_CUR);
   string lineOut;
   char buffer[1];
@@ -26,6 +21,8 @@ string Plyobj::nextLine(FILE* f, int offset) {
   }
   return lineOut;
 }
+
+}  // namespace
 
 void Plyobj::removeEdge(int eInt) {
   Edge e = edges[eInt];
@@ -49,12 +46,16 @@ void Plyobj::simplify(int endFaces) {
   }
 }
 
-static uint64_t make_key(int a, int b) {
+namespace {
+
+uint64_t make_key(int a, int b) {
   if (a > b) {
     std::swap(a, b);
   }
   return (uint64_t(a) << 32) | uint64_t(b);
 }
+
+}  // namespace
 
 void Plyobj::buildEdgeList() {
   edges.clear();
