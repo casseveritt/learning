@@ -10,6 +10,43 @@
 
 using namespace r3;
 
+
+struct IndexPair {
+  IndexPair() = default;
+  IndexPair(int32_t i0, int32_t i1) : a(i0), b(i1) {}
+
+  uint64_t as_uint64_t() const {
+    return (uint64_t(min()) << 32) | uint64_t(max());
+  }
+
+  bool operator==(const IndexPair& rhs) const {
+    return as_uint64_t() == rhs.as_uint64_t();
+  }
+
+  int32_t min() const {
+    return std::min(a,b);
+  }
+
+  int32_t max() const {
+    return std::max(a,b);
+  }
+
+  int32_t a = -1;
+  int32_t b = -1;
+};
+
+namespace std {
+
+template <>
+struct hash<IndexPair> {
+  std::size_t operator()(const IndexPair& k) const
+  {
+    return hash<uint64_t>()(k.as_uint64_t());
+  }
+};
+
+}
+
 class Plyobj : public Shape {
  public:
   struct Vert {
@@ -35,7 +72,7 @@ class Plyobj : public Shape {
   std::vector<Vert> vertices;
   std::vector<Edge> edges;
   std::vector<Tri> tris;
-  std::unordered_map<uint64_t, int> vertsToEdgeIndex;
+  std::unordered_map<IndexPair, int> vertsToEdgeIndex;
 
   void removeEdge(int eInt);
   int findShortestEdge();

@@ -67,17 +67,6 @@ void Plyobj::simplify(int endFaces) {
   }
 }
 
-namespace {
-
-uint64_t make_key(int a, int b) {
-  if (a > b) {
-    std::swap(a, b);
-  }
-  return (uint64_t(a) << 32) | uint64_t(b);
-}
-
-}  // namespace
-
 void Plyobj::buildEdgeList() {
   edges.clear();
   vertsToEdgeIndex.clear();
@@ -88,9 +77,9 @@ void Plyobj::buildEdgeList() {
     for (int j = 0; j < 3; j++) {  // Pass over every edge of the face
       int va = t.v[j];
       int vb = t.v[b[j]];
+      const auto k = IndexPair(va, vb);
       int ei = -1;
       {
-        uint64_t k = make_key(va, vb);
         auto it = vertsToEdgeIndex.find(k);
         if (it != vertsToEdgeIndex.end()) {
           ei = it->second;
@@ -103,28 +92,18 @@ void Plyobj::buildEdgeList() {
       }
       auto& e = edges[ei];
       if (e.v0 < 0) {
-        if (va < vb) {
-          e.v0 = va;
-          e.v1 = vb;
-        } else {
-          e.v0 = vb;
-          e.v1 = va;
-        }
+        e.v0 = k.min();
+        e.v1 = k.max();
       }
 
-      if (va < vb) {
-        if (e.f0 != -1) {
-          probs[e.f0]++;
-          probs[i]++;
-        }
-        e.f0 = i;
+      auto& f = (va < vb) ? e.f0 : e.f1;
+      if (f != -1) {
+        probs[f]++;
+        probs[i]++;
       } else {
-        if (e.f1 != -1) {
-          probs[e.f1]++;
-          probs[i]++;
-        }
-        e.f1 = i;
+        f = i;
       }
+
     }
   }
 
