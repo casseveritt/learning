@@ -35,14 +35,35 @@ void Plyobj::removeEdge(int eInt) {
     for (int j = 0; j < 3; j++) {
       if (pol.v[j] == e.v1) {
         tris[i].v[j] = e.v0;
+      } else {
+        vertices[tris[i].v[j]].col = Vec3f(1.0f, 0.0f, 0.0f);
       }
     }
   }
 }
 
+float vertDist(Vec3f v0, Vec3f v1) {
+  return sqrt(((v0.x - v1.x) * (v0.x - v1.x)) + ((v0.y - v1.y) * (v0.y - v1.y)) + ((v0.z - v1.z) * (v0.z - v1.z)));
+}
+
+int Plyobj::findShortestEdge() {
+  int smallestEdgeIndex = 0;
+  float smallestLen = vertDist(vertices[edges[0].v0].pos, vertices[edges[0].v1].pos);
+  for (int i = 1; i < int(edges.size()); i++) {
+    if (edges[i].influencer == -2) continue;
+    float edgeLen = vertDist(vertices[edges[i].v0].pos, vertices[edges[i].v1].pos);
+    if (edgeLen > smallestLen) {
+      smallestEdgeIndex = i;
+      smallestLen = edgeLen;
+    }
+  }
+  edges[smallestEdgeIndex].influencer = -2;
+  return smallestEdgeIndex;
+}
+
 void Plyobj::simplify(int endFaces) {
   while (faceSize > endFaces && faceSize > 4) {
-    faceSize -= 2;
+    removeEdge(findShortestEdge());
   }
 }
 
@@ -179,15 +200,12 @@ void Plyobj::build(FILE* f, Matrix4f m) {
   }
 
   buildEdgeList();
-  // printf("Faces: %i\n", int(tris.size()));
-  // removeEdge(edgeSize-1);
-  // printf("Faces: %i\n", int(tris.size()));
-  // simplify(faceSize);
+  simplify(faceSize - 2);
 
   obj.begin(GL_TRIANGLES);
-  obj.color(1.0f, 1.0f, 1.0f);
   for (int i = 0; i < faceSize; i++) {
     for (int j = 0; j < 3; j++) {
+      obj.color(1.0f, 1.0f, 1.0f);
       obj.normal(vertices[tris[i].v[j]].norm);
       // obj.texCoord();
       obj.position((m * vertices[tris[i].v[j]].pos));

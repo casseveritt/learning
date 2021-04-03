@@ -13,6 +13,7 @@ using namespace r3;
 class Plyobj : public Shape {
  public:
   struct Vert {
+    Vec3f col;
     Vec3f norm = Vec3f(0.0f, 0.0f, 0.0f);
     Vec3f pos;
   };
@@ -37,6 +38,7 @@ class Plyobj : public Shape {
   std::unordered_map<uint64_t, int> vertsToEdgeIndex;
 
   void removeEdge(int eInt);
+  int findShortestEdge();
   void simplify(int endFaces);
   void buildEdgeList();
 
