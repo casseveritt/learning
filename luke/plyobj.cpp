@@ -40,18 +40,17 @@ void Plyobj::removeEdge(int eInt) {
       }
     }
   }
-}
-
-float vertDist(Vec3f v0, Vec3f v1) {
-  return sqrt(((v0.x - v1.x) * (v0.x - v1.x)) + ((v0.y - v1.y) * (v0.y - v1.y)) + ((v0.z - v1.z) * (v0.z - v1.z)));
+  for (int i=0;i<int(edges.size());i++) {
+    
+  }
 }
 
 int Plyobj::findShortestEdge() {
   int smallestEdgeIndex = 0;
-  float smallestLen = vertDist(vertices[edges[0].v0].pos, vertices[edges[0].v1].pos);
+  float smallestLen = (vertices[edges[0].v0].pos-vertices[edges[0].v1].pos).Length();
   for (int i = 1; i < int(edges.size()); i++) {
     if (edges[i].influencer == -2) continue;
-    float edgeLen = vertDist(vertices[edges[i].v0].pos, vertices[edges[i].v1].pos);
+    float edgeLen = (vertices[edges[i].v0].pos-vertices[edges[i].v1].pos).Length();
     if (edgeLen > smallestLen) {
       smallestEdgeIndex = i;
       smallestLen = edgeLen;
