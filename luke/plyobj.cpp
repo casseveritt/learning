@@ -28,10 +28,14 @@ void Plyobj::removeEdge(size_t eInt) {
   Edge e = edges[eInt];
   // change every Tri that referred
   // to e.v1 to now refer to e.v0
-  for (auto& t : tris) {
+  printf("replacing %d with %d\n", e.v1, e.v0);
+  for (size_t ti = 0; ti < tris.size(); ti++) {
+    auto& t = tris[ti];
     for (int i = 0; i < 3; i++) {
       if (t.v[i] == e.v1) {
+        printf("  before: t = %d, v = {%d, %d, %d}\n", int(ti), t.v[0], t.v[1], t.v[2]);
         t.v[i] = e.v0;
+        printf("  after:  t = %d, v = {%d, %d, %d}\n", int(ti), t.v[0], t.v[1], t.v[2]);
       }
     }
   }
@@ -49,7 +53,7 @@ int Plyobj::findShortestEdge() {
   for (int i = 1; i < int(edges.size()); i++) {
     if (edges[i].influencer == -2) continue;
     float edgeLen = (vertices[edges[i].v0].pos-vertices[edges[i].v1].pos).Length();
-    if (edgeLen > smallestLen) {
+    if (edgeLen < smallestLen) {
       smallestEdgeIndex = i;
       smallestLen = edgeLen;
     }
@@ -108,9 +112,29 @@ void Plyobj::buildEdgeList(int recursionLevel) {
     }
   }
 
+  int dangling = 0;
+  for (size_t i = 0; i < edges.size(); i++) {
+    const auto& e = edges[i];
+    if ( e.f0 < 0 || e.f1 < 0 ) {
+      printf("dangling edge %d: t = {%d, %d}, v = {%d, %d}\n", int(i), e.f0, e.f1, e.v0, e.v1);
+      dangling++;
+    }
+  }
+  if (dangling > 0) {
+    printf("found %d dangling edges\n", dangling);
+  }
+
   if (probs.size()) {
     int fixed = 0;
+    if (recursionLevel == 1) {
+      printf("found %d problems\n", int(probs.size()));
+    }
     for (auto prob : probs) {
+      if (recursionLevel == 1) {
+        printf("  tri %d had %d problems\n", int(prob.first), prob.second);
+        auto& t = tris[prob.first];
+        printf("     v = {%d, %d, %d}\n", t.v[0], t.v[1], t.v[2]);
+      }
       if (prob.second == 3) {
         auto& t = tris[prob.first];
         swap(t.v[0], t.v[1]);
@@ -186,7 +210,7 @@ void Plyobj::build(FILE* f, Matrix4f m) {
   }
 
   buildEdgeList();
-  simplify(tris.size() - 100);
+  simplify(tris.size() - 200);
 
   obj.begin(GL_TRIANGLES);
   for (size_t i = 0; i < tris.size(); i++) {
