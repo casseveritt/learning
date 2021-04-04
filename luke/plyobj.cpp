@@ -67,7 +67,7 @@ void Plyobj::simplify(size_t endFaces) {
   }
 }
 
-void Plyobj::buildEdgeList() {
+void Plyobj::buildEdgeList(int recursionLevel) {
   vertsToEdgeIndex.clear();
   edges.clear();
   vertsToEdgeIndex.clear();
@@ -117,8 +117,14 @@ void Plyobj::buildEdgeList() {
         fixed++;
       }
     }
-    //printf("fixed %d face winding problems\n", fixed);
-    buildEdgeList();
+    if ( recursionLevel > 0 ) {
+      printf("fixed %d face winding problems\n", fixed);
+    }
+    if ( recursionLevel > 5 ) {
+      printf("probable infinite recursion - exiting\n");
+      exit(1);
+    }
+    buildEdgeList(recursionLevel + 1);
   }
 }
 
@@ -180,7 +186,7 @@ void Plyobj::build(FILE* f, Matrix4f m) {
   }
 
   buildEdgeList();
-  simplify(tris.size() -50);
+  simplify(tris.size() - 100);
 
   obj.begin(GL_TRIANGLES);
   for (size_t i = 0; i < tris.size(); i++) {

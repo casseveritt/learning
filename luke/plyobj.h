@@ -76,7 +76,7 @@ class Plyobj : public Shape {
   void removeEdge(size_t eInt);
   int findShortestEdge();
   void simplify(size_t endFaces);
-  void buildEdgeList();
+  void buildEdgeList(int recursionLevel = 0);
 
   void build(FILE* f, Matrix4f m);
 
