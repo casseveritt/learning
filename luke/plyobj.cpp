@@ -27,7 +27,7 @@ bool isDegenerate(const Plyobj::Tri& t) {
 }
 
 // Would collapsing this edge would split a contiguous volume into
-// two separate volumes? 
+// two separate volumes?
 bool isEdgeChoke(const Plyobj& po, size_t edgeIndex) {
   const auto& e = po.edges[edgeIndex];
   bool pr = edgeIndex == 6852;
@@ -41,12 +41,12 @@ bool isEdgeChoke(const Plyobj& po, size_t edgeIndex) {
     const auto& ee = po.edges[i];
     if (ee.v0 == e.v0) {
       oppv0.push_back(ee.v1);
-    } else if(ee.v1 == e.v0) {
+    } else if (ee.v1 == e.v0) {
       oppv0.push_back(ee.v0);
     }
     if (ee.v0 == e.v1) {
       oppv1.push_back(ee.v1);
-    } else if(ee.v1 == e.v1) {
+    } else if (ee.v1 == e.v1) {
       oppv1.push_back(ee.v0);
     }
   }
@@ -58,7 +58,7 @@ bool isEdgeChoke(const Plyobj& po, size_t edgeIndex) {
           printf("choke loop = {%d, %d, %d}\n", e.v0, e.v1, int(o0));
           auto it = po.vertsToTriIndex.find(i3);
           if (it != po.vertsToTriIndex.end()) {
-            printf( "it first = { %d, %d, %d }, second = %d\n", it->first.a, it->first.b, it->first.c, int(it->second));
+            printf("it first = { %d, %d, %d }, second = %d\n", it->first.a, it->first.b, it->first.c, int(it->second));
           }
         }
         if (po.vertsToTriIndex.find(i3) == po.vertsToTriIndex.end()) {
@@ -84,7 +84,7 @@ void Plyobj::buildTriMap() {
   IndexTriple valid(t.v[0], t.v[1], t.v[2]);
   auto vit = vertsToTriIndex.find(valid);
   if (vit == vertsToTriIndex.end()) {
-    printf( "failed to find valid\n");
+    printf("failed to find valid\n");
     exit(1);
   }
   IndexTriple invalid(-1, -1, -1);
@@ -122,10 +122,10 @@ void Plyobj::removeEdge(size_t eInt) {
 }
 
 int Plyobj::findEdgeToRemove() {
-  typedef pair<size_t,float> IdxLen;
+  typedef pair<size_t, float> IdxLen;
   vector<IdxLen> il;
   for (size_t i = 0; i < edges.size(); i++) {
-    float len = (vertices[edges[i].v0].pos-vertices[edges[i].v1].pos).Length();
+    float len = (vertices[edges[i].v0].pos - vertices[edges[i].v1].pos).Length();
     il.push_back(make_pair(i, len));
   }
   sort(il.begin(), il.end(), [](const IdxLen& a, const IdxLen& b) { return a.second < b.second; });
@@ -186,14 +186,13 @@ void Plyobj::buildEdgeList(int recursionLevel) {
       } else {
         f = i;
       }
-
     }
   }
 
   int dangling = 0;
   for (size_t i = 0; i < edges.size(); i++) {
     const auto& e = edges[i];
-    if ( e.f0 < 0 || e.f1 < 0 ) {
+    if (e.f0 < 0 || e.f1 < 0) {
       printf("dangling edge %d: t = {%d, %d}, v = {%d, %d}\n", int(i), e.f0, e.f1, e.v0, e.v1);
       dangling++;
     }
@@ -219,10 +218,10 @@ void Plyobj::buildEdgeList(int recursionLevel) {
         fixed++;
       }
     }
-    if ( recursionLevel > 0 ) {
+    if (recursionLevel > 0) {
       printf("fixed %d face winding problems\n", fixed);
     }
-    if ( recursionLevel > 5 ) {
+    if (recursionLevel > 5) {
       printf("probable infinite recursion - exiting\n");
       exit(1);
     }
@@ -292,18 +291,20 @@ void Plyobj::build(FILE* f, Matrix4f m) {
 
   simplify(tris.size() - 2000);
 
-  /*
+  //*
   obj.begin(GL_TRIANGLES);
   for (size_t i = 0; i < tris.size(); i++) {
+    Vec3f faceNorm = (vertices[tris[i].v[0]].pos - vertices[tris[i].v[2]].pos)
+                         .Cross((vertices[tris[i].v[1]].pos - vertices[tris[i].v[2]].pos));
     for (int j = 0; j < 3; j++) {
       obj.color(1.0f, 1.0f, 1.0f);
-      obj.normal(vertices[tris[i].v[j]].norm);
+      obj.normal(faceNorm);
       // obj.texCoord();
       obj.position((m * vertices[tris[i].v[j]].pos));
     }
   }
   obj.end();
-  */
+  /*/
   obj.begin(GL_LINES);
   obj.color(1.0f, 1.0f, 1.0f);
   for (size_t i = 0; i < edges.size(); i++) {
@@ -314,6 +315,7 @@ void Plyobj::build(FILE* f, Matrix4f m) {
       obj.position((m * v.pos));
     }
   }
+  */
   obj.end();
 }
 

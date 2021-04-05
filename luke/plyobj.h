@@ -10,7 +10,6 @@
 
 using namespace r3;
 
-
 struct IndexPair {
   IndexPair() = default;
   IndexPair(int32_t i0, int32_t i1) : a(i0), b(i1) {}
@@ -24,11 +23,11 @@ struct IndexPair {
   }
 
   int32_t min() const {
-    return std::min(a,b);
+    return std::min(a, b);
   }
 
   int32_t max() const {
-    return std::max(a,b);
+    return std::max(a, b);
   }
 
   int32_t a = -1;
@@ -75,21 +74,19 @@ namespace std {
 
 template <>
 struct hash<IndexPair> {
-  std::size_t operator()(const IndexPair& k) const
-  {
+  std::size_t operator()(const IndexPair& k) const {
     return hash<uint64_t>()(k.as_uint64_t());
   }
 };
 
 template <>
 struct hash<IndexTriple> {
-  std::size_t operator()(const IndexTriple& k) const
-  {
+  std::size_t operator()(const IndexTriple& k) const {
     return hash<uint64_t>()(k.as_uint64_t());
   }
 };
 
-}
+}  // namespace std
 
 class Plyobj : public Shape {
  public:

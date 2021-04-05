@@ -218,9 +218,9 @@ void RendererImpl::Init() {
 
   {
     auto cow = new Plyobj;  // Cow
-    cow->build(fopen("models/cow.ply", "r"), Matrix4f::Scale(0.25f));
+    cow->build(fopen("models/cow.ply", "r"), Matrix4f::Scale(0.5f));
     list.push_back(cow);
-    list.back()->obj.modelPose.t = Vec3f(-0.8f, 0.0f, 1.0f);
+    // list.back()->obj.modelPose.t = Vec3f(-0.8f, 0.0f, 1.0f);
     list.back()->obj.matDifCol = Vec3f(0.2f, 0.1f, 0.8f);
     list.back()->obj.matSpcCol = Vec3f(0.25f, 0.25f, 0.95f);
     list.back()->obj.shiny = 1.5f;
@@ -230,7 +230,7 @@ void RendererImpl::Init() {
     auto light = new Sphere;  // Light Sphere
     light->build(0.03125f);
     list.push_back(light);
-    list.back()->obj.modelPose.t = Vec3f(0.0f, 1.0f, 0.0f);
+    list.back()->obj.modelPose.t = Vec3f(0.0f, 2.0f, 0.0f);
   }
 
   points.push_back(Vec3f(-1.0f, 0.0f, 1.0f));
@@ -347,9 +347,9 @@ void RendererImpl::Draw() {
   if (intersect) {
     intPoint.draw(scene, program);
   }
-  for (int i = 1; i < 4; i++) {
+  /*for (int i = 1; i < 4; i++) {
     list[i]->draw(scene, litTexProgram);
-  }
+  }*/
 
   list[4]->draw(scene, litProgram);
 
