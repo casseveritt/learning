@@ -77,42 +77,31 @@ void Plyobj::removeEdge(size_t eInt) {
   Edge e = edges[eInt];
 
   {  // Deletes edges necessary and fixes map and vector.
-    auto edgesEnd = edges.size() - 1;
-    int edgeIndex = vertsToEdgeIndex[IndexPair(e.v0, e.v1)];
-    vertsToEdgeIndex.erase(IndexPair(e.v0, e.v1));
-    vertsToEdgeIndex[IndexPair(edges[edgesEnd].v0, edges[edgesEnd].v1)] = edgeIndex;
-    Edge edg = edges[edgesEnd];
-    edges[edgeIndex] = edg;
-    edges.resize(edgesEnd);
 
-    auto& t = tris[e.f0];
-    int v2;
-    for (int i = 0; i < 3; i++) {
-      if (t.v[i] != e.v0 && t.v[i] != e.v1) {
-        v2 = t.v[i];
-      }
-    }
-    edgesEnd--;
-    int rmEdgeIndex = vertsToEdgeIndex[IndexPair(v2, e.v1)];
-    vertsToEdgeIndex.erase(IndexPair(v2, e.v1));
-    vertsToEdgeIndex[IndexPair(edges[edgesEnd].v0, edges[edgesEnd].v1)] = rmEdgeIndex;
-    edg = edges[edgesEnd];
-    edges[rmEdgeIndex] = edg;
-    edges.resize(edgesEnd);
+    auto rm = [=](int v0, int v1) {
+      IndexPair eip(v0, v1);
+      int rmEdgeIndex = vertsToEdgeIndex[eip];
+      vertsToEdgeIndex.erase(eip);
+      auto& ee = edges.back();
+      vertsToEdgeIndex[ee.getIndexPair()] = rmEdgeIndex;
+      edges[rmEdgeIndex] = ee;
+      edges.pop_back();
+    };
 
-    t = tris[e.f1];
-    for (int i = 0; i < 3; i++) {
-      if (t.v[i] != e.v0 && t.v[i] != e.v1) {
-        v2 = t.v[i];
+    rm(e.v0, e.v1);
+
+    auto get_other_vert = [=](int f) -> int {
+      auto& t = tris[f];
+      for (int i = 0; i < 3; i++) {
+        if (t.v[i] != e.v0 && t.v[i] != e.v1) {
+          return t.v[i];
+        }
       }
-    }
-    edgesEnd--;
-    rmEdgeIndex = vertsToEdgeIndex[IndexPair(v2, e.v1)];
-    vertsToEdgeIndex.erase(IndexPair(v2, e.v1));
-    vertsToEdgeIndex[IndexPair(edges[edgesEnd].v0, edges[edgesEnd].v1)] = rmEdgeIndex;
-    edg = edges[edgesEnd];
-    edges[rmEdgeIndex] = edg;
-    edges.resize(edgesEnd);
+      return ~0; // this should not happen
+    };
+
+    rm(get_other_vert(e.f0), e.v1);
+    rm(get_other_vert(e.f1), e.v1);
   }
 
   // change every Tri that referred

@@ -105,6 +105,9 @@ class Plyobj : public Shape {
     int f1 = -1;
     int v0 = -1;
     int v1 = -1;
+    IndexPair getIndexPair() const {
+      return IndexPair(v0, v1);
+    }
   };
 
   struct Tri {
