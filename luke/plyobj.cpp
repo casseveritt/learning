@@ -1,3 +1,6 @@
+
+#include <unordered_set>
+
 #include "plyobj.h"
 
 using namespace r3;
@@ -73,6 +76,19 @@ void buildUvMap([[maybe_unused]] const Plyobj& po, [[maybe_unused]] vector<Vec2f
   // When we run out of edges that we can add triangles to, start a new chart.
   // When we run out of triangles to map, pack the charts into a square, scaling so that
   // the square's coordinates are normalized.
+  unordered_set<size_t> available;
+  for (size_t i = 0; i < po.tris.size(); i++) {
+    available.insert(i); 
+  }
+  struct ChartTri {
+    size_t plyTriIndex;
+    Plyobj::Tri t;
+  };
+  struct Chart {
+    vector<Vec2f> texCoords;
+    vector<ChartTri> chartTris;
+  };
+
 }
 
 
