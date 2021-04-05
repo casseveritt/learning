@@ -62,6 +62,20 @@ bool isEdgeChoke(const Plyobj& po, size_t edgeIndex) {
   return false;
 }
 
+// This builds a set of texture space triangles that correspond to the mesh triangles
+void buildUvMap([[maybe_unused]] const Plyobj& po, [[maybe_unused]] vector<Vec2f>& texCoords, [[maybe_unused]] vector<Plyobj::Tri>& texTris) {
+  // Start with a pile of triangles that need to be mapped
+  // Begin a chart with one triangle and add its available edges to the possible growth
+  // direction.  If we try and fail to add a new triangle on an edge, remove it from the
+  // list for consideration.
+  // Each time we add a new triangle to a chart, remove it from the list that needs
+  // mapping.
+  // When we run out of edges that we can add triangles to, start a new chart.
+  // When we run out of triangles to map, pack the charts into a square, scaling so that
+  // the square's coordinates are normalized.
+}
+
+
 }  // namespace
 
 void Plyobj::buildTriMap() {
@@ -267,7 +281,11 @@ void Plyobj::build(FILE* f, Matrix4f m) {
   buildTriMap();
   buildEdgeList();
 
-  simplify(tris.size() / 32);
+  //simplify(tris.size() / 8);
+
+  vector<Vec2f> texCoords;
+  vector<Tri> texTris;
+  buildUvMap(*this, texCoords, texTris);
 
   //*
   obj.begin(GL_TRIANGLES);
