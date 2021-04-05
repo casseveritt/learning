@@ -30,7 +30,6 @@ bool isDegenerate(const Plyobj::Tri& t) {
 // two separate volumes?
 bool isEdgeChoke(const Plyobj& po, size_t edgeIndex) {
   const auto& e = po.edges[edgeIndex];
-  bool pr = edgeIndex == 6852;
 
   vector<size_t> oppv0;
   vector<size_t> oppv1;
@@ -54,15 +53,7 @@ bool isEdgeChoke(const Plyobj& po, size_t edgeIndex) {
     for (auto o1 : oppv1) {
       if (o0 == o1) {
         IndexTriple i3(e.v0, e.v1, o0);
-        if (pr) {
-          printf("choke loop = {%d, %d, %d}\n", e.v0, e.v1, int(o0));
-          auto it = po.vertsToTriIndex.find(i3);
-          if (it != po.vertsToTriIndex.end()) {
-            printf("it first = { %d, %d, %d }, second = %d\n", it->first.a, it->first.b, it->first.c, int(it->second));
-          }
-        }
         if (po.vertsToTriIndex.find(i3) == po.vertsToTriIndex.end()) {
-          printf("choke loop = {%d, %d, %d}\n", e.v0, e.v1, int(o0));
           return true;
         }
       }
@@ -80,19 +71,6 @@ void Plyobj::buildTriMap() {
     IndexTriple i3(t.v[0], t.v[1], t.v[2]);
     vertsToTriIndex[i3] = int(i);
   }
-  const auto& t = tris[0];
-  IndexTriple valid(t.v[0], t.v[1], t.v[2]);
-  auto vit = vertsToTriIndex.find(valid);
-  if (vit == vertsToTriIndex.end()) {
-    printf("failed to find valid\n");
-    exit(1);
-  }
-  IndexTriple invalid(-1, -1, -1);
-  auto ivit = vertsToTriIndex.find(invalid);
-  if (ivit != vertsToTriIndex.end()) {
-    printf("claimed to find invalid triangle\n");
-    exit(2);
-  }
 }
 
 void Plyobj::removeEdge(size_t eInt) {
@@ -105,9 +83,9 @@ void Plyobj::removeEdge(size_t eInt) {
     auto& t = tris[ti];
     for (int i = 0; i < 3; i++) {
       if (t.v[i] == e.v1) {
-        printf("  before: t = %d, v = {%d, %d, %d}\n", int(ti), t.v[0], t.v[1], t.v[2]);
+        // printf("  before: t = %d, v = {%d, %d, %d}\n", int(ti), t.v[0], t.v[1], t.v[2]);
         t.v[i] = e.v0;
-        printf("  after:  t = %d, v = {%d, %d, %d}\n", int(ti), t.v[0], t.v[1], t.v[2]);
+        // printf("  after:  t = %d, v = {%d, %d, %d}\n", int(ti), t.v[0], t.v[1], t.v[2]);
       }
     }
     if (isDegenerate(t)) {
@@ -132,7 +110,7 @@ int Plyobj::findEdgeToRemove() {
   size_t whichEdge = 0;
   while (whichEdge < il.size()) {
     if (isEdgeChoke(*this, il[whichEdge].first)) {
-      printf("choke edge %d skipped\n", int(il[whichEdge].first));
+      // printf("choke edge %d skipped\n", int(il[whichEdge].first));
       whichEdge++;
       continue;
     }
@@ -289,7 +267,7 @@ void Plyobj::build(FILE* f, Matrix4f m) {
   buildTriMap();
   buildEdgeList();
 
-  simplify(tris.size() - 2000);
+  simplify(tris.size() / 32);
 
   //*
   obj.begin(GL_TRIANGLES);
