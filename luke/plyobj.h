@@ -48,6 +48,10 @@ struct IndexTriple {
     return k == rhs.k;
   }
 
+  bool operator!=(const IndexTriple& rhs) const {
+    return k != rhs.k;
+  }
+
   void make_key() {
     int32_t aa = a;
     int32_t bb = b;
@@ -105,6 +109,9 @@ class Plyobj : public Shape {
 
   struct Tri {
     int v[3];
+    IndexTriple getIndexTriple() const {
+      return IndexTriple(v[0], v[1], v[2]);
+    }
   };
 
   std::vector<Vert> vertices;

@@ -75,12 +75,53 @@ void Plyobj::buildTriMap() {
 
 void Plyobj::removeEdge(size_t eInt) {
   Edge e = edges[eInt];
+
+  {  // Deletes edges necessary and fixes map and vector.
+    auto edgesEnd = edges.size() - 1;
+    int edgeIndex = vertsToEdgeIndex[IndexPair(e.v0, e.v1)];
+    vertsToEdgeIndex.erase(IndexPair(e.v0, e.v1));
+    vertsToEdgeIndex[IndexPair(edges[edgesEnd].v0, edges[edgesEnd].v1)] = edgeIndex;
+    Edge edg = edges[edgesEnd];
+    edges[edgeIndex] = edg;
+    edges.resize(edgesEnd);
+
+    auto& t = tris[e.f0];
+    int v2;
+    for (int i = 0; i < 3; i++) {
+      if (t.v[i] != e.v0 && t.v[i] != e.v1) {
+        v2 = t.v[i];
+      }
+    }
+    edgesEnd--;
+    int rmEdgeIndex = vertsToEdgeIndex[IndexPair(v2, e.v1)];
+    vertsToEdgeIndex.erase(IndexPair(v2, e.v1));
+    vertsToEdgeIndex[IndexPair(edges[edgesEnd].v0, edges[edgesEnd].v1)] = rmEdgeIndex;
+    edg = edges[edgesEnd];
+    edges[rmEdgeIndex] = edg;
+    edges.resize(edgesEnd);
+
+    t = tris[e.f1];
+    for (int i = 0; i < 3; i++) {
+      if (t.v[i] != e.v0 && t.v[i] != e.v1) {
+        v2 = t.v[i];
+      }
+    }
+    edgesEnd--;
+    rmEdgeIndex = vertsToEdgeIndex[IndexPair(v2, e.v1)];
+    vertsToEdgeIndex.erase(IndexPair(v2, e.v1));
+    vertsToEdgeIndex[IndexPair(edges[edgesEnd].v0, edges[edgesEnd].v1)] = rmEdgeIndex;
+    edg = edges[edgesEnd];
+    edges[rmEdgeIndex] = edg;
+    edges.resize(edgesEnd);
+  }
+
   // change every Tri that referred
   // to e.v1 to now refer to e.v0
   int degenerates = 0;
   printf("replacing %d with %d\n", e.v1, e.v0);
   for (size_t ti = 0; ti < tris.size() - degenerates; ti++) {
     auto& t = tris[ti];
+    IndexTriple i3 = t.getIndexTriple();
     for (int i = 0; i < 3; i++) {
       if (t.v[i] == e.v1) {
         // printf("  before: t = %d, v = {%d, %d, %d}\n", int(ti), t.v[0], t.v[1], t.v[2]);
@@ -88,15 +129,30 @@ void Plyobj::removeEdge(size_t eInt) {
         // printf("  after:  t = %d, v = {%d, %d, %d}\n", int(ti), t.v[0], t.v[1], t.v[2]);
       }
     }
+    IndexTriple i3new = t.getIndexTriple();
+    if (i3 != i3new) {
+      vertsToTriIndex[i3new] = int(ti);
+      vertsToTriIndex.erase(i3);
+    }
     if (isDegenerate(t)) {
       degenerates++;
-      std::swap(t, tris[tris.size() - degenerates]);
+      auto end = tris.size() - degenerates;
+      auto i3end = tris[end].getIndexTriple();
+      std::swap(t, tris[end]);
+      vertsToTriIndex[i3end] = ti;
+      vertsToTriIndex[i3new] = end;
       ti--;
     }
   }
   tris.resize(tris.size() - degenerates);
-  buildTriMap();
-  buildEdgeList();
+  int dangling = 0;
+  for (size_t i = 0; i < edges.size(); i++) {
+    const auto& edg = edges[i];
+    if (edg.f0 < 0 || edg.f1 < 0) {
+      printf("dangling edge %d: t = {%d, %d}, v = {%d, %d}\n", int(i), edg.f0, edg.f1, edg.v0, edg.v1);
+      dangling++;
+    }
+  }
 }
 
 int Plyobj::findEdgeToRemove() {
@@ -267,7 +323,7 @@ void Plyobj::build(FILE* f, Matrix4f m) {
   buildTriMap();
   buildEdgeList();
 
-  simplify(tris.size() / 32);
+  simplify(tris.size() - 800);
 
   //*
   obj.begin(GL_TRIANGLES);
