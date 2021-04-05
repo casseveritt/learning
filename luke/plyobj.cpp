@@ -30,6 +30,7 @@ bool isDegenerate(const Plyobj::Tri& t) {
 // two separate volumes? 
 bool isEdgeChoke(const Plyobj& po, size_t edgeIndex) {
   const auto& e = po.edges[edgeIndex];
+  bool pr = edgeIndex == 6852;
 
   vector<size_t> oppv0;
   vector<size_t> oppv1;
@@ -53,6 +54,13 @@ bool isEdgeChoke(const Plyobj& po, size_t edgeIndex) {
     for (auto o1 : oppv1) {
       if (o0 == o1) {
         IndexTriple i3(e.v0, e.v1, o0);
+        if (pr) {
+          printf("choke loop = {%d, %d, %d}\n", e.v0, e.v1, int(o0));
+          auto it = po.vertsToTriIndex.find(i3);
+          if (it != po.vertsToTriIndex.end()) {
+            printf( "it first = { %d, %d, %d }, second = %d\n", it->first.a, it->first.b, it->first.c, int(it->second));
+          }
+        }
         if (po.vertsToTriIndex.find(i3) == po.vertsToTriIndex.end()) {
           printf("choke loop = {%d, %d, %d}\n", e.v0, e.v1, int(o0));
           return true;
@@ -123,14 +131,14 @@ int Plyobj::findEdgeToRemove() {
   sort(il.begin(), il.end(), [](const IdxLen& a, const IdxLen& b) { return a.second < b.second; });
   size_t whichEdge = 0;
   while (whichEdge < il.size()) {
-    if (isEdgeChoke(*this, whichEdge)) {
+    if (isEdgeChoke(*this, il[whichEdge].first)) {
       printf("choke edge %d skipped\n", int(il[whichEdge].first));
       whichEdge++;
       continue;
     }
     break;
   }
-  printf("skipped %d edges\n", int(whichEdge));
+  printf("skipped %d edges, chose edge %d\n", int(whichEdge), int(il[whichEdge].first));
   return il[whichEdge].first;
 }
 
@@ -282,7 +290,7 @@ void Plyobj::build(FILE* f, Matrix4f m) {
   buildTriMap();
   buildEdgeList();
 
-  simplify(tris.size() - 200);
+  simplify(tris.size() - 2000);
 
   /*
   obj.begin(GL_TRIANGLES);
