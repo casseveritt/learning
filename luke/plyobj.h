@@ -35,11 +35,55 @@ struct IndexPair {
   int32_t b = -1;
 };
 
+struct IndexTriple {
+  IndexTriple() = default;
+  IndexTriple(int32_t i0, int32_t i1, int32_t i2) : a(i0), b(i1), c(i2) {
+    make_key();
+  }
+
+  uint64_t as_uint64_t() const {
+    return k;
+  }
+
+  bool operator==(const IndexTriple& rhs) const {
+    return k == rhs.k;
+  }
+
+  void make_key() {
+    int32_t aa = a;
+    int32_t bb = b;
+    int32_t cc = c;
+    if (aa > bb) {
+      std::swap(aa, bb);
+    }
+    if (bb > cc) {
+      std::swap(bb, cc);
+    }
+    if (aa > bb) {
+      std::swap(aa, bb);
+    }
+    k = (uint64_t(aa & 0x1fffff) << 42) | (uint64_t(bb & 0x1fffff) << 21) | uint64_t(cc & 0x1fffff);
+  }
+
+  int32_t a = -1;
+  int32_t b = -1;
+  int32_t c = -1;
+  uint64_t k = 0;
+};
+
 namespace std {
 
 template <>
 struct hash<IndexPair> {
   std::size_t operator()(const IndexPair& k) const
+  {
+    return hash<uint64_t>()(k.as_uint64_t());
+  }
+};
+
+template <>
+struct hash<IndexTriple> {
+  std::size_t operator()(const IndexTriple& k) const
   {
     return hash<uint64_t>()(k.as_uint64_t());
   }
@@ -70,10 +114,12 @@ class Plyobj : public Shape {
   std::vector<Edge> edges;
   std::vector<Tri> tris;
   std::unordered_map<IndexPair, int> vertsToEdgeIndex;
+  std::unordered_map<IndexTriple, int> vertsToTriIndex;
 
   void removeEdge(size_t eInt);
   int findEdgeToRemove();
   void simplify(size_t endFaces);
+  void buildTriMap();
   void buildEdgeList(int recursionLevel = 0);
 
   void build(FILE* f, Matrix4f m);

@@ -26,7 +26,66 @@ bool isDegenerate(const Plyobj::Tri& t) {
   return t.v[0] == t.v[1] || t.v[0] == t.v[2] || t.v[1] == t.v[2];
 }
 
+// Would collapsing this edge would split a contiguous volume into
+// two separate volumes? 
+bool isEdgeChoke(const Plyobj& po, size_t edgeIndex) {
+  const auto& e = po.edges[edgeIndex];
+
+  vector<size_t> oppv0;
+  vector<size_t> oppv1;
+  for (size_t i = 0; i < po.edges.size(); i++) {
+    if (i == edgeIndex) {
+      continue;
+    }
+    const auto& ee = po.edges[i];
+    if (ee.v0 == e.v0) {
+      oppv0.push_back(ee.v1);
+    } else if(ee.v1 == e.v0) {
+      oppv0.push_back(ee.v0);
+    }
+    if (ee.v0 == e.v1) {
+      oppv1.push_back(ee.v1);
+    } else if(ee.v1 == e.v1) {
+      oppv1.push_back(ee.v0);
+    }
+  }
+  for (auto o0 : oppv0) {
+    for (auto o1 : oppv1) {
+      if (o0 == o1) {
+        IndexTriple i3(e.v0, e.v1, o0);
+        if (po.vertsToTriIndex.find(i3) == po.vertsToTriIndex.end()) {
+          printf("choke loop = {%d, %d, %d}\n", e.v0, e.v1, int(o0));
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 }  // namespace
+
+void Plyobj::buildTriMap() {
+  vertsToTriIndex.clear();
+  for (size_t i = 0; i < tris.size(); i++) {
+    const auto& t = tris[i];
+    IndexTriple i3(t.v[0], t.v[1], t.v[2]);
+    vertsToTriIndex[i3] = int(i);
+  }
+  const auto& t = tris[0];
+  IndexTriple valid(t.v[0], t.v[1], t.v[2]);
+  auto vit = vertsToTriIndex.find(valid);
+  if (vit == vertsToTriIndex.end()) {
+    printf( "failed to find valid\n");
+    exit(1);
+  }
+  IndexTriple invalid(-1, -1, -1);
+  auto ivit = vertsToTriIndex.find(invalid);
+  if (ivit != vertsToTriIndex.end()) {
+    printf("claimed to find invalid triangle\n");
+    exit(2);
+  }
+}
 
 void Plyobj::removeEdge(size_t eInt) {
   Edge e = edges[eInt];
@@ -50,8 +109,8 @@ void Plyobj::removeEdge(size_t eInt) {
     }
   }
   tris.resize(tris.size() - degenerates);
-  edges.clear();
-  vertsToEdgeIndex.clear();
+  buildTriMap();
+  buildEdgeList();
 }
 
 int Plyobj::findEdgeToRemove() {
@@ -62,14 +121,23 @@ int Plyobj::findEdgeToRemove() {
     il.push_back(make_pair(i, len));
   }
   sort(il.begin(), il.end(), [](const IdxLen& a, const IdxLen& b) { return a.second < b.second; });
-  return il[0].first;
+  size_t whichEdge = 0;
+  while (whichEdge < il.size()) {
+    if (isEdgeChoke(*this, whichEdge)) {
+      printf("choke edge %d skipped\n", int(il[whichEdge].first));
+      whichEdge++;
+      continue;
+    }
+    break;
+  }
+  printf("skipped %d edges\n", int(whichEdge));
+  return il[whichEdge].first;
 }
 
 void Plyobj::simplify(size_t endFaces) {
   while (tris.size() > endFaces && tris.size() > 4) {
     removeEdge(findEdgeToRemove());
     printf("%i\n", int(tris.size()));
-    buildEdgeList();
   }
 }
 
@@ -211,6 +279,7 @@ void Plyobj::build(FILE* f, Matrix4f m) {
     }
   }
 
+  buildTriMap();
   buildEdgeList();
 
   simplify(tris.size() - 200);
