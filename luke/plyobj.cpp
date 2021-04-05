@@ -22,14 +22,19 @@ string nextLine(FILE* f, int offset = 0) {
   return lineOut;
 }
 
+bool isDegenerate(const Plyobj::Tri& t) {
+  return t.v[0] == t.v[1] || t.v[0] == t.v[2] || t.v[1] == t.v[2];
+}
+
 }  // namespace
 
 void Plyobj::removeEdge(size_t eInt) {
   Edge e = edges[eInt];
   // change every Tri that referred
   // to e.v1 to now refer to e.v0
+  int degenerates = 0;
   printf("replacing %d with %d\n", e.v1, e.v0);
-  for (size_t ti = 0; ti < tris.size(); ti++) {
+  for (size_t ti = 0; ti < tris.size() - degenerates; ti++) {
     auto& t = tris[ti];
     for (int i = 0; i < 3; i++) {
       if (t.v[i] == e.v1) {
@@ -38,36 +43,33 @@ void Plyobj::removeEdge(size_t eInt) {
         printf("  after:  t = %d, v = {%d, %d, %d}\n", int(ti), t.v[0], t.v[1], t.v[2]);
       }
     }
+    if (isDegenerate(t)) {
+      degenerates++;
+      std::swap(t, tris[tris.size() - degenerates]);
+      ti--;
+    }
   }
-
-  tris[e.f0] = tris[tris.size() - 2];
-  tris[e.f1] = tris[tris.size() - 1];
-  tris.resize(tris.size() - 2);
+  tris.resize(tris.size() - degenerates);
   edges.clear();
   vertsToEdgeIndex.clear();
 }
 
-int Plyobj::findShortestEdge() {
-  int smallestEdgeIndex = 0;
-  float smallestLen = (vertices[edges[0].v0].pos-vertices[edges[0].v1].pos).Length();
-  for (int i = 1; i < int(edges.size()); i++) {
-    if (edges[i].influencer == -2) continue;
-    float edgeLen = (vertices[edges[i].v0].pos-vertices[edges[i].v1].pos).Length();
-    if (edgeLen < smallestLen) {
-      smallestEdgeIndex = i;
-      smallestLen = edgeLen;
-    }
+int Plyobj::findEdgeToRemove() {
+  typedef pair<size_t,float> IdxLen;
+  vector<IdxLen> il;
+  for (size_t i = 0; i < edges.size(); i++) {
+    float len = (vertices[edges[i].v0].pos-vertices[edges[i].v1].pos).Length();
+    il.push_back(make_pair(i, len));
   }
-  edges[smallestEdgeIndex].influencer = -2;
-  return smallestEdgeIndex;
+  sort(il.begin(), il.end(), [](const IdxLen& a, const IdxLen& b) { return a.second < b.second; });
+  return il[0].first;
 }
 
 void Plyobj::simplify(size_t endFaces) {
   while (tris.size() > endFaces && tris.size() > 4) {
-    removeEdge(findShortestEdge());
+    removeEdge(findEdgeToRemove());
     printf("%i\n", int(tris.size()));
     buildEdgeList();
-    printf("Building...\n\n");
   }
 }
 
@@ -210,8 +212,10 @@ void Plyobj::build(FILE* f, Matrix4f m) {
   }
 
   buildEdgeList();
+
   simplify(tris.size() - 200);
 
+  /*
   obj.begin(GL_TRIANGLES);
   for (size_t i = 0; i < tris.size(); i++) {
     for (int j = 0; j < 3; j++) {
@@ -219,6 +223,18 @@ void Plyobj::build(FILE* f, Matrix4f m) {
       obj.normal(vertices[tris[i].v[j]].norm);
       // obj.texCoord();
       obj.position((m * vertices[tris[i].v[j]].pos));
+    }
+  }
+  obj.end();
+  */
+  obj.begin(GL_LINES);
+  obj.color(1.0f, 1.0f, 1.0f);
+  for (size_t i = 0; i < edges.size(); i++) {
+    const auto& e = edges[i];
+    for (int j = 0; j < 2; j++) {
+      const auto& v = vertices[j == 0 ? e.v0 : e.v1];
+      obj.normal(v.norm);
+      obj.position((m * v.pos));
     }
   }
   obj.end();

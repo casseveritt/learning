@@ -56,12 +56,10 @@ class Plyobj : public Shape {
   };
 
   struct Edge {
-    float len;
     int f0 = -1;
     int f1 = -1;
     int v0 = -1;
     int v1 = -1;
-    int influencer = -1;
   };
 
   struct Tri {
@@ -74,7 +72,7 @@ class Plyobj : public Shape {
   std::unordered_map<IndexPair, int> vertsToEdgeIndex;
 
   void removeEdge(size_t eInt);
-  int findShortestEdge();
+  int findEdgeToRemove();
   void simplify(size_t endFaces);
   void buildEdgeList(int recursionLevel = 0);
 
