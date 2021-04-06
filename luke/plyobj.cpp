@@ -53,7 +53,8 @@ bool isEdgeChoke(const Plyobj& po, size_t edgeIndex) {
     for (auto o1 : oppv1) {
       if (o0 == o1) {
         IndexTriple i3(e.v0, e.v1, o0);
-        if (po.vertsToTriIndex.find(i3) == po.vertsToTriIndex.end()) {
+        if (po.vertsToTriIndex.count(i3) == 0) {
+
           return true;
         }
       }
@@ -120,20 +121,24 @@ void Plyobj::removeEdge(size_t eInt) {
     }
     IndexTriple i3new = t.getIndexTriple();
     if (i3 != i3new) {
-      vertsToTriIndex[i3new] = int(ti);
       vertsToTriIndex.erase(i3);
-    }
-    if (isDegenerate(t)) {
-      degenerates++;
-      auto end = tris.size() - degenerates;
-      auto i3end = tris[end].getIndexTriple();
-      std::swap(t, tris[end]);
-      vertsToTriIndex[i3end] = ti;
-      vertsToTriIndex[i3new] = end;
-      ti--;
+      if (isDegenerate(t)) {
+        degenerates++;
+        auto end = tris.size() - degenerates;
+        if (ti != end) {
+          auto i3end = tris[end].getIndexTriple();
+          std::swap(t, tris[end]);
+          vertsToTriIndex[i3end] = ti;
+          ti--;
+        }
+      } else {
+        vertsToTriIndex[i3new] = int(ti);
+      }
     }
   }
   tris.resize(tris.size() - degenerates);
+
+  // debug check
   int dangling = 0;
   for (size_t i = 0; i < edges.size(); i++) {
     const auto& edg = edges[i];
@@ -161,13 +166,19 @@ int Plyobj::findEdgeToRemove() {
     }
     break;
   }
-  printf("skipped %d edges, chose edge %d\n", int(whichEdge), int(il[whichEdge].first));
+  printf("skipped %d edges, chose edge %d, f# = %d, mf# = %d\n", int(whichEdge), int(il[whichEdge].first), int(tris.size()), int(vertsToTriIndex.size()));
   return il[whichEdge].first;
 }
 
 void Plyobj::simplify(size_t endFaces) {
   while (tris.size() > endFaces && tris.size() > 4) {
     removeEdge(findEdgeToRemove());
+    for (size_t i = 0; i < tris.size(); i++) {
+      auto& t = tris[i];
+      if (vertsToTriIndex.count(t.getIndexTriple()) == 0) {
+        printf("f %d = {%d, %d, %d} not in map!\n", int(i), t.v[0], t.v[1], t.v[2]);
+      }
+    }
     printf("%i\n", int(tris.size()));
   }
 }
