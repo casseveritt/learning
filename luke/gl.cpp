@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include <cstring>
 #include <string>
@@ -26,6 +27,14 @@ using namespace std;
   You need dev packages to build and run this:
   sudo apt install libgles2-mesa-dev libglfw3-dev
 */
+
+double t0, t1;
+
+static double getTimeInSeconds() {
+  timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return double(int64_t(ts.tv_sec) * int64_t(1e9) + int64_t(ts.tv_nsec)) * 1e-9;
+}
 
 struct RendererImpl : public Renderer {
   RendererImpl() {}
@@ -218,7 +227,7 @@ void RendererImpl::Init() {
 
   {
     auto cow = new Plyobj;  // Cow
-    cow->build(fopen("models/cube.ply", "r"), Matrix4f::Scale(0.5f));
+    cow->build(fopen("models/cow.ply", "r"), Matrix4f::Scale(0.5f));
     list.push_back(cow);
     // list.back()->obj.modelPose.t = Vec3f(-0.8f, 0.0f, 1.0f);
     list.back()->obj.matDifCol = Vec3f(0.2f, 0.1f, 0.8f);
@@ -292,6 +301,8 @@ void RendererImpl::Intersect() {
 
   float distance = (fIW3 - nIW3).Length();
 
+  t0 = getTimeInSeconds();
+
   for (auto shape : list) {
     if (shape->intersect(nIW3, fIW3, objIntLoc)) {
       if ((objIntLoc - nIW3).Length() < distance) {
@@ -302,6 +313,7 @@ void RendererImpl::Intersect() {
       }
     }
   }
+  printf("Intersect check time: %lf msec\n", getTimeInSeconds() - t0);
 
   if (distance != (fIW3 - nIW3).Length()) {
     intersect = true;

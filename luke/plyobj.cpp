@@ -334,32 +334,27 @@ void Plyobj::build(FILE* f, Matrix4f m) {
   for (int i = 0; i < int(vertices.size()); i++) vertices[i].pos.y -= boundingMin.y;
   for (int i = 0; i < triSize; i++) {  // Get face data
     Tri t;
-    vector<int> vertsOnFace;
     string sNumber, line = nextLine(f, 2);
+    int ind = 0;
     for (size_t j = 0; j < line.size(); j++) {
       if (line[j] == ' ') {
-        vertsOnFace.push_back(atoi(sNumber.c_str()));
+        t.v[ind] = atoi(sNumber.c_str());
         sNumber.resize(0);
+        ind++;
       } else {
         sNumber.append(1, line[j]);
       }
     }
-    for (int j = 0; j < int(vertsOnFace.size()) - 1; j++) {
-      t.v[0] = vertsOnFace[j];
-      t.v[1] = vertsOnFace[j + 1];
-      t.v[2] = vertsOnFace[(j + 2) % int(vertsOnFace.size())];
-      printf("%i, %i, %i\n", t.v[0], t.v[1], t.v[2]);
-      tris.push_back(t);
-      Vec3f faceNorm = (vertices[t.v[0]].pos - vertices[t.v[2]].pos).Cross((vertices[t.v[1]].pos - vertices[t.v[2]].pos));
-      faceNorm.Normalize();
-      for (int k = 0; k < 3; k++) {  // Sets normals when not there, and averages when Sets
-        if (vertices[t.v[k]].norm == Vec3f(0.0f, 0.0f, 0.0f))
-          vertices[t.v[k]].norm = faceNorm;
-        else
-          vertices[t.v[k]].norm = (vertices[t.v[k]].norm + faceNorm) / 2;
-      }
-    }
     // printf("\n");
+    tris.push_back(t);
+    Vec3f faceNorm = (vertices[t.v[0]].pos - vertices[t.v[2]].pos).Cross((vertices[t.v[1]].pos - vertices[t.v[2]].pos));
+    faceNorm.Normalize();
+    for (int k = 0; k < 3; k++) {  // Sets normals when not there, and averages when Sets
+      if (vertices[t.v[k]].norm == Vec3f(0.0f, 0.0f, 0.0f))
+        vertices[t.v[k]].norm = faceNorm;
+      else
+        vertices[t.v[k]].norm = (vertices[t.v[k]].norm + faceNorm) / 2;
+    }
   }
 
   // buildTriMap();
@@ -433,39 +428,47 @@ bool Plyobj::intersect([[maybe_unused]] Vec3f p0, [[maybe_unused]] Vec3f p1, [[m
   Vec3f r0 = p0 - obj.modelPose.t;
   Vec3f r1 = p1 - obj.modelPose.t;
   vector<Vec3f> intPoints;
+  bool inBounds = false;
 
-  /*
   Linef line(p0, p1);
   vector<Planef> planes;
-  planes.push_back(Planef(Vec3f(1.0f, 0.0f, 0.0f),  boundingMax.x));
+  planes.push_back(Planef(Vec3f(1.0f, 0.0f, 0.0f), boundingMax.x));
   planes.push_back(Planef(Vec3f(-1.0f, 0.0f, 0.0f), boundingMin.x));
-  planes.push_back(Planef(Vec3f(0.0f, 1.0f, 0.0f),  boundingMax.y));
+  planes.push_back(Planef(Vec3f(0.0f, 1.0f, 0.0f), boundingMax.y));
   planes.push_back(Planef(Vec3f(0.0f, -1.0f, 0.0f), boundingMin.y));
-  planes.push_back(Planef(Vec3f(0.0f, 0.0f, 1.0f),  boundingMax.z));
+  planes.push_back(Planef(Vec3f(0.0f, 0.0f, 1.0f), boundingMax.z));
   planes.push_back(Planef(Vec3f(0.0f, 0.0f, -1.0f), boundingMin.z));
   for (Planef p : planes) {
-    Vec3f planeIntPoint;
-    p.Intersect(line, planeIntPoint);
-  }
-  */
-
-  for (int i = 0; i < int(tris.size()); i++) {
-    auto& t = tris[i];
-    Vec3f hp;
-    if (triInt(r0, r1, t, hp)) intPoints.push_back(hp);
-  }
-  if (!intPoints.empty()) {
-    Vec3f closestInt = intPoints[0];
-    float minLen = (r0 - closestInt).Length();
-    for (int i = 1; i < int(intPoints.size()); i++) {
-      float len = (r0 - intPoints[i]).Length();
-      if (len < minLen) {
-        closestInt = intPoints[i];
-        minLen = len;
+    Vec3f pip;  // PlaneIntPoint
+    if (p.Intersect(line, pip)) {
+      if (pip.x <= boundingMax.x && pip.y <= boundingMax.y && pip.z <= boundingMax.z) {
+        if (pip.x >= boundingMin.x && pip.y >= boundingMin.y && pip.z >= boundingMin.z) {
+          inBounds = true;
+        }
       }
     }
-    intersection = closestInt + obj.modelPose.t;
-    return true;
   }
-  return false;
+
+  if (inBounds) {
+    printf("In bounds\n");
+    for (int i = 0; i < int(tris.size()); i++) {
+      auto& t = tris[i];
+      Vec3f hp;
+      if (triInt(r0, r1, t, hp)) intPoints.push_back(hp);
+    }
+    if (!intPoints.empty()) {
+      Vec3f closestInt = intPoints[0];
+      float minLen = (r0 - closestInt).Length();
+      for (int i = 1; i < int(intPoints.size()); i++) {
+        float len = (r0 - intPoints[i]).Length();
+        if (len < minLen) {
+          closestInt = intPoints[i];
+          minLen = len;
+        }
+      }
+      intersection = closestInt + obj.modelPose.t;
+      return true;
+    }
+    return false;
+  }
 }
