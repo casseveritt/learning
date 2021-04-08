@@ -105,6 +105,7 @@ class Plyobj : public Shape {
     int f1 = -1;
     int v0 = -1;
     int v1 = -1;
+    float angle = -1;
     IndexPair getIndexPair() const {
       return IndexPair(v0, v1);
     }
@@ -112,11 +113,22 @@ class Plyobj : public Shape {
 
   struct Tri {
     int v[3];
+    Tri() {
+      v[0] = -1;
+      v[1] = -1;
+      v[2] = -1;
+    }
+    Tri(std::vector<int> vl, int ind) {
+      v[0] = vl[ind];
+      v[1] = vl[(ind + 1) % int(vl.size())];
+      v[2] = vl[(ind + 2) % int(vl.size())];
+    }
     IndexTriple getIndexTriple() const {
       return IndexTriple(v[0], v[1], v[2]);
     }
   };
-
+  int triSize;
+  Vec3f boundingMax, boundingMin;
   std::vector<Vert> vertices;
   std::vector<Edge> edges;
   std::vector<Tri> tris;
@@ -129,9 +141,12 @@ class Plyobj : public Shape {
   void buildTriMap();
   void buildEdgeList(int recursionLevel = 0);
 
+  void appendFace(std::vector<int> vertInds);
   void build(FILE* f, Matrix4f m);
 
   virtual void draw(const Scene& scene, Prog p) override;
+
+  bool triInt(Vec3f p0, Vec3f p1, Tri tr, Vec3f& intPoint);
 
   virtual bool intersect(Vec3f p0, Vec3f p1, Vec3f& intersection) override;
 };

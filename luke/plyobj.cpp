@@ -54,7 +54,6 @@ bool isEdgeChoke(const Plyobj& po, size_t edgeIndex) {
       if (o0 == o1) {
         IndexTriple i3(e.v0, e.v1, o0);
         if (po.vertsToTriIndex.count(i3) == 0) {
-
           return true;
         }
       }
@@ -98,7 +97,7 @@ void Plyobj::removeEdge(size_t eInt) {
           return t.v[i];
         }
       }
-      return ~0; // this should not happen
+      return ~0;  // this should not happen
     };
 
     rm(get_other_vert(e.f0), e.v1);
@@ -166,7 +165,8 @@ int Plyobj::findEdgeToRemove() {
     }
     break;
   }
-  printf("skipped %d edges, chose edge %d, f# = %d, mf# = %d\n", int(whichEdge), int(il[whichEdge].first), int(tris.size()), int(vertsToTriIndex.size()));
+  printf("skipped %d edges, chose edge %d, f# = %d, mf# = %d\n", int(whichEdge), int(il[whichEdge].first), int(tris.size()),
+         int(vertsToTriIndex.size()));
   return il[whichEdge].first;
 }
 
@@ -211,6 +211,16 @@ void Plyobj::buildEdgeList(int recursionLevel) {
       if (e.v0 < 0) {
         e.v0 = k.min();
         e.v1 = k.max();
+      }
+
+      if (e.f0 > -1 && e.f1 > -1) {
+        Vec3f f0norm = (vertices[tris[e.f0].v[0]].pos - vertices[tris[e.f0].v[2]].pos)
+                           .Cross((vertices[tris[e.f0].v[1]].pos - vertices[tris[e.f0].v[2]].pos));
+        Vec3f f1norm = (vertices[tris[e.f0].v[0]].pos - vertices[tris[e.f0].v[2]].pos)
+                           .Cross((vertices[tris[e.f0].v[1]].pos - vertices[tris[e.f0].v[2]].pos));
+        float f0mag = sqrt((f0norm.x * f0norm.x) + (f0norm.y * f0norm.y) + (f0norm.z * f0norm.z));
+        float f1mag = sqrt((f1norm.x * f1norm.x) + (f1norm.y * f1norm.y) + (f1norm.z * f1norm.z));
+        e.angle = ToDegrees(acos(f0norm.Dot(f1norm) / (f0mag * f1mag)));
       }
 
       auto& f = (va < vb) ? e.f0 : e.f1;
@@ -259,7 +269,18 @@ void Plyobj::buildEdgeList(int recursionLevel) {
       printf("probable infinite recursion - exiting\n");
       exit(1);
     }
+    printf("Rebuilding...\n");
     buildEdgeList(recursionLevel + 1);
+  }
+}
+
+void Plyobj::appendFace(vector<int> vertInds) {
+  int faceVertsSize = int(vertInds.size());
+  switch (faceVertsSize) {
+    case 3:
+
+    default:
+      break;
   }
 }
 
@@ -277,8 +298,8 @@ void Plyobj::build(FILE* f, Matrix4f m) {
     searchStr = nextLine(f);
     while (int(searchStr.size()) <= 12) searchStr = nextLine(f);
   }
-  sz = atoi(searchStr.substr(13, int(searchStr.size())).c_str());
-  tris.resize(sz);
+  triSize = atoi(searchStr.substr(13, int(searchStr.size())).c_str());
+  // tris.resize(sz);
   while (strcmp(nextLine(f).c_str(), "end_header") != 0)
     ;
 
@@ -295,35 +316,56 @@ void Plyobj::build(FILE* f, Matrix4f m) {
         sNumber.append(1, line[j]);
       }
     }
+    vertex.pos = m * vertex.pos;
+    if (i == 0) {
+      boundingMax = boundingMin = vertex.pos;
+    } else {
+      if (vertex.pos.x > boundingMax.x) boundingMax.x = vertex.pos.x;
+      if (vertex.pos.x < boundingMin.x) boundingMin.x = vertex.pos.x;
+
+      if (vertex.pos.y > boundingMax.y) boundingMax.y = vertex.pos.y;
+      if (vertex.pos.y < boundingMin.y) boundingMin.y = vertex.pos.y;
+
+      if (vertex.pos.z > boundingMax.z) boundingMax.z = vertex.pos.z;
+      if (vertex.pos.z < boundingMin.z) boundingMin.z = vertex.pos.z;
+    }
     vertices[i] = vertex;
   }
-  for (size_t i = 0; i < tris.size(); i++) {  // Get face data
-    auto& t = tris[i];
-    int ind = 0;
+  for (int i = 0; i < int(vertices.size()); i++) vertices[i].pos.y -= boundingMin.y;
+  for (int i = 0; i < triSize; i++) {  // Get face data
+    Tri t;
+    vector<int> vertsOnFace;
     string sNumber, line = nextLine(f, 2);
     for (size_t j = 0; j < line.size(); j++) {
       if (line[j] == ' ') {
-        t.v[ind] = atoi(sNumber.c_str());
+        vertsOnFace.push_back(atoi(sNumber.c_str()));
         sNumber.resize(0);
-        ind++;
       } else {
         sNumber.append(1, line[j]);
       }
     }
-    Vec3f faceNorm = (vertices[t.v[0]].pos - vertices[t.v[2]].pos).Cross((vertices[t.v[1]].pos - vertices[t.v[2]].pos));
-    faceNorm.Normalize();
-    for (int j = 0; j < 3; j++) {  // Sets normals when not there, and averages when Sets
-      if (vertices[t.v[j]].norm == Vec3f(0.0f, 0.0f, 0.0f))
-        vertices[t.v[j]].norm = faceNorm;
-      else
-        vertices[t.v[j]].norm = (vertices[t.v[j]].norm + faceNorm) / 2;
+    for (int j = 0; j < int(vertsOnFace.size()) - 1; j++) {
+      t.v[0] = vertsOnFace[j];
+      t.v[1] = vertsOnFace[j + 1];
+      t.v[2] = vertsOnFace[(j + 2) % int(vertsOnFace.size())];
+      printf("%i, %i, %i\n", t.v[0], t.v[1], t.v[2]);
+      tris.push_back(t);
+      Vec3f faceNorm = (vertices[t.v[0]].pos - vertices[t.v[2]].pos).Cross((vertices[t.v[1]].pos - vertices[t.v[2]].pos));
+      faceNorm.Normalize();
+      for (int k = 0; k < 3; k++) {  // Sets normals when not there, and averages when Sets
+        if (vertices[t.v[k]].norm == Vec3f(0.0f, 0.0f, 0.0f))
+          vertices[t.v[k]].norm = faceNorm;
+        else
+          vertices[t.v[k]].norm = (vertices[t.v[k]].norm + faceNorm) / 2;
+      }
     }
+    // printf("\n");
   }
 
-  buildTriMap();
-  buildEdgeList();
+  // buildTriMap();
+  // buildEdgeList();
 
-  simplify(tris.size() - 800);
+  // simplify(tris.size() - 800);
 
   //*
   obj.begin(GL_TRIANGLES);
@@ -334,7 +376,7 @@ void Plyobj::build(FILE* f, Matrix4f m) {
       obj.color(1.0f, 1.0f, 1.0f);
       obj.normal(faceNorm);
       // obj.texCoord();
-      obj.position((m * vertices[tris[i].v[j]].pos));
+      obj.position((vertices[tris[i].v[j]].pos));
     }
   }
   obj.end();
@@ -357,6 +399,73 @@ void Plyobj::draw(const Scene& scene, Prog p) {
   obj.draw(scene, p);
 }
 
+bool Plyobj::triInt(Vec3f p0, Vec3f p1, Tri tr, Vec3f& intPoint) {
+  const float EPSILON = 0.0000001;
+  Vec3f v0 = vertices[tr.v[0]].pos;
+  Vec3f v1 = vertices[tr.v[1]].pos;
+  Vec3f v2 = vertices[tr.v[2]].pos;
+  Vec3f edge1, edge2, h, s, q;
+  float a, f, u, v;
+  edge1 = v1 - v0;
+  edge2 = v2 - v0;
+  h = p1.Cross(edge2);
+  a = edge1.Dot(h);
+  // This ray is parallel to this triangle.
+  if (a > -EPSILON && a < EPSILON) return false;
+  f = 1.0 / a;
+  s = p0 - v0;
+  u = f * s.Dot(h);
+  if (u < 0.0 || u > 1.0) return false;
+  q = s.Cross(edge1);
+  v = f * p1.Dot(q);
+  // At this stage we can compute t to find out where the intersection point is on the line.
+  if (v < 0.0 || u + v > 1.0) return false;
+  float t = f * edge2.Dot(q);
+  if (t > EPSILON) {  // ray intersection
+    intPoint = p0 + p1 * t;
+    return true;
+  }  // This means that there is a line intersection but not a ray intersection.
+  else
+    return false;
+}
+
 bool Plyobj::intersect([[maybe_unused]] Vec3f p0, [[maybe_unused]] Vec3f p1, [[maybe_unused]] Vec3f& intersection) {
+  Vec3f r0 = p0 - obj.modelPose.t;
+  Vec3f r1 = p1 - obj.modelPose.t;
+  vector<Vec3f> intPoints;
+
+  /*
+  Linef line(p0, p1);
+  vector<Planef> planes;
+  planes.push_back(Planef(Vec3f(1.0f, 0.0f, 0.0f),  boundingMax.x));
+  planes.push_back(Planef(Vec3f(-1.0f, 0.0f, 0.0f), boundingMin.x));
+  planes.push_back(Planef(Vec3f(0.0f, 1.0f, 0.0f),  boundingMax.y));
+  planes.push_back(Planef(Vec3f(0.0f, -1.0f, 0.0f), boundingMin.y));
+  planes.push_back(Planef(Vec3f(0.0f, 0.0f, 1.0f),  boundingMax.z));
+  planes.push_back(Planef(Vec3f(0.0f, 0.0f, -1.0f), boundingMin.z));
+  for (Planef p : planes) {
+    Vec3f planeIntPoint;
+    p.Intersect(line, planeIntPoint);
+  }
+  */
+
+  for (int i = 0; i < int(tris.size()); i++) {
+    auto& t = tris[i];
+    Vec3f hp;
+    if (triInt(r0, r1, t, hp)) intPoints.push_back(hp);
+  }
+  if (!intPoints.empty()) {
+    Vec3f closestInt = intPoints[0];
+    float minLen = (r0 - closestInt).Length();
+    for (int i = 1; i < int(intPoints.size()); i++) {
+      float len = (r0 - intPoints[i]).Length();
+      if (len < minLen) {
+        closestInt = intPoints[i];
+        minLen = len;
+      }
+    }
+    intersection = closestInt + obj.modelPose.t;
+    return true;
+  }
   return false;
 }

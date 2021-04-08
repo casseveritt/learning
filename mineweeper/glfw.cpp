@@ -161,13 +161,10 @@ int main(int argc, char** argv) {
     }
 
     if (MSARunning && t0 >= 0.5) {
-      if (Board::State == Uninitalized) {
+      if (board.state == 0) {
         board.reveal(rand()%bWidth, rand()%bHeight);
-      } else if (Board::State == Playing) {
+      } else if (board.state == 1) {
         std::vector<float> probability;
-        for (Board::Tile t : board.board) {
-          
-        }
       }
       t0 = getTimeInSeconds();
 

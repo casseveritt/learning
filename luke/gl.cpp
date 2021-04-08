@@ -218,7 +218,7 @@ void RendererImpl::Init() {
 
   {
     auto cow = new Plyobj;  // Cow
-    cow->build(fopen("models/cow.ply", "r"), Matrix4f::Scale(0.5f));
+    cow->build(fopen("models/cube.ply", "r"), Matrix4f::Scale(0.5f));
     list.push_back(cow);
     // list.back()->obj.modelPose.t = Vec3f(-0.8f, 0.0f, 1.0f);
     list.back()->obj.matDifCol = Vec3f(0.2f, 0.1f, 0.8f);
