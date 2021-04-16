@@ -77,9 +77,8 @@ struct IndexTriple {
 struct BoundingVolume {
   // BoundingVolume();
   Vec3f maxs, mins;
-  std::vector<int> faceIndxs;
-  BoundingVolume* SBV0;
-  BoundingVolume* SBV1;
+  std::vector<int> triIndexes;
+  BoundingVolume* child[2];
 };
 
 namespace std {
@@ -145,11 +144,11 @@ class Plyobj : public Shape {
 
   void removeEdge(size_t eInt);
   int findEdgeToRemove();
-  void simplify(size_t endFaces);
+  void simplify(size_t endTris);
   void buildTriMap();
   void buildEdgeList(int recursionLevel = 0);
 
-  void appendFace(std::vector<int> vertInds);
+  void appendTri(std::vector<int> vertInds);
   void build(FILE* f, Matrix4f m);
 
   virtual void draw(const Scene& scene, Prog p) override;

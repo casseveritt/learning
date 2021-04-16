@@ -62,8 +62,6 @@ bool isEdgeChoke(const Plyobj& po, size_t edgeIndex) {
   return false;
 }
 
-}  // namespace
-
 /*
 // Sets pointers of a BV in the BVH to a split version of itself, and once the BVs
 // contain the same amount or less than the specified number or tris.
@@ -82,6 +80,8 @@ void split_bv(/Bounding Volume Structure/) {
     child[1].split_bv();
  }
  */
+
+}  // namespace
 
 void Plyobj::buildTriMap() {
   vertsToTriIndex.clear();
@@ -189,8 +189,8 @@ int Plyobj::findEdgeToRemove() {
   return il[whichEdge].first;
 }
 
-void Plyobj::simplify(size_t endFaces) {
-  while (tris.size() > endFaces && tris.size() > 4) {
+void Plyobj::simplify(size_t endTris) {
+  while (tris.size() > endTris && tris.size() > 4) {
     removeEdge(findEdgeToRemove());
     for (size_t i = 0; i < tris.size(); i++) {
       auto& t = tris[i];
@@ -210,7 +210,7 @@ void Plyobj::buildEdgeList(int recursionLevel) {
   int b[] = {1, 2, 0};
   for (size_t i = 0; i < tris.size(); i++) {  // Pass over all the tris
     const auto& t = tris[i];
-    for (int j = 0; j < 3; j++) {  // Pass over every edge of the face
+    for (int j = 0; j < 3; j++) {  // Pass over every edge of the tri
       int va = t.v[j];
       int vb = t.v[b[j]];
       const auto k = IndexPair(va, vb);
@@ -282,7 +282,7 @@ void Plyobj::buildEdgeList(int recursionLevel) {
       }
     }
     if (recursionLevel > 0) {
-      printf("fixed %d face winding problems\n", fixed);
+      printf("fixed %d tri winding problems\n", fixed);
     }
     if (recursionLevel > 5) {
       printf("probable infinite recursion - exiting\n");
@@ -293,9 +293,9 @@ void Plyobj::buildEdgeList(int recursionLevel) {
   }
 }
 
-void Plyobj::appendFace(vector<int> vertInds) {
-  int faceVertsSize = int(vertInds.size());
-  switch (faceVertsSize) {
+void Plyobj::appendTri(vector<int> vertInds) {
+  int triVertsSize = int(vertInds.size());
+  switch (triVertsSize) {
     case 3:
 
     default:
@@ -351,7 +351,7 @@ void Plyobj::build(FILE* f, Matrix4f m) {
     vertices[i] = vertex;
   }
   for (int i = 0; i < int(vertices.size()); i++) vertices[i].pos.y -= boundingMin.y;
-  for (int i = 0; i < triSize; i++) {  // Get face data
+  for (int i = 0; i < triSize; i++) {  // Get tri data
     Tri t;
     string sNumber, line = nextLine(f, 2);
     int ind = 0;
@@ -366,13 +366,13 @@ void Plyobj::build(FILE* f, Matrix4f m) {
     }
     // printf("\n");
     tris.push_back(t);
-    Vec3f faceNorm = (vertices[t.v[0]].pos - vertices[t.v[2]].pos).Cross((vertices[t.v[1]].pos - vertices[t.v[2]].pos));
-    faceNorm.Normalize();
+    Vec3f triNorm = (vertices[t.v[0]].pos - vertices[t.v[2]].pos).Cross((vertices[t.v[1]].pos - vertices[t.v[2]].pos));
+    triNorm.Normalize();
     for (int k = 0; k < 3; k++) {  // Sets normals when not there, and averages when Sets
       if (vertices[t.v[k]].norm == Vec3f(0.0f, 0.0f, 0.0f))
-        vertices[t.v[k]].norm = faceNorm;
+        vertices[t.v[k]].norm = triNorm;
       else
-        vertices[t.v[k]].norm = (vertices[t.v[k]].norm + faceNorm) / 2;
+        vertices[t.v[k]].norm = (vertices[t.v[k]].norm + triNorm) / 2;
     }
   }
 
@@ -384,11 +384,11 @@ void Plyobj::build(FILE* f, Matrix4f m) {
   //* Polygonal
   obj.begin(GL_TRIANGLES);
   for (size_t i = 0; i < tris.size(); i++) {
-    Vec3f faceNorm = (vertices[tris[i].v[0]].pos - vertices[tris[i].v[2]].pos)
-                         .Cross((vertices[tris[i].v[1]].pos - vertices[tris[i].v[2]].pos));
+    Vec3f triNorm = (vertices[tris[i].v[0]].pos - vertices[tris[i].v[2]].pos)
+                        .Cross((vertices[tris[i].v[1]].pos - vertices[tris[i].v[2]].pos));
     for (int j = 0; j < 3; j++) {
       obj.color(1.0f, 1.0f, 1.0f);
-      obj.normal(faceNorm);
+      obj.normal(triNorm);
       // obj.texCoord();
       obj.position((vertices[tris[i].v[j]].pos));
     }
