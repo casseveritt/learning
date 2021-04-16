@@ -27,7 +27,15 @@ Board board;
 int bWidth = 10, bHeight = 10, mines = 10;
 
 bool MSARunning = false; // Minesweeper Algorithm
-double t0;
+struct MSATile {
+  int adjMines = 0;
+  int adjFlags = 0;
+  int adjUnrev = 0;
+  bool revealed = false;
+  bool flagged = false;
+};
+std::vector<MSATile> playerBoard;
+double t0, t1;
 
 static double getTimeInSeconds() {
   timespec ts;
@@ -101,7 +109,7 @@ int main(int argc, char** argv) {
     mines = atoi(argv[3]);
   }
 
-  // seed = 0;
+  seed = 0;
   srand(seed);
 
   // printf("w=%d, h=%d, mines=%d\n", bWidth, bHeight, mines);
@@ -138,6 +146,7 @@ int main(int argc, char** argv) {
   uint32_t prevRightClick = 0;
 
   while (!glfwWindowShouldClose(window)) {
+    t1 = getTimeInSeconds();
     glfwGetFramebufferSize(window, &width, &height);
 
     if (prevLeftClick < leftClick.load()) {
@@ -160,14 +169,14 @@ int main(int argc, char** argv) {
       board.flag(col, row);
     }
 
-    if (MSARunning && t0 >= 0.5) {
+    if (MSARunning && (t1-t0)*1000 >= 1000) {
+      printf("Do stuff\n");
       if (board.state == 0) {
         board.reveal(rand()%bWidth, rand()%bHeight);
       } else if (board.state == 1) {
         std::vector<float> probability;
       }
-      t0 = getTimeInSeconds();
-
+      t0 = t1;
     }
 
     rend->SetWindowSize(width, height);

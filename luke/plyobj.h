@@ -74,6 +74,14 @@ struct IndexTriple {
   uint64_t k = 0;
 };
 
+struct BoundingVolume {
+  // BoundingVolume();
+  Vec3f maxs, mins;
+  std::vector<int> faceIndxs;
+  BoundingVolume* SBV0;
+  BoundingVolume* SBV1;
+};
+
 namespace std {
 
 template <>

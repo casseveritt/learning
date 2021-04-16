@@ -64,6 +64,25 @@ bool isEdgeChoke(const Plyobj& po, size_t edgeIndex) {
 
 }  // namespace
 
+/*
+// Sets pointers of a BV in the BVH to a split version of itself, and once the BVs
+// contain the same amount or less than the specified number or tris.
+void split_bv(/Bounding Volume Structure/) {
+   if (tris.size()<threshold) return;
+   Vec4f plane = choose_dividing_plane();
+   child[0].tris.clear();
+   child[1].tris.clear();
+   for(auto tri : tris) {
+       auto center = tri.center();
+       child_index =  plane.distance(center) < 0.0f ? 0 : 1;
+       child[child_index].tris.push_back( tri );
+    }
+    tris.clear();
+    child[0].split_bv();
+    child[1].split_bv();
+ }
+ */
+
 void Plyobj::buildTriMap() {
   vertsToTriIndex.clear();
   for (size_t i = 0; i < tris.size(); i++) {
@@ -362,7 +381,7 @@ void Plyobj::build(FILE* f, Matrix4f m) {
 
   // simplify(tris.size() - 800);
 
-  //*
+  //* Polygonal
   obj.begin(GL_TRIANGLES);
   for (size_t i = 0; i < tris.size(); i++) {
     Vec3f faceNorm = (vertices[tris[i].v[0]].pos - vertices[tris[i].v[2]].pos)
@@ -375,7 +394,7 @@ void Plyobj::build(FILE* f, Matrix4f m) {
     }
   }
   obj.end();
-  /*/
+  /*/ Wireframe
   obj.begin(GL_LINES);
   obj.color(1.0f, 1.0f, 1.0f);
   for (size_t i = 0; i < edges.size(); i++) {
@@ -386,8 +405,8 @@ void Plyobj::build(FILE* f, Matrix4f m) {
       obj.position((m * v.pos));
     }
   }
-  */
   obj.end();
+  */
 }
 
 void Plyobj::draw(const Scene& scene, Prog p) {
@@ -438,6 +457,7 @@ bool Plyobj::intersect([[maybe_unused]] Vec3f p0, [[maybe_unused]] Vec3f p1, [[m
   planes.push_back(Planef(Vec3f(0.0f, -1.0f, 0.0f), boundingMin.y));
   planes.push_back(Planef(Vec3f(0.0f, 0.0f, 1.0f), boundingMax.z));
   planes.push_back(Planef(Vec3f(0.0f, 0.0f, -1.0f), boundingMin.z));
+
   for (Planef p : planes) {
     Vec3f pip;  // PlaneIntPoint
     if (p.Intersect(line, pip)) {
