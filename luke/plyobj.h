@@ -2,6 +2,7 @@
 
 #include <string.h>
 
+#include <memory>
 #include <unordered_map>
 
 #include "geom.h"
@@ -74,13 +75,6 @@ struct IndexTriple {
   uint64_t k = 0;
 };
 
-struct BoundingVolume {
-  // BoundingVolume();
-  Vec3f maxs, mins;
-  std::vector<int> triIndexes;
-  BoundingVolume* child[2];
-};
-
 namespace std {
 
 template <>
@@ -98,6 +92,8 @@ struct hash<IndexTriple> {
 };
 
 }  // namespace std
+
+struct BoundingVolume;
 
 class Plyobj : public Shape {
  public:
@@ -141,6 +137,7 @@ class Plyobj : public Shape {
   std::vector<Tri> tris;
   std::unordered_map<IndexPair, int> vertsToEdgeIndex;
   std::unordered_map<IndexTriple, int> vertsToTriIndex;
+  std::unique_ptr<BoundingVolume> bv;
 
   void removeEdge(size_t eInt);
   int findEdgeToRemove();
@@ -156,4 +153,16 @@ class Plyobj : public Shape {
   bool triInt(Vec3f p0, Vec3f p1, Tri tr, Vec3f& intPoint);
 
   virtual bool intersect(Vec3f p0, Vec3f p1, Vec3f& intersection) override;
+};
+
+struct BoundingVolume {
+  BoundingVolume() {
+    child[0] = child[1] = nullptr;
+  }
+  ~BoundingVolume();
+  void split(Plyobj* ply);
+
+  Vec3f maxs, mins;
+  std::vector<size_t> triIndexes;
+  BoundingVolume* child[2];
 };

@@ -62,26 +62,42 @@ bool isEdgeChoke(const Plyobj& po, size_t edgeIndex) {
   return false;
 }
 
-/*
-// Sets pointers of a BV in the BVH to a split version of itself, and once the BVs
-// contain the same amount or less than the specified number or tris.
-void split_bv(/Bounding Volume Structure/) {
-   if (tris.size()<threshold) return;
-   Vec4f plane = choose_dividing_plane();
-   child[0].tris.clear();
-   child[1].tris.clear();
-   for(auto tri : tris) {
-       auto center = tri.center();
-       child_index =  plane.distance(center) < 0.0f ? 0 : 1;
-       child[child_index].tris.push_back( tri );
-    }
-    tris.clear();
-    child[0].split_bv();
-    child[1].split_bv();
- }
- */
+Vec4f choose_dividing_plane([[maybe_unused]] BoundingVolume* bv) {
+  return Vec4f();
+}
 
 }  // namespace
+
+// Sets pointers of a BV in the BVH to a split version of itself, and once the BVs
+// contain the same amount or less than the specified number or tris.
+void BoundingVolume::split(Plyobj* ply) {
+  constexpr int threshold = 100;
+  // Compute mins and maxs / bv corners, probably when finding all tris containing
+  if (triIndexes.size() < threshold) {
+    return;
+  }
+  child[0] = new BoundingVolume();
+  child[1] = new BoundingVolume();
+  Vec4f plane = choose_dividing_plane(this);
+  // for(auto triIndex : triIndexes) {
+  // Plyobj::Tri t = ply->tris[];
+  // auto center = tri.center();
+  // child_index =  plane.distance(center) < 0.0f ? 0 : 1;
+  // child[child_index].tris.push_back( tri );
+  // }
+  triIndexes.clear();
+  child[0]->split(ply);
+  child[1]->split(ply);
+}
+
+BoundingVolume::~BoundingVolume() {
+  if (child[0] != nullptr) {
+    delete child[0];
+  }
+  if (child[1] != nullptr) {
+    delete child[1];
+  }
+}
 
 void Plyobj::buildTriMap() {
   vertsToTriIndex.clear();
@@ -407,6 +423,13 @@ void Plyobj::build(FILE* f, Matrix4f m) {
   }
   obj.end();
   */
+
+  bv = std::unique_ptr<BoundingVolume>(new BoundingVolume());
+  bv->triIndexes.resize(tris.size());
+  for (size_t i = 0; i < tris.size(); i++) {
+    bv->triIndexes[i] = i;
+  }
+  bv->split(this);
 }
 
 void Plyobj::draw(const Scene& scene, Prog p) {
@@ -489,6 +512,6 @@ bool Plyobj::intersect([[maybe_unused]] Vec3f p0, [[maybe_unused]] Vec3f p1, [[m
       intersection = closestInt + obj.modelPose.t;
       return true;
     }
-    return false;
   }
+  return false;
 }
