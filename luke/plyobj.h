@@ -156,13 +156,9 @@ class Plyobj : public Shape {
 };
 
 struct BoundingVolume {
-  BoundingVolume() {
-    child[0] = child[1] = nullptr;
-  }
-  ~BoundingVolume();
   void split(Plyobj* ply);
 
   Vec3f maxs, mins;
   std::vector<size_t> triIndexes;
-  BoundingVolume* child[2];
+  std::unique_ptr<BoundingVolume> child[2];
 };

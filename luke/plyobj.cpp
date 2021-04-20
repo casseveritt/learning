@@ -62,24 +62,72 @@ bool isEdgeChoke(const Plyobj& po, size_t edgeIndex) {
   return false;
 }
 
-Vec4f choose_dividing_plane([[maybe_unused]] BoundingVolume* bv) {
+Vec4f choose_dividing_plane(BoundingVolume* bv) {
+  float xSize = fabs(bv->maxs.x - bv->mins.x);
+  float ySize = fabs(bv->maxs.y - bv->mins.y);
+  float zSize = fabs(bv->maxs.z - bv->mins.z);
+  if (xSize > ySize && xSize > zSize) { // X biggest
+    return Vec4f(1, 0, 0, (bv->maxs.x + bv->mins.x) / 2);
+  } else if (ySize > zSize) { // Y biggest
+    return Vec4f(0, 1, 0, (bv->maxs.y + bv->mins.y) / 2);
+  } else { // Z biggest
+    return Vec4f(0, 0, 1, (bv->maxs.z + bv->mins.z) / 2);
+  }
   return Vec4f();
 }
 
 }  // namespace
 
+Vec3f tri_center(Plyobj* ply, size_t triIndex) {
+  Plyobj::Tri t = ply->tris[triIndex];
+  Vec3f triCenter;
+  triCenter.x = (ply->vertices[t.v[0]].pos.x + ply->vertices[t.v[1]].pos.x + ply->vertices[t.v[2]].pos.x) / 3;
+  triCenter.y = (ply->vertices[t.v[0]].pos.y + ply->vertices[t.v[1]].pos.y + ply->vertices[t.v[2]].pos.y) / 3;
+  triCenter.z = (ply->vertices[t.v[0]].pos.z + ply->vertices[t.v[1]].pos.z + ply->vertices[t.v[2]].pos.z) / 3;
+  return triCenter;
+}
+
 // Sets pointers of a BV in the BVH to a split version of itself, and once the BVs
 // contain the same amount or less than the specified number or tris.
 void BoundingVolume::split(Plyobj* ply) {
   constexpr int threshold = 100;
+  maxs = ply->tris[triIndexes[0]].v[0];
+  mins = ply->tris[triIndexes[0]].v[0];
+  for (size_t st : triIndexes)
+
   // Compute mins and maxs / bv corners, probably when finding all tris containing
   if (triIndexes.size() < threshold) {
     return;
   }
-  child[0] = new BoundingVolume();
-  child[1] = new BoundingVolume();
+  child[0] = std::unique_ptr<BoundingVolume>(new BoundingVolume());
+  child[1] = std::unique_ptr<BoundingVolume>(new BoundingVolume());
   Vec4f plane = choose_dividing_plane(this);
-  // for(auto triIndex : triIndexes) {
+  if (plane.x == 1) {
+    for (size_t st : triIndexes) {
+      if (ply->tris[st].v[0].x < plane.w) {
+        child[0].triIndexes.push_back(st);
+      } else {
+        child[1].triIndexes.push_back(st);
+      }
+    }
+  } if (plane.y == 1) {
+    for (size_t st : triIndexes) {
+      if (ply->tris[st].v[0].y < plane.w) {
+        child[0].triIndexes.push_back(st);
+      } else {
+        child[1].triIndexes.push_back(st);
+      }
+    }
+  } if (plane.z == 1) {
+    for (size_t st : triIndexes) {
+      if (ply->tris[st].v[0].z < plane.w) {
+        child[0].triIndexes.push_back(st);
+      } else {
+        child[1].triIndexes.push_back(st);
+      }
+    }
+  }
+  // for (auto triIndex : triIndexes) {
   // Plyobj::Tri t = ply->tris[];
   // auto center = tri.center();
   // child_index =  plane.distance(center) < 0.0f ? 0 : 1;
@@ -88,15 +136,6 @@ void BoundingVolume::split(Plyobj* ply) {
   triIndexes.clear();
   child[0]->split(ply);
   child[1]->split(ply);
-}
-
-BoundingVolume::~BoundingVolume() {
-  if (child[0] != nullptr) {
-    delete child[0];
-  }
-  if (child[1] != nullptr) {
-    delete child[1];
-  }
 }
 
 void Plyobj::buildTriMap() {
@@ -392,12 +431,12 @@ void Plyobj::build(FILE* f, Matrix4f m) {
     }
   }
 
-  // buildTriMap();
-  // buildEdgeList();
+  buildTriMap();
+  buildEdgeList();
 
-  // simplify(tris.size() - 800);
+  simplify(tris.size() - 800);
 
-  //* Polygonal
+  //* Polygonal model
   obj.begin(GL_TRIANGLES);
   for (size_t i = 0; i < tris.size(); i++) {
     Vec3f triNorm = (vertices[tris[i].v[0]].pos - vertices[tris[i].v[2]].pos)
@@ -410,7 +449,7 @@ void Plyobj::build(FILE* f, Matrix4f m) {
     }
   }
   obj.end();
-  /*/ Wireframe
+  /*/ Wireframe model
   obj.begin(GL_LINES);
   obj.color(1.0f, 1.0f, 1.0f);
   for (size_t i = 0; i < edges.size(); i++) {

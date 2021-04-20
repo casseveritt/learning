@@ -113,12 +113,14 @@ static GLuint load_image(const char* imgName) {
   return out;
 }
 
-/*static Vec3f evalBezier(const std::vector<Vec3f>& p, float t) {
+/*
+static Vec3f evalBezier(const std::vector<Vec3f>& p, float t) {
   float t2 = t * t;
   float t3 = t * t * t;
   float w[4] = {-1 * t3 + 3 * t2 - 3 * t + 1, 3 * t3 - 6 * t2 + 3 * t, -3 * t3 + 3 * t2, t3};
   return p[0] * w[0] + p[1] * w[1] + p[2] * w[2] + p[3] * w[3];
-}*/
+}
+*/
 
 static Vec3f evalDeCast(const std::vector<Vec3f>& p, float t) {
   if (p.size() == 1) {
