@@ -63,37 +63,42 @@ bool isEdgeChoke(const Plyobj& po, size_t edgeIndex) {
 }
 
 Vec4f choose_dividing_plane(BoundingVolume* bv) {
-  float xSize = fabs(bv->maxs.x - bv->mins.x);
-  float ySize = fabs(bv->maxs.y - bv->mins.y);
-  float zSize = fabs(bv->maxs.z - bv->mins.z);
+  float xSize = bv->maxs.x - bv->mins.x;
+  float ySize = bv->maxs.y - bv->mins.y;
+  float zSize = bv->maxs.z - bv->mins.z;
   if (xSize > ySize && xSize > zSize) { // X biggest
-    return Vec4f(1, 0, 0, (bv->maxs.x + bv->mins.x) / 2);
+    return Vec4f(1, 0, 0, -(bv->maxs.x + bv->mins.x) / 2);
   } else if (ySize > zSize) { // Y biggest
-    return Vec4f(0, 1, 0, (bv->maxs.y + bv->mins.y) / 2);
+    return Vec4f(0, 1, 0, -(bv->maxs.y + bv->mins.y) / 2);
   } else { // Z biggest
-    return Vec4f(0, 0, 1, (bv->maxs.z + bv->mins.z) / 2);
+    return Vec4f(0, 0, 1, -(bv->maxs.z + bv->mins.z) / 2);
   }
   return Vec4f();
 }
 
-}  // namespace
-
-Vec3f tri_center(Plyobj* ply, size_t triIndex) {
+Vec4f tri_center(Plyobj* ply, size_t triIndex) {
   Plyobj::Tri t = ply->tris[triIndex];
-  Vec3f triCenter;
-  triCenter.x = (ply->vertices[t.v[0]].pos.x + ply->vertices[t.v[1]].pos.x + ply->vertices[t.v[2]].pos.x) / 3;
-  triCenter.y = (ply->vertices[t.v[0]].pos.y + ply->vertices[t.v[1]].pos.y + ply->vertices[t.v[2]].pos.y) / 3;
-  triCenter.z = (ply->vertices[t.v[0]].pos.z + ply->vertices[t.v[1]].pos.z + ply->vertices[t.v[2]].pos.z) / 3;
-  return triCenter;
+  return Vec4f(((ply->vertices[t.v[0]].pos + ply->vertices[t.v[1]].pos + ply->vertices[t.v[2]].pos) / 3), 1.0f);
 }
+
+Vec3f vertPos(Plyobj* ply, int triInd, int vertInd) {
+  return ply->vertices[ply->tris[triInd].v[vertInd]].pos;
+}
+
+}  // namespace
 
 // Sets pointers of a BV in the BVH to a split version of itself, and once the BVs
 // contain the same amount or less than the specified number or tris.
 void BoundingVolume::split(Plyobj* ply) {
   constexpr int threshold = 100;
-  maxs = ply->tris[triIndexes[0]].v[0];
-  mins = ply->tris[triIndexes[0]].v[0];
-  for (size_t st : triIndexes)
+  maxs = vertPos(ply, triIndexes[0], 0);
+  mins = vertPos(ply, triIndexes[0], 0);
+  for (size_t st : triIndexes) {
+    for (int i=0;i<3;i++) {
+      maxs = Max(maxs, vertPos(ply, st, i));
+      mins = Min(mins, vertPos(ply, st, i));
+    }
+  }
 
   // Compute mins and maxs / bv corners, probably when finding all tris containing
   if (triIndexes.size() < threshold) {
@@ -102,40 +107,15 @@ void BoundingVolume::split(Plyobj* ply) {
   child[0] = std::unique_ptr<BoundingVolume>(new BoundingVolume());
   child[1] = std::unique_ptr<BoundingVolume>(new BoundingVolume());
   Vec4f plane = choose_dividing_plane(this);
-  if (plane.x == 1) {
-    for (size_t st : triIndexes) {
-      if (ply->tris[st].v[0].x < plane.w) {
-        child[0].triIndexes.push_back(st);
-      } else {
-        child[1].triIndexes.push_back(st);
-      }
-    }
-  } if (plane.y == 1) {
-    for (size_t st : triIndexes) {
-      if (ply->tris[st].v[0].y < plane.w) {
-        child[0].triIndexes.push_back(st);
-      } else {
-        child[1].triIndexes.push_back(st);
-      }
-    }
-  } if (plane.z == 1) {
-    for (size_t st : triIndexes) {
-      if (ply->tris[st].v[0].z < plane.w) {
-        child[0].triIndexes.push_back(st);
-      } else {
-        child[1].triIndexes.push_back(st);
-      }
-    }
+  for (size_t st : triIndexes) {
+    Vec4f center = tri_center(ply, st);
+    int c = plane.Dot(center) < 0 ? 0 : 1;
+    child[c]->triIndexes.push_back(st);
   }
-  // for (auto triIndex : triIndexes) {
-  // Plyobj::Tri t = ply->tris[];
-  // auto center = tri.center();
-  // child_index =  plane.distance(center) < 0.0f ? 0 : 1;
-  // child[child_index].tris.push_back( tri );
-  // }
   triIndexes.clear();
   child[0]->split(ply);
   child[1]->split(ply);
+  printf("Split finished: (%f, %f, %f) (%f, %f, %f)\n", mins.x, mins.y, mins.z, maxs.x, maxs.y, maxs.z);
 }
 
 void Plyobj::buildTriMap() {
