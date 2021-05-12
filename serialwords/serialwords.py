@@ -9901,7 +9901,7 @@ if len(sys.argv) > 1:
 		serial = []
 		while i > 0:
 			serial.insert(0, words[i%wll])
-			i = int(i/wll)
+			i = i//wll
 		print("-".join(serial))
 	else:
 		l = sys.argv[1].split("-")
