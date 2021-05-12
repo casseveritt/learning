@@ -9897,7 +9897,11 @@ if len(sys.argv) > 1:
 	except:
 		pass
 
-	if i >= 0:
+	if i == 0:
+		print(words[0])
+		exit(0)
+
+	if i > 0:
 		serial = []
 		while i > 0:
 			serial.insert(0, words[i%wll])
