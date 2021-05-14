@@ -157,6 +157,7 @@ class Plyobj : public Shape {
 
 struct BoundingVolume {
   void split(Plyobj* ply);
+  bool intersect(Vec3f p0, Vec3f p1, Vec3f& intersection);
 
   Vec3f maxs, mins;
   std::vector<size_t> triIndexes;

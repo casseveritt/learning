@@ -118,6 +118,56 @@ void BoundingVolume::split(Plyobj* ply) {
   printf("Split finished: (%f, %f, %f) (%f, %f, %f)\n", mins.x, mins.y, mins.z, maxs.x, maxs.y, maxs.z);
 }
 
+bool BoundingVolume::intersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
+  Vec3f r0 = p0 - obj.modelPose.t;
+  Vec3f r1 = p1 - obj.modelPose.t;
+  vector<Vec3f> intPoints;
+  bool inBounds = false;
+
+  Linef line(p0, p1);
+  vector<Planef> planes;
+  planes.push_back(Planef(Vec3f(1.0f, 0.0f, 0.0f), boundingMax.x));
+  planes.push_back(Planef(Vec3f(-1.0f, 0.0f, 0.0f), boundingMin.x));
+  planes.push_back(Planef(Vec3f(0.0f, 1.0f, 0.0f), boundingMax.y));
+  planes.push_back(Planef(Vec3f(0.0f, -1.0f, 0.0f), boundingMin.y));
+  planes.push_back(Planef(Vec3f(0.0f, 0.0f, 1.0f), boundingMax.z));
+  planes.push_back(Planef(Vec3f(0.0f, 0.0f, -1.0f), boundingMin.z));
+
+  for (Planef p : planes) {
+    Vec3f pip;  // PlaneIntPoint
+    if (p.Intersect(line, pip)) {
+      if (pip.x <= boundingMax.x && pip.y <= boundingMax.y && pip.z <= boundingMax.z) {
+        if (pip.x >= boundingMin.x && pip.y >= boundingMin.y && pip.z >= boundingMin.z) {
+          inBounds = true;
+        }
+      }
+    }
+  }
+
+  if (inBounds) {
+    printf("In bounds\n");
+    for (int i = 0; i < int(tris.size()); i++) {
+      auto& t = tris[i];
+      Vec3f hp;
+      if (triInt(r0, r1, t, hp)) intPoints.push_back(hp);
+    }
+    if (!intPoints.empty()) {
+      Vec3f closestInt = intPoints[0];
+      float minLen = (r0 - closestInt).Length();
+      for (int i = 1; i < int(intPoints.size()); i++) {
+        float len = (r0 - intPoints[i]).Length();
+        if (len < minLen) {
+          closestInt = intPoints[i];
+          minLen = len;
+        }
+      }
+      intersection = closestInt + obj.modelPose.t;
+      return true;
+    }
+  }
+  return false;
+}
+
 void Plyobj::buildTriMap() {
   vertsToTriIndex.clear();
   for (size_t i = 0; i < tris.size(); i++) {

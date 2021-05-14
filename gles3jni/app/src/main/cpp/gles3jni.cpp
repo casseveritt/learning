@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+// Build:   ./gradlew build
+// Install: adb install ./app/build/outputs/apk/debug/app-debug.apk
+
 #include <jni.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,10 +27,10 @@
 const Vertex QUAD[4] = {
     // Square with diagonal < 2 so that it fits in a [-1 .. 1]^2 square
     // regardless of rotation.
-    {{-0.7f, -0.7f}, {0x00, 0xFF, 0x00}},
-    {{ 0.7f, -0.7f}, {0x00, 0x00, 0xFF}},
-    {{-0.7f,  0.7f}, {0xFF, 0x00, 0x00}},
-    {{ 0.7f,  0.7f}, {0xFF, 0xFF, 0xFF}},
+    {{-0.5f, -0.5f}, {0x00, 0xFF, 0x00}},
+    {{ 0.5f, -0.5f}, {0x00, 0x00, 0xFF}},
+    {{-0.5f,  0.5f}, {0xFF, 0x00, 0x00}},
+    {{ 0.5f,  0.5f}, {0xFF, 0xFF, 0xFF}},
 };
 
 bool checkGlError(const char* funcName) {
@@ -151,8 +154,7 @@ void Renderer::resize(int w, int h) {
     glViewport(0, 0, w, h);
 }
 
-void Renderer::calcSceneParams(unsigned int w, unsigned int h,
-        float* offsets) {
+void Renderer::calcSceneParams(unsigned int w, unsigned int h, float* offsets) {
     // number of cells along the larger screen dimension
     const float NCELLS_MAJOR = MAX_INSTANCES_PER_SIDE;
     // cell size in scene space
@@ -200,15 +202,6 @@ void Renderer::step() {
     if (mLastFrameNs > 0) {
         float dt = float(nowNs - mLastFrameNs) * 0.000000001f;
 
-        for (unsigned int i = 0; i < mNumInstances; i++) {
-            mAngles[i] += mAngularVelocity[i] * dt;
-            if (mAngles[i] >= TWO_PI) {
-                mAngles[i] -= TWO_PI;
-            } else if (mAngles[i] <= -TWO_PI) {
-                mAngles[i] += TWO_PI;
-            }
-        }
-
         float* transforms = mapTransformBuf();
         for (unsigned int i = 0; i < mNumInstances; i++) {
             float s = sinf(mAngles[i]);
@@ -224,7 +217,7 @@ void Renderer::step() {
     mLastFrameNs = nowNs;
 }
 
-void Renderer::render() {
+void Renderer::render() { // Maybe main loop
     step();
 
     glClearColor(0.2f, 0.2f, 0.3f, 1.0f);
