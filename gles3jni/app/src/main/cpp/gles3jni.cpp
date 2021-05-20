@@ -22,258 +22,225 @@
 #include <string.h>
 #include <time.h>
 
+#include "board.h"
+#include "geom.h"
 #include "gles3jni.h"
+#include "linear.h"
+#include "multrect.h"
+#include "render.h"
+#include "scene.h"
+#include "stb.h"
 
-const Vertex QUAD[4] = {
-    // Square with diagonal < 2 so that it fits in a [-1 .. 1]^2 square
-    // regardless of rotation.
-    {{-0.5f, -0.5f}, {0x00, 0xFF, 0x00}},
-    {{ 0.5f, -0.5f}, {0x00, 0x00, 0xFF}},
-    {{-0.5f,  0.5f}, {0xFF, 0x00, 0x00}},
-    {{ 0.5f,  0.5f}, {0xFF, 0xFF, 0xFF}},
+using namespace r3;
+
+bool checkGlError(const char* funcName) {  // Checks if there have been errors
+  GLint err = glGetError();
+  if (err != GL_NO_ERROR) {
+    ALOGE("GL error after %s(): 0x%08x\n", funcName, err);
+    return true;
+  }
+  return false;
+}
+
+static void printString(const char* name, GLenum s) {  // Prints out to log
+  const char* v = (const char*)glGetString(s);
+  ALOGV("App %s: %s\n", name, v);  // Just like printf
+}
+
+struct RendererImpl : public Renderer {
+  RendererImpl() {}
+
+  void Init(const Board& b) override;
+  void Draw(const Board& b) override;
+  void SetWindowSize(int w, int h) override;
+  void SetCursorPos(Vec2d cursorPos) override;
+
+  Scene scene;
+  GLuint defaultVab;
+
+  Prog constColorProg, texProg;
+
+  GLuint zero, one, two, three, four, five, six, seven, eight;
+  GLuint unrev, flag, mine, clickMine;
+
+  MultRect tiles;
+
+  int width;
+  int height;
+
+  Vec2d currPos;
+
+  Vec3f nearInWorld3;
+  Vec3f farInWorld3;
 };
 
-bool checkGlError(const char* funcName) {
-    GLint err = glGetError();
-    if (err != GL_NO_ERROR) {
-        ALOGE("GL error after %s(): 0x%08x\n", funcName, err);
-        return true;
-    }
-    return false;
+Renderer* CreateRenderer() {
+  return new RendererImpl();
 }
 
-GLuint createShader(GLenum shaderType, const char* src) {
-    GLuint shader = glCreateShader(shaderType);
-    if (!shader) {
-        checkGlError("glCreateShader");
-        return 0;
+static GLuint load_image(const char* imgName) {
+  int w, h, n;
+
+  const char* im = "imgs/";
+  char* imgLocation = new char[strlen(im) + strlen(imgName) + 1];
+  strcpy(imgLocation, im);
+  strcat(imgLocation, imgName);
+
+  GLuint out;
+  unsigned char* img;
+
+  img = image_load(imgLocation, &w, &h, &n);
+
+  delete[] imgLocation;
+
+  uint32_t* imgi = new uint32_t[w * h];
+
+  for (int j = 0; j < h; j++) {
+    for (int i = 0; i < w; i++) {
+      int ij = i + j * w;
+      { imgi[ij] = uint32_t(img[ij * n + 0]) << 0 | uint32_t(img[ij * n + 1]) << 8 | uint32_t(img[ij * n + 2]) << 16; }
     }
-    glShaderSource(shader, 1, &src, NULL);
+  }
 
-    GLint compiled = GL_FALSE;
-    glCompileShader(shader);
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
-    if (!compiled) {
-        GLint infoLogLen = 0;
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLen);
-        if (infoLogLen > 0) {
-            GLchar* infoLog = (GLchar*)malloc(infoLogLen);
-            if (infoLog) {
-                glGetShaderInfoLog(shader, infoLogLen, NULL, infoLog);
-                ALOGE("Could not compile %s shader:\n%s\n",
-                        shaderType == GL_VERTEX_SHADER ? "vertex" : "fragment",
-                        infoLog);
-                free(infoLog);
-            }
-        }
-        glDeleteShader(shader);
-        return 0;
-    }
-
-    return shader;
-}
-
-GLuint createProgram(const char* vtxSrc, const char* fragSrc) {
-    GLuint vtxShader = 0;
-    GLuint fragShader = 0;
-    GLuint program = 0;
-    GLint linked = GL_FALSE;
-
-    vtxShader = createShader(GL_VERTEX_SHADER, vtxSrc);
-    if (!vtxShader)
-        goto exit;
-
-    fragShader = createShader(GL_FRAGMENT_SHADER, fragSrc);
-    if (!fragShader)
-        goto exit;
-
-    program = glCreateProgram();
-    if (!program) {
-        checkGlError("glCreateProgram");
-        goto exit;
-    }
-    glAttachShader(program, vtxShader);
-    glAttachShader(program, fragShader);
-
-    glLinkProgram(program);
-    glGetProgramiv(program, GL_LINK_STATUS, &linked);
-    if (!linked) {
-        ALOGE("Could not link program");
-        GLint infoLogLen = 0;
-        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLen);
-        if (infoLogLen) {
-            GLchar* infoLog = (GLchar*)malloc(infoLogLen);
-            if (infoLog) {
-                glGetProgramInfoLog(program, infoLogLen, NULL, infoLog);
-                ALOGE("Could not link program:\n%s\n", infoLog);
-                free(infoLog);
-            }
-        }
-        glDeleteProgram(program);
-        program = 0;
-    }
-
-exit:
-    glDeleteShader(vtxShader);
-    glDeleteShader(fragShader);
-    return program;
-}
-
-static void printGlString(const char* name, GLenum s) {
-    const char* v = (const char*)glGetString(s);
-    ALOGV("GL %s: %s\n", name, v);
+  glGenTextures(1, &out);
+  glBindTexture(GL_TEXTURE_2D, out);
+  glTexStorage2D(GL_TEXTURE_2D, 4, GL_RGBA8, w, h);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, imgi);
+  glGenerateMipmap(GL_TEXTURE_2D);
+  delete[] imgi;
+  image_free(img);
+  return out;
 }
 
 // ----------------------------------------------------------------------------
 
-Renderer::Renderer()
-:   mNumInstances(0),
-    mLastFrameNs(0)
-{
-    memset(mScale, 0, sizeof(mScale));
-    memset(mAngularVelocity, 0, sizeof(mAngularVelocity));
-    memset(mAngles, 0, sizeof(mAngles));
+void RendererImpl::Init(const Board& b) {
+  GLint version_maj = 0;
+  GLint version_min = 0;
+  glGetIntegerv(GL_MAJOR_VERSION, &version_maj);
+  glGetIntegerv(GL_MINOR_VERSION, &version_min);
+  printf("GL Version: %d.%d\n", version_maj, version_min);
+
+  glGenVertexArrays(1, &defaultVab);
+  glBindVertexArray(defaultVab);
+
+  // Programs init begin
+  constColorProg = Prog("ccol");
+  texProg = Prog("tex");
+
+  // Textures init begin
+  zero = load_image("0tile.png");
+  one = load_image("1tile.png");
+  two = load_image("2tile.png");
+  three = load_image("3tile.png");
+  four = load_image("4tile.png");
+  five = load_image("5tile.png");
+  six = load_image("6tile.png");
+  seven = load_image("7tile.png");
+  eight = load_image("8tile.png");
+
+  unrev = load_image("unrevealed.png");
+  flag = load_image("flagged.png");
+  mine = load_image("mine.png");
+  clickMine = load_image("clickedMine.png");
+
+  tiles.s0 = 1.0f / (b.width);
+  tiles.s1 = 1.0f / (b.height);
 }
 
-Renderer::~Renderer() {
+void RendererImpl::SetWindowSize(int w, int h) {
+  width = w;
+  height = h;
 }
 
-void Renderer::resize(int w, int h) {
-    auto offsets = mapOffsetBuf();
-    calcSceneParams(w, h, offsets);
-    unmapOffsetBuf();
-
-    // Auto gives a signed int :-(
-    for (auto i = (unsigned)0; i < mNumInstances; i++) {
-        mAngles[i] = drand48() * TWO_PI;
-        mAngularVelocity[i] = MAX_ROT_SPEED * (2.0*drand48() - 1.0);
-    }
-
-    mLastFrameNs = 0;
-
-    glViewport(0, 0, w, h);
+void RendererImpl::SetCursorPos(Vec2d cursorPos) {
+  currPos = cursorPos;
 }
 
-void Renderer::calcSceneParams(unsigned int w, unsigned int h, float* offsets) {
-    // number of cells along the larger screen dimension
-    const float NCELLS_MAJOR = MAX_INSTANCES_PER_SIDE;
-    // cell size in scene space
-    const float CELL_SIZE = 2.0f / NCELLS_MAJOR;
+static double GetTimeInSeconds() {
+  timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return double(int64_t(ts.tv_sec) * int64_t(1e9) + int64_t(ts.tv_nsec)) * 1e-9;
+}
 
-    // Calculations are done in "landscape", i.e. assuming dim[0] >= dim[1].
-    // Only at the end are values put in the opposite order if h > w.
-    const float dim[2] = {fmaxf(w,h), fminf(w,h)};
-    const float aspect[2] = {dim[0] / dim[1], dim[1] / dim[0]};
-    const float scene2clip[2] = {1.0f, aspect[0]};
-    const int ncells[2] = {
-            static_cast<int>(NCELLS_MAJOR),
-            (int)floorf(NCELLS_MAJOR * aspect[1])
-    };
+void RendererImpl::Draw(const Board& b) {
+  static int frames = 0;
+  static double sumtime = 0.0;
 
-    float centers[2][MAX_INSTANCES_PER_SIDE];
-    for (int d = 0; d < 2; d++) {
-        auto offset = -ncells[d] / NCELLS_MAJOR; // -1.0 for d=0
-        for (auto i = 0; i < ncells[d]; i++) {
-            centers[d][i] = scene2clip[d] * (CELL_SIZE*(i + 0.5f) + offset);
+  double t0 = GetTimeInSeconds();
+
+  scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t, Vec3f(0, 1, 0));
+
+  glViewport(0, 0, width, height);
+
+  glClearColor(0.05f, 0.05f, 0.05f, 0);
+  glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+  // float aspectRatio = float(width) / height;
+  scene.projMat = Ortho(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
+
+  GLuint tex[] = {zero, one, two, three, four, five, six, seven, eight, unrev, flag, mine, clickMine};
+
+  for (int i = 0; i < 13; i++) {
+    std::vector<MultRect::Rect> rects;
+    tiles.obj.tex = tex[i];
+    for (int x = 0; x < b.width; x++) {
+      for (int y = 0; y < b.height; y++) {
+        Board::Tile t = b.el(x, y);
+        MultRect::Rect r(x, y);
+        if (i == t.adjMines && t.revealed) {
+          rects.push_back(r);
+        } else if (i == 9 && !t.revealed) {
+          rects.push_back(r);
+        } else if (i == 10 && t.flagged) {
+          rects.push_back(r);
+        } else if (i == 11 && t.isMine && t.revealed) {
+          rects.push_back(r);
+        } else if (i == 12 && t.isMine && t.revealed && t.flagged) {
+          rects.push_back(r);
         }
+        // rects.push_back(MultRect::Rect(x,y));
+        // setTile(b.el(x, y), xSide, ySide);
+        // rect.obj.modelPose.t = Vec3f((xSide * x), (ySide * (b.height - (1 + y))), 0.0f);
+        // rect.draw(scene, texProg);
+      }
     }
+    tiles.build(rects);
+    tiles.draw(scene, texProg);
+  }
 
-    int major = w >= h ? 0 : 1;
-    int minor = w >= h ? 1 : 0;
-    // outer product of centers[0] and centers[1]
-    for (int i = 0; i < ncells[0]; i++) {
-        for (int j = 0; j < ncells[1]; j++) {
-            int idx = i*ncells[1] + j;
-            offsets[2*idx + major] = centers[0][i];
-            offsets[2*idx + minor] = centers[1][j];
-        }
-    }
-
-    mNumInstances = ncells[0] * ncells[1];
-    mScale[major] = 0.5f * CELL_SIZE * scene2clip[0];
-    mScale[minor] = 0.5f * CELL_SIZE * scene2clip[1];
-}
-
-void Renderer::step() {
-    timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    auto nowNs = now.tv_sec*1000000000ull + now.tv_nsec;
-
-    if (mLastFrameNs > 0) {
-        float dt = float(nowNs - mLastFrameNs) * 0.000000001f;
-
-        float* transforms = mapTransformBuf();
-        for (unsigned int i = 0; i < mNumInstances; i++) {
-            float s = sinf(mAngles[i]);
-            float c = cosf(mAngles[i]);
-            transforms[4*i + 0] =  c * mScale[0];
-            transforms[4*i + 1] =  s * mScale[1];
-            transforms[4*i + 2] = -s * mScale[0];
-            transforms[4*i + 3] =  c * mScale[1];
-        }
-        unmapTransformBuf();
-    }
-
-    mLastFrameNs = nowNs;
-}
-
-void Renderer::render() { // Maybe main loop
-    step();
-
-    glClearColor(0.2f, 0.2f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    draw(mNumInstances);
-    checkGlError("Renderer::render");
+  double t1 = GetTimeInSeconds();
+  frames++;
+  sumtime += (t1 - t0);
+  if (frames >= 100) {
+    // printf("avg frame time = %d msec\n", int((sumtime / frames) * 1000));
+    // printf("avg fps = %d\n", int((frames / (sumtime))));
+    frames = 0;
+    sumtime = 0.0;
+  }
 }
 
 // ----------------------------------------------------------------------------
-
-static Renderer* g_renderer = NULL;
 
 extern "C" {
-    JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, jobject obj);
-    JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width, jint height);
-    JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, jobject obj);
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, jobject obj);
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width, jint height);
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, jobject obj);
 };
 
-#if !defined(DYNAMIC_ES3)
-static GLboolean gl3stubInit() {
-    return GL_TRUE;
-}
-#endif
+// Java interaction
 
-JNIEXPORT void JNICALL
-Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, jobject obj) {
-    if (g_renderer) {
-        delete g_renderer;
-        g_renderer = NULL;
-    }
-
-    printGlString("Version", GL_VERSION);
-    printGlString("Vendor", GL_VENDOR);
-    printGlString("Renderer", GL_RENDERER);
-    printGlString("Extensions", GL_EXTENSIONS);
-
-    const char* versionStr = (const char*)glGetString(GL_VERSION);
-    if (strstr(versionStr, "OpenGL ES 3.") && gl3stubInit()) {
-        g_renderer = createES3Renderer();
-    } else if (strstr(versionStr, "OpenGL ES 2.")) {
-        g_renderer = createES2Renderer();
-    } else {
-        ALOGE("Unsupported OpenGL ES version");
-    }
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, jobject obj) {  // Initialization
 }
 
-JNIEXPORT void JNICALL
-Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width, jint height) {
-    if (g_renderer) {
-        g_renderer->resize(width, height);
-    }
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width,
+                                                                    jint height) {  // If window shape changes
 }
 
-JNIEXPORT void JNICALL
-Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, jobject obj) {
-    if (g_renderer) {
-        g_renderer->render();
-    }
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, jobject obj) {  // New frame
+  static int64_t count = 0;
+  count++;
+  float f = (count & 0xff) / float(0xff);
+  glClearColor(f, f, f, 1);
+  glClear(GL_COLOR_BUFFER_BIT);
 }

@@ -17,11 +17,11 @@ void Board::initialize(int fx, int fy) {
   state = Playing;
   int tiles = (width * height) - 9, bombs = numMines;
 
-  for (int i=0;i<height && bombs>0;i++) {
-    for (int j=0;j<width && bombs>0;j++) {
+  for (int i = 0; i < height && bombs > 0; i++) {
+    for (int j = 0; j < width && bombs > 0; j++) {
       if (std::abs(j - fx) > 1 || std::abs(i - fy) > 1) {
-        float chance = float(bombs)/float(tiles);
-        if ((rand()%tiles)+1 <= bombs) {
+        float chance = float(bombs) / float(tiles);
+        if ((rand() % tiles) + 1 <= bombs) {
           bombs--;
           el(j, i).isMine = true;
           for (int ii = std::max(i - 1, 0); ii < std::min(i + 2, height); ii++) {
@@ -49,7 +49,7 @@ void Board::checkWin() {
   }
   if (tilesToWin == 0) {
     state = Won;
-    for (int i=0;i<int(board.size());i++) {
+    for (int i = 0; i < int(board.size()); i++) {
       if (board[i].isMine && !board[i].flagged) {
         board[i].flagged = true;
       }

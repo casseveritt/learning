@@ -17,7 +17,7 @@ class Board {
     bool isMine = false;
   };
   std::vector<Tile> board;
-  int width, height, numMines;//, tilesToWin;
+  int width, height, numMines;  //, tilesToWin;
   State state = Uninitialized;
 
   void build(int inx, int iny, int inb);
