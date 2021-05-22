@@ -33,6 +33,11 @@
 
 using namespace r3;
 
+std::string baseDir;
+jobject appActivity;
+JavaVM * jvm = NULL;
+JNIEnv * appEnv = NULL;
+
 bool checkGlError(const char* funcName) {  // Checks if there have been errors
   GLint err = glGetError();
   if (err != GL_NO_ERROR) {
@@ -222,7 +227,62 @@ void RendererImpl::Draw(const Board& b) {
 
 // ----------------------------------------------------------------------------
 
+/*
+static JNIEnv *attachThread() {
+  if( ! appActivity ) {
+    return NULL;
+  }
+  JNIEnv *env = NULL;
+  if( jvm == NULL || jvm->AttachCurrentThread( &env, NULL) || env == NULL ) {
+    ALOGE( "Unable to attach the current thread!" );
+  }
+  return env;
+}
+*/
+
+jstring appNewJavaString( JNIEnv *env, const std::string & s ) {
+  return env->NewStringUTF( s.c_str() );
+}
+
+static jmethodID getMethod( JNIEnv *env, jobject obj, const char *methodName, const char *methodSignature ) {
+
+  ALOGV( "Get Method %s\n", methodName );
+  
+  jclass objClass = env->GetObjectClass( obj );
+
+  ALOGV( " 1 Get Method %s\n", methodName );
+  
+  jmethodID m = env->GetMethodID( objClass, methodName, methodSignature );
+  ALOGV( " 2 Get Method %p\n", m );
+  if ( m == NULL ) {
+    ALOGE( "failed to find %s method (sig %s)\n", methodName, methodSignature );
+  }
+  return m;
+}
+
+bool appMaterializeFile( const char * filename ) {
+  JNIEnv *env = appEnv;//attachThread();
+  if ( env == NULL ) { return false; }
+  
+  ALOGV( "Materialize file %s\n", filename );
+  
+  jmethodID m = getMethod( env, appActivity, "copyFromApk", "(Ljava/lang/String;)Z" );
+  ALOGV( "1 Materialize file %s\n", filename );
+  if ( m == NULL ) { return false; }
+  
+  jstring s = appNewJavaString( env, filename );
+  ALOGV( "2 Materialize file %s\n", filename );
+  
+  jboolean r = env->CallBooleanMethod( appActivity, m, s );
+  ALOGV( "Materialize file %s (%s)\n", filename, r ? "succeeded" : "failed" );
+  return r;
+}
+
+// ----------------------------------------------------------------------------
+
 extern "C" {
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setActivity(JNIEnv* env, jobject obj, jobject activity);
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setFilesDir(JNIEnv* env, jobject obj, jstring cmd);
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, jobject obj);
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width, jint height);
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, jobject obj);
@@ -230,14 +290,40 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, j
 
 // Java interaction
 
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setActivity(JNIEnv* env, jobject obj, jobject activity) {
+  ALOGV("Activity Set");
+  appActivity = env->NewGlobalRef( activity );
+  appEnv = env;
+}
+
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setFilesDir(JNIEnv* env, jobject obj, jstring cmd) {
+  appEnv = env;
+  const char * str = env->GetStringUTFChars( cmd, NULL );
+  ALOGV("setFilesDir: %s", str );  
+  baseDir = str;
+  baseDir += '/';
+  env->ReleaseStringUTFChars( cmd, str );
+}
+
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, jobject obj) {  // Initialization
+  appEnv = env;
+  appMaterializeFile("ccol.fs");
+  FILE* fp = fopen((baseDir + "ccol.fs").c_str(), "r");
+  if (fp != nullptr) {
+    fseek(fp, 0, SEEK_END);
+    int size = ftell(fp);
+    ALOGV("File size: %i", size);
+  }
+  fclose(fp);
 }
 
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width,
                                                                     jint height) {  // If window shape changes
+  appEnv = env;
 }
 
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, jobject obj) {  // New frame
+  appEnv = env;
   static int64_t count = 0;
   count++;
   float f = (count & 0xff) / float(0xff);

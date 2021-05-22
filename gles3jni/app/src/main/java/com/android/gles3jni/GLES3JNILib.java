@@ -16,6 +16,8 @@
 
 package com.android.gles3jni;
 
+import android.app.Activity;
+
 // Wrapper for native library
 
 public class GLES3JNILib {
@@ -24,6 +26,8 @@ public class GLES3JNILib {
           System.loadLibrary("gles3jni");
      }
 
+     public static native void setActivity( Activity activity );
+     public static native void setFilesDir( String cmd );
      public static native void init();
      public static native void resize(int width, int height);
      public static native void step();

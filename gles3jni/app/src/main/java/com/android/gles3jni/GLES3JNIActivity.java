@@ -19,16 +19,23 @@ package com.android.gles3jni;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
+import java.io.InputStream;
+import java.io.FileOutputStream;
 import android.view.WindowManager;
+import java.io.IOException;
 
 import java.io.File;
 
 public class GLES3JNIActivity extends Activity {
 
+    private static final String TAG = "gles3jni";
+
     GLES3JNIView mView;
 
     @Override protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
+        GLES3JNILib.setActivity(this);
+        GLES3JNILib.setFilesDir(getFilesDir().getAbsolutePath());
         mView = new GLES3JNIView(getApplication());
         setContentView(mView);
     }
@@ -41,5 +48,40 @@ public class GLES3JNIActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();
         mView.onResume();
+
+    }
+
+    public boolean copyFromApk(String filename) { // Copy file out of apk
+        // implement me!
+        Log.i(TAG, "in Java copyFromApk( " + filename + " ) called");
+        InputStream input = null;
+        try {
+            input = getAssets().open(filename);
+            // Log.i( TAG, "apk file " + filename + " opened!" );
+
+            File f = new java.io.File(getFilesDir().getAbsolutePath()
+                    + "/" + filename);
+            if (f.exists() == false) {
+                // Log.i(TAG, "Creating local file " + f.getAbsolutePath() );
+                f.getParentFile().mkdirs();
+                f.createNewFile();
+            }
+
+            FileOutputStream output = new FileOutputStream(f);
+
+            byte[] buf = new byte[4096];
+            int len = 0;
+            while ((len = input.read(buf, 0, 4096)) > 0) {
+                output.write(buf, 0, len);
+            }
+            input.close();
+            output.close();
+
+        } catch (IOException e) {
+            Log.e(TAG, "copyFromApk failure of  " + e.getMessage());
+            return false;
+        }
+
+        return true;
     }
 }

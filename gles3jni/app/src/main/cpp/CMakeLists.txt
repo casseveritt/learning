@@ -24,8 +24,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-rtti -fno-exceptions -Wa
 set(OPENGL_LIB GLESv3)
 
 add_library(gles3jni SHARED
-            stb/stb_image.h
-            stb/stb_image_write.h
+            stb_image.h
+            stb_image_write.h
             stb.h
             stb.cpp
             linear.h
