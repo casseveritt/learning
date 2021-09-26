@@ -36,6 +36,8 @@ add_library(gles3jni SHARED
             geom.cpp
             multrect.h
             multrect.cpp
+            rectangle.h
+            rectangle.cpp
             prog.h
             prog.cpp
             gles3jni.cpp )

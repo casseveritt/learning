@@ -3,7 +3,6 @@
 using namespace r3;
 
 void Rectangle::build(float side0, float side1, Vec3f rCol) {
-  form = 0;
   s0 = side0;
   s1 = side1;
   obj.begin(GL_TRIANGLE_STRIP);

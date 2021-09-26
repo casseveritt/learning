@@ -16,10 +16,11 @@
 
 // Build:   ./gradlew build
 // Install: adb install ./app/build/outputs/apk/debug/app-debug.apk
+// Save logs to foo.log: adb lolcat -v time | tee foo.log
 
 #include <jni.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string.h> 
 #include <time.h>
 
 #include "board.h"
@@ -69,6 +70,7 @@ struct RendererImpl : public Renderer {
   GLuint unrev, flag, mine, clickMine;
 
   MultRect tiles;
+  Rectangle testrect;
 
   int width;
   int height;
@@ -86,7 +88,7 @@ Renderer* CreateRenderer() {
 static GLuint load_image(const char* imgName) {
   int w, h, n;
 
-  const char* im = "imgs/";
+  const char* im = baseDir.c_str();
   char* imgLocation = new char[strlen(im) + strlen(imgName) + 1];
   strcpy(imgLocation, im);
   strcat(imgLocation, imgName);
@@ -120,6 +122,7 @@ static GLuint load_image(const char* imgName) {
 // ----------------------------------------------------------------------------
 
 void RendererImpl::Init(const Board& b) {
+  ALOGV("Gl init");
   GLint version_maj = 0;
   GLint version_min = 0;
   glGetIntegerv(GL_MAJOR_VERSION, &version_maj);
@@ -130,10 +133,12 @@ void RendererImpl::Init(const Board& b) {
   glBindVertexArray(defaultVab);
 
   // Programs init begin
-  constColorProg = Prog("ccol");
-  texProg = Prog("tex");
+  ALOGV("Programs init");
+  constColorProg = Prog("ccol", baseDir);
+  texProg = Prog("tex", baseDir);
 
   // Textures init begin
+  ALOGV("Texture loading");
   zero = load_image("0tile.png");
   one = load_image("1tile.png");
   two = load_image("2tile.png");
@@ -149,8 +154,14 @@ void RendererImpl::Init(const Board& b) {
   mine = load_image("mine.png");
   clickMine = load_image("clickedMine.png");
 
+  ALOGV("Object building");
   tiles.s0 = 1.0f / (b.width);
   tiles.s1 = 1.0f / (b.height);
+
+  testrect.build(1.0f,1.0f,Vec3f(1.0f,0.0f,1.0f));
+  //testrect.obj.modelPose
+
+  ALOGV("Done initializing");
 }
 
 void RendererImpl::SetWindowSize(int w, int h) {
@@ -169,12 +180,17 @@ static double GetTimeInSeconds() {
 }
 
 void RendererImpl::Draw(const Board& b) {
-  static int frames = 0;
+
+  testrect.draw(scene, constColorProg);
+
+  /*
+  static int frames = 0; 
   static double sumtime = 0.0;
 
   double t0 = GetTimeInSeconds();
 
-  scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), -scene.camPose.t, Vec3f(0, 1, 0));
+  scene.camPose.t.SetValue(0,0,1);
+  scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), Vec3f(0, 0, -1), Vec3f(0, 1, 0));
 
   glViewport(0, 0, width, height);
 
@@ -182,7 +198,7 @@ void RendererImpl::Draw(const Board& b) {
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
   // float aspectRatio = float(width) / height;
-  scene.projMat = Ortho(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
+  scene.projMat = Ortho(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 100.0f);
 
   GLuint tex[] = {zero, one, two, three, four, five, six, seven, eight, unrev, flag, mine, clickMine};
 
@@ -223,6 +239,7 @@ void RendererImpl::Draw(const Board& b) {
     frames = 0;
     sumtime = 0.0;
   }
+  */
 }
 
 // ----------------------------------------------------------------------------
@@ -290,6 +307,12 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, j
 
 // Java interaction
 
+Renderer* rend = nullptr;
+
+Board board;
+int frame = 0, width, height;
+int bWidth = 10, bHeight = 10, mines = 10;
+
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setActivity(JNIEnv* env, jobject obj, jobject activity) {
   ALOGV("Activity Set");
   appActivity = env->NewGlobalRef( activity );
@@ -308,25 +331,53 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setFilesDir(JNIEnv*
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, jobject obj) {  // Initialization
   appEnv = env;
   appMaterializeFile("ccol.fs");
+  appMaterializeFile("ccol.vs");
+  appMaterializeFile("tex.fs");
+  appMaterializeFile("tex.vs");
+
+  appMaterializeFile("0tile.png");
+  appMaterializeFile("1tile.png");
+  appMaterializeFile("2tile.png");
+  appMaterializeFile("3tile.png");
+  appMaterializeFile("4tile.png");
+  appMaterializeFile("5tile.png");
+  appMaterializeFile("6tile.png");
+  appMaterializeFile("7tile.png");
+  appMaterializeFile("8tile.png");
+  appMaterializeFile("clickedMine.png");
+  appMaterializeFile("flagged.png");
+  appMaterializeFile("mine.png");
+  appMaterializeFile("unrevealed.png");
+
   FILE* fp = fopen((baseDir + "ccol.fs").c_str(), "r");
   if (fp != nullptr) {
     fseek(fp, 0, SEEK_END);
     int size = ftell(fp);
     ALOGV("File size: %i", size);
   }
+
+  srand(0); // Random board seed
+  rend = CreateRenderer();
+  board.build(bWidth, bHeight, mines);
+  ALOGV("rend->Init-ing");
+  rend->Init(board);
+
   fclose(fp);
 }
 
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width,
-                                                                    jint height) {  // If window shape changes
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width, jint height) {  // If window shape changes
   appEnv = env;
 }
 
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, jobject obj) {  // New frame
   appEnv = env;
+
   static int64_t count = 0;
   count++;
   float f = (count & 0xff) / float(0xff);
   glClearColor(f, f, f, 1);
   glClear(GL_COLOR_BUFFER_BIT);
+
+  rend->Draw(board);
+
 }

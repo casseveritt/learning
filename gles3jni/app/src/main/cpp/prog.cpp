@@ -13,7 +13,7 @@ namespace {
 char* getFileContents(const char* filename) {
   FILE* fp = fopen(filename, "r");
   if (fp == nullptr) {
-    printf("Failed to open file: %s\n", filename);
+    ALOGV("Failed to open file: %s\n", filename);
     exit(1);
   }
   fseek(fp, 0, SEEK_END);
@@ -41,8 +41,8 @@ char* concatenate(const char* a, const char* b) {
 
 }  // namespace
 
-void Prog::create(const char* baseShaderName) {
-  const char* pr = "progs/";
+void Prog::create(const char* baseShaderName, std::string filePath) {
+  const char* pr = filePath.c_str();
   const char* fs = ".fs";
   const char* vs = ".vs";
   char* bsfs = new char[strlen(pr) + strlen(baseShaderName) + strlen(fs) + 1];

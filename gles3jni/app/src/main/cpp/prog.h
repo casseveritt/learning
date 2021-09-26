@@ -53,8 +53,8 @@ class Prog {
 
   Prog() {}
 
-  Prog(const char* baseShaderName) {
-    create(baseShaderName);
+  Prog(const char* baseShaderName, std::string filePath) {
+    create(baseShaderName, filePath);
   }
 
   Prog(const char* vertexShaderFilename, const char* fragmentShaderFilename) {
@@ -62,7 +62,8 @@ class Prog {
   }
 
   void create(const char* vertexShaderFilename, const char* fragmentShaderFilename);
-  void create(const char* baseShaderName);
+  void create(const char* baseShaderName, std::string filePath);
+  
 
   void load(const Scene& scene);
 
