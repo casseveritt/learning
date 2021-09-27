@@ -56,4 +56,20 @@ class GLES3JNIView extends GLSurfaceView {
             GLES3JNILib.init();
         }
     }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent e) {
+            // MotionEvent reports input details from the touch screen
+            // and other input controls. In this case, you are only
+            // interested in events where the touch position changed.
+
+        float x = e.getX();
+        float y = e.getY();
+        Log.i(TAG, "Touch x: " + x + ", y: " + y);
+        if (e.getAction() == MotionEvent.ACTION_POINTER_1_UP) {
+          GLES3JNILib.touch(x,y);
+        }
+        return true;
+    }
+
 }

@@ -167,6 +167,7 @@ void RendererImpl::Init(const Board& b) {
 void RendererImpl::SetWindowSize(int w, int h) {
   width = w;
   height = h;
+  ALOGV("Screen Dimensions: Width = %d, Height = %d", w, h);
 }
 
 void RendererImpl::SetCursorPos(Vec2d cursorPos) {
@@ -180,10 +181,6 @@ static double GetTimeInSeconds() {
 }
 
 void RendererImpl::Draw(const Board& b) {
-
-  testrect.draw(scene, constColorProg);
-
-  /*
   static int frames = 0; 
   static double sumtime = 0.0;
 
@@ -192,13 +189,13 @@ void RendererImpl::Draw(const Board& b) {
   scene.camPose.t.SetValue(0,0,1);
   scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), Vec3f(0, 0, -1), Vec3f(0, 1, 0));
 
-  glViewport(0, 0, width, height);
+  //glViewport(0, 0, width, height);
 
-  glClearColor(0.05f, 0.05f, 0.05f, 0);
+  //glClearColor(0.05f, 0.05f, 0.05f, 0);
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-  // float aspectRatio = float(width) / height;
-  scene.projMat = Ortho(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 100.0f);
+  float aspectRatio = float(height) / width;
+  scene.projMat = Ortho(0.0f, float(b.width), -(aspectRatio-1)*float(b.height), float(b.height), -1.0f, 1.0f);
 
   GLuint tex[] = {zero, one, two, three, four, five, six, seven, eight, unrev, flag, mine, clickMine};
 
@@ -239,7 +236,10 @@ void RendererImpl::Draw(const Board& b) {
     frames = 0;
     sumtime = 0.0;
   }
-  */
+  
+
+  //testrect.draw(scene, constColorProg);
+
 }
 
 // ----------------------------------------------------------------------------
@@ -367,6 +367,11 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, j
 
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width, jint height) {  // If window shape changes
   appEnv = env;
+  rend->SetWindowSize(width, height);
+}
+
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_touch(float x, float y) {  // Touch event
+  ALOGV("C++ touch coords x: %f, y: %f", x, y);
 }
 
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, jobject obj) {  // New frame
@@ -378,6 +383,8 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, j
   glClearColor(f, f, f, 1);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  rend->Draw(board);
+  rend->Draw(board); 
+
+  ALOGV("Frame finished %d", count);
 
 }
