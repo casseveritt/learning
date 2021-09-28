@@ -302,6 +302,7 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setActivity(JNIEnv*
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setFilesDir(JNIEnv* env, jobject obj, jstring cmd);
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, jobject obj);
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width, jint height);
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y);
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, jobject obj);
 };
 
@@ -365,13 +366,22 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, j
   fclose(fp);
 }
 
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width, jint height) {  // If window shape changes
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint jwidth, jint jheight) {  // If window shape changes
   appEnv = env;
-  rend->SetWindowSize(width, height);
+  rend->SetWindowSize(jwidth, jheight);
+  width = jwidth;
+  height = jheight;
 }
 
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_touch(float x, float y) {  // Touch event
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y) {  // Touch event
   ALOGV("C++ touch coords x: %f, y: %f", x, y);
+  float boardTileX = x / (width / board.width);
+  ALOGV("Revealing x %f", boardTileX);
+  float boardTileY = (y - (float(height/width-1)*height)) / (height / board.height);
+  ALOGV("Revealing y %f", boardTileY);
+  if (boardTileY>=0){
+    board.reveal(boardTileX, boardTileY);
+  }
 }
 
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, jobject obj) {  // New frame
