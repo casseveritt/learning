@@ -155,11 +155,11 @@ void RendererImpl::Init(const Board& b) {
   clickMine = load_image("clickedMine.png");
 
   ALOGV("Object building");
-  tiles.s0 = 1.0f / (b.width);
-  tiles.s1 = 1.0f / (b.height);
+  tiles.s0 = 1.0f;
+  tiles.s1 = 1.0f;
+  tiles.obj.modelPose.t = Vec3f(0, (b.height - 1), 0);
 
   testrect.build(1.0f,1.0f,Vec3f(1.0f,0.0f,1.0f));
-  //testrect.obj.modelPose
 
   ALOGV("Done initializing");
 }
