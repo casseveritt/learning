@@ -31,5 +31,5 @@ public class GLES3JNILib {
      public static native void init();
      public static native void resize(int width, int height);
      public static native void step();
-     public static native void touch(float x, float y); // Purposefully simple
+     public static native void touch(float x, float y, int type); // Purposefully simple
 }

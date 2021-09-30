@@ -138,8 +138,12 @@ void Board::reveal(int x, int y) {
 // Places a flag on UNREVEALED tiles, or takes them off
 void Board::flag(int x, int y) {
   Tile& t = el(x, y);
-  if (!t.revealed && (state == Playing)) {
-    t.flagged = !t.flagged;
+  if (!t.revealed) {
+    if (state == Playing) {
+      t.flagged = !t.flagged;
+    }
+  } else {
+    reveal(x, y);
   }
 }
 

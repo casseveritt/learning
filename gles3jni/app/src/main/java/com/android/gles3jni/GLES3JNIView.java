@@ -65,10 +65,8 @@ class GLES3JNIView extends GLSurfaceView {
 
         float x = e.getX();
         float y = e.getY();
-        Log.i(TAG, "Touch x: " + x + ", y: " + y);
-        //if (e.getAction() == MotionEvent.ACTION_POINTER_1_UP) {
-          GLES3JNILib.touch(x,y);
-        //}
+        Log.i(TAG, "Touch x: " + x + ", y: " + y + " action: " + e.getAction());
+        GLES3JNILib.touch(x,y, e.getAction());
         return true;
     }
 

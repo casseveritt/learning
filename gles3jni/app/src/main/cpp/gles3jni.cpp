@@ -164,6 +164,27 @@ void RendererImpl::Init(const Board& b) {
   ALOGV("Done initializing");
 }
 
+/*
+static void mouse_button_callback(int button, int action) {
+  if (button == GLFW_MOUSE_BUTTON_LEFT) {
+    if (action == GLFW_PRESS) {
+      leftClick = true;
+      anchor = prevPos;
+    } else if (action == GLFW_RELEASE) {
+      leftClick = false;
+    }
+  }
+  if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+    if (action == GLFW_PRESS) {
+      rightClick = (action == GLFW_PRESS);
+      anchor = prevPos;
+    } else if (action == GLFW_RELEASE) {
+      rightClick = false;
+    }
+  }
+}
+*/
+
 void RendererImpl::SetWindowSize(int w, int h) {
   width = w;
   height = h;
@@ -302,7 +323,7 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setActivity(JNIEnv*
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setFilesDir(JNIEnv* env, jobject obj, jstring cmd);
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, jobject obj);
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width, jint height);
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y);
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y, jint type);
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, jobject obj);
 };
 
@@ -312,6 +333,8 @@ Renderer* rend = nullptr;
 
 Board board;
 int frame = 0, width, height;
+bool held = false;
+int framesHeld = 0;
 int bWidth = 10, bHeight = 10, mines = 10;
 
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setActivity(JNIEnv* env, jobject obj, jobject activity) {
@@ -373,14 +396,26 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env,
   height = jheight;
 }
 
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y) {  // Touch event
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y, jint type) {  // Touch event
   ALOGV("C++ touch coords x: %f, y: %f", x, y);
-  float boardTileX = x / (width / board.width);
-  ALOGV("Revealing x %f", boardTileX);
-  float boardTileY = (y - (float(height/width-1)*height)) / (height / board.height);
-  ALOGV("Revealing y %f", boardTileY);
-  if (boardTileY>=0){
-    board.reveal(boardTileX, boardTileY);
+  if (y < width){
+    if (type == 1) {
+      int boardTileX = (x / (width / board.width));
+      int boardTileY = (y / (width / board.height));
+      ALOGV("Revealing tile x: %f, y: %f", boardTileX, boardTileY);
+      if (held) {
+        board.reveal(boardTileX, boardTileY);
+        held = false;
+      } else {
+        board.flag(boardTileX, boardTileY);
+      }
+      framesHeld = 0;
+    } if (type == 0 || type == 2) {
+      framesHeld++;
+      if (framesHeld >= 10) {
+        held = true;
+      }
+    }
   }
 }
 
