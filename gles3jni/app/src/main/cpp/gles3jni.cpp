@@ -57,28 +57,51 @@ static void printString(const char* name, GLenum s) {  // Prints out to log
 enum Space {
   Space_Pixel,
   Space_Window,
-  Space_Board
+  Space_Board,
+  Space_Tile
 };
 
 struct Transforms {
 
-  Vec3f transform(Space to, Space from, Vec3f p);
-
+  Transforms() {
+    xfScreenFromPixel = Matrix4f::Identity();
+    auto s = Matrix4f::Scale(Vec3f(1.2f, 1.2f, 1));
+    auto t = Matrix4f::Translate(Vec3f(-0.1f, -0.5f, 0));
+    xfBoardFromScreen = t * s;
+    xfBoardTileFromBoard = Matrix4f::Identity();
+    xfBoardFromBoardWindow = Matrix4f::Identity();
+  }
+  void SetPixels(int w, int h) {
+    auto s = Matrix4f::Scale(Vec3f((1.0f/w), -(1.0f/w),1));
+    auto t = Matrix4f::Translate(Vec3f(0,(float(h)/w),0));
+    xfScreenFromPixel = t * s;
+  }
+  void SetTiles(int r, int c) {
+    xfBoardTileFromBoard.SetScale(Vec3f(float(c),float(r),1));
+  }
+  Vec3f transform(Space to, Space from, Vec3f p) {
+    return transform(to, from) * p;
+  }
+  Matrix4f transform(Space to, Space from) {
+    if (from == Space_Tile && to == Space_Pixel) {
+      return (xfBoardTileFromBoard * xfBoardFromScreen * xfScreenFromPixel).Inverted();
+    }
+    if (from == Space_Board && to == Space_Pixel) {
+      return (xfBoardFromScreen * xfScreenFromPixel).Inverted();
+    }
+    if (from == Space_Pixel && to == Space_Window) {
+      return xfScreenFromPixel;
+    }
+    ALOGE("Transforms::transform unsupported transform");
+    exit(42);
+    return Matrix4f();
+  }
 
   Matrix4f xfScreenFromPixel;
   Matrix4f xfBoardFromScreen;
   Matrix4f xfBoardTileFromBoard;
   Matrix4f xfBoardFromBoardWindow;
 };
-
-Vec3f Transforms::transform(Space to, Space from, Vec3f p){
-  if (from == Space_Pixel && to == Space_Window) {
-    return xfScreenFromPixel * p;
-  }
-  ALOGE("Transforms::transform unsupported transform");
-  exit(42);
-  return Vec3f();
-}
 
 struct RendererImpl : public Renderer {
   RendererImpl() {}
@@ -87,6 +110,8 @@ struct RendererImpl : public Renderer {
   void Draw(const Board& b) override;
   void SetWindowSize(int w, int h) override;
   void SetCursorPos(Vec2d cursorPos) override;
+
+  Transforms xf;
 
   Scene scene;
   GLuint defaultVab;
@@ -149,6 +174,8 @@ static GLuint load_image(const char* imgName) {
 // ----------------------------------------------------------------------------
 
 void RendererImpl::Init(const Board& b) {
+
+
   ALOGV("Gl init");
   GLint version_maj = 0;
   GLint version_min = 0;
@@ -182,9 +209,13 @@ void RendererImpl::Init(const Board& b) {
   clickMine = load_image("clickedMine.png");
 
   ALOGV("Object building");
+  xf.SetTiles(b.width, b.height);
+
   tiles.s0 = 1.0f;
   tiles.s1 = 1.0f;
-  tiles.obj.modelPose.t = Vec3f(0, (b.height - 1), 0);
+  //tiles.obj.modelPose = Posef();
+  //tiles.obj.model = xf.transform(Space_Pixel, Space_Board);
+  //tiles.obj.model = Matrix4f::Identity();
 
   testrect.build(1.0f,1.0f,Vec3f(1.0f,0.0f,1.0f));
 
@@ -215,6 +246,7 @@ static void mouse_button_callback(int button, int action) {
 void RendererImpl::SetWindowSize(int w, int h) {
   width = w;
   height = h;
+  xf.SetPixels(w, h);
   ALOGV("Screen Dimensions: Width = %d, Height = %d", w, h);
 }
 
@@ -237,13 +269,15 @@ void RendererImpl::Draw(const Board& b) {
   scene.camPose.t.SetValue(0,0,1);
   scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), Vec3f(0, 0, -1), Vec3f(0, 1, 0));
 
+  tiles.obj.model = xf.transform(Space_Pixel, Space_Tile);
+
   //glViewport(0, 0, width, height);
 
   //glClearColor(0.05f, 0.05f, 0.05f, 0);
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
   float aspectRatio = float(height) / width;
-  scene.projMat = Ortho(0.0f, float(b.width), -(aspectRatio-1)*float(b.height), float(b.height), -1.0f, 1.0f);
+  scene.projMat = Ortho(0.0f, float(width), float(height), 0.0f, -1.0f, 1.0f);
 
   GLuint tex[] = {zero, one, two, three, four, five, six, seven, eight, unrev, flag, mine, clickMine};
 

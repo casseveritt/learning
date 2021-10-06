@@ -24,6 +24,7 @@ void Rectangle::draw(const Scene& scene, Prog p) {
   obj.draw(scene, p);
 }
 
+/*
 bool Rectangle::intersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
   Planef plane(Vec3f(0, 0, 1), 0.0f);
   plane.Transform(obj.modelPose.GetMatrix4());
@@ -39,3 +40,4 @@ bool Rectangle::intersect(Vec3f p0, Vec3f p1, Vec3f& intersection) {
   }
   return hit;
 }
+*/

@@ -79,7 +79,7 @@ void Geom::draw(const Scene& scene, Prog p) {
     glBindTexture(GL_TEXTURE_2D, tex);
   }
 
-  Matrix4f modelMat = modelPose.GetMatrix4();
+  Matrix4f modelMat = model;// * modelPose.GetMatrix4();
   glUniformMatrix4fv(p.loc("proj").i, 1, GL_FALSE, scene.projMat.GetValue());
   glUniformMatrix4fv(p.loc("model").i, 1, GL_FALSE, modelMat.GetValue());
   glUniformMatrix4fv(p.loc("view").i, 1, GL_FALSE, viewMat.GetValue());
