@@ -38,6 +38,7 @@ std::string baseDir;
 jobject appActivity;
 JavaVM * jvm = NULL;
 JNIEnv * appEnv = NULL;
+bool dragdetect = false;
 
 bool checkGlError(const char* funcName) {  // Checks if there have been errors
   GLint err = glGetError();
@@ -51,6 +52,32 @@ bool checkGlError(const char* funcName) {  // Checks if there have been errors
 static void printString(const char* name, GLenum s) {  // Prints out to log
   const char* v = (const char*)glGetString(s);
   ALOGV("App %s: %s\n", name, v);  // Just like printf
+}
+
+enum Space {
+  Space_Pixel,
+  Space_Window,
+  Space_Board
+};
+
+struct Transforms {
+
+  Vec3f transform(Space to, Space from, Vec3f p);
+
+
+  Matrix4f xfScreenFromPixel;
+  Matrix4f xfBoardFromScreen;
+  Matrix4f xfBoardTileFromBoard;
+  Matrix4f xfBoardFromBoardWindow;
+};
+
+Vec3f Transforms::transform(Space to, Space from, Vec3f p){
+  if (from == Space_Pixel && to == Space_Window) {
+    return xfScreenFromPixel * p;
+  }
+  ALOGE("Transforms::transform unsupported transform");
+  exit(42);
+  return Vec3f();
 }
 
 struct RendererImpl : public Renderer {
@@ -248,6 +275,10 @@ void RendererImpl::Draw(const Board& b) {
     tiles.draw(scene, texProg);
   }
 
+  if (dragdetect) {
+    testrect.draw(scene, constColorProg);
+  }
+
   double t1 = GetTimeInSeconds();
   frames++;
   sumtime += (t1 - t0);
@@ -398,6 +429,9 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env,
 
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y, jint type) {  // Touch event
   ALOGV("C++ touch coords x: %f, y: %f", x, y);
+  if (type == 262) {
+    dragdetect = true;
+  }
   if (y < width){
     if (type == 1) {
       int boardTileX = (x / (width / board.width));
