@@ -86,6 +86,9 @@ struct Transforms {
     if (from == Space_Tile && to == Space_Pixel) {
       return (xfBoardTileFromBoard * xfBoardFromScreen * xfScreenFromPixel).Inverted();
     }
+    if (from == Space_Tile && to == Space_Window) {
+      return (xfBoardTileFromBoard * xfBoardFromScreen).Inverted();
+    }
     if (from == Space_Board && to == Space_Pixel) {
       return (xfBoardFromScreen * xfScreenFromPixel).Inverted();
     }
@@ -269,7 +272,7 @@ void RendererImpl::Draw(const Board& b) {
   scene.camPose.t.SetValue(0,0,1);
   scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), Vec3f(0, 0, -1), Vec3f(0, 1, 0));
 
-  tiles.obj.model = xf.transform(Space_Pixel, Space_Tile);
+  tiles.obj.model = xf.transform(Space_Window, Space_Tile);
 
   //glViewport(0, 0, width, height);
 
@@ -277,7 +280,7 @@ void RendererImpl::Draw(const Board& b) {
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
   float aspectRatio = float(height) / width;
-  scene.projMat = Ortho(0.0f, float(width), float(height), 0.0f, -1.0f, 1.0f);
+  scene.projMat = Ortho(0.0f, 1.0f, 0.0f, float(height)/width, -1.0f, 1.0f);
 
   GLuint tex[] = {zero, one, two, three, four, five, six, seven, eight, unrev, flag, mine, clickMine};
 
