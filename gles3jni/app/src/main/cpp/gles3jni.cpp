@@ -65,9 +65,13 @@ struct Transforms {
 
   Transforms() {
     xfScreenFromPixel = Matrix4f::Identity();
+    auto r = Matrix4f::Translate(Vec3f(-0.5f, -0.5f, 0.0f));
+    r = Quaternionf(Vec3f(0.0f, 0.0f, -1.0f), ToRadians(45.0f)).GetMatrix4() * r;
+    r = Matrix4f::Translate(Vec3f(0.5f, 0.5f, 0.0f)) * r;
+
     auto s = Matrix4f::Scale(Vec3f(1.2f, 1.2f, 1));
     auto t = Matrix4f::Translate(Vec3f(-0.1f, -0.5f, 0));
-    xfBoardFromScreen = t * s;
+    xfBoardFromScreen = r * t * s;
     xfBoardTileFromBoard = Matrix4f::Identity();
     xfBoardFromBoardWindow = Matrix4f::Identity();
   }
@@ -78,9 +82,6 @@ struct Transforms {
   }
   void SetTiles(int r, int c) {
     xfBoardTileFromBoard.SetScale(Vec3f(float(c),float(r),1));
-  }
-  Vec3f transform(Space to, Space from, Vec3f p) {
-    return transform(to, from) * p;
   }
   Matrix4f transform(Space to, Space from) {
     if (from == Space_Tile && to == Space_Pixel) {
@@ -95,6 +96,9 @@ struct Transforms {
     if (from == Space_Pixel && to == Space_Window) {
       return xfScreenFromPixel;
     }
+    if (from == Space_Pixel && to == Space_Tile) {
+      return (xfBoardTileFromBoard * xfBoardFromScreen * xfScreenFromPixel);
+    }
     ALOGE("Transforms::transform unsupported transform");
     exit(42);
     return Matrix4f();
@@ -106,6 +110,8 @@ struct Transforms {
   Matrix4f xfBoardFromBoardWindow;
 };
 
+Transforms xf;
+
 struct RendererImpl : public Renderer {
   RendererImpl() {}
 
@@ -113,8 +119,6 @@ struct RendererImpl : public Renderer {
   void Draw(const Board& b) override;
   void SetWindowSize(int w, int h) override;
   void SetCursorPos(Vec2d cursorPos) override;
-
-  Transforms xf;
 
   Scene scene;
   GLuint defaultVab;
@@ -466,26 +470,24 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env,
 
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y, jint type) {  // Touch event
   ALOGV("C++ touch coords x: %f, y: %f", x, y);
+  Vec3f posInPixels(x, y, 1.0f);
   if (type == 262) {
     dragdetect = true;
   }
-  if (y < width){
-    if (type == 1) {
-      int boardTileX = (x / (width / board.width));
-      int boardTileY = (y / (width / board.height));
-      ALOGV("Revealing tile x: %f, y: %f", boardTileX, boardTileY);
-      if (held) {
-        board.reveal(boardTileX, boardTileY);
-        held = false;
-      } else {
-        board.flag(boardTileX, boardTileY);
-      }
-      framesHeld = 0;
-    } if (type == 0 || type == 2) {
-      framesHeld++;
-      if (framesHeld >= 10) {
-        held = true;
-      }
+  if (type == 1) {
+    Vec3f posInTiles = xf.transform(Space_Tile, Space_Pixel) * posInPixels;
+    if (held) {
+      ALOGV("Revealing tile x: %f, y: %f", posInTiles.x, posInTiles.y);
+      board.reveal(posInTiles.x, posInTiles.y);
+      held = false;
+    } else {
+      board.flag(posInTiles.x, posInTiles.y);
+    }
+    framesHeld = 0;
+  } if (type == 0 || type == 2) {
+    framesHeld++;
+    if (framesHeld >= 10) {
+      held = true;
     }
   }
 }
