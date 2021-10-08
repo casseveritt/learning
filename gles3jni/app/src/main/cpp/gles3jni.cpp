@@ -38,7 +38,6 @@ std::string baseDir;
 jobject appActivity;
 JavaVM * jvm = NULL;
 JNIEnv * appEnv = NULL;
-bool dragdetect = false;
 
 bool checkGlError(const char* funcName) {  // Checks if there have been errors
   GLint err = glGetError();
@@ -57,6 +56,7 @@ static void printString(const char* name, GLenum s) {  // Prints out to log
 enum Space {
   Space_Pixel,
   Space_Window,
+  Space_BoardWindow,
   Space_Board,
   Space_Tile
 };
@@ -65,13 +65,7 @@ struct Transforms {
 
   Transforms() {
     xfScreenFromPixel = Matrix4f::Identity();
-    auto r = Matrix4f::Translate(Vec3f(-0.5f, -0.5f, 0.0f));
-    r = Quaternionf(Vec3f(0.0f, 0.0f, -1.0f), ToRadians(45.0f)).GetMatrix4() * r;
-    r = Matrix4f::Translate(Vec3f(0.5f, 0.5f, 0.0f)) * r;
-
-    auto s = Matrix4f::Scale(Vec3f(1.2f, 1.2f, 1));
-    auto t = Matrix4f::Translate(Vec3f(-0.1f, -0.5f, 0));
-    xfBoardFromScreen = r * t * s;
+    xfBoardFromScreen = Matrix4f::Identity();
     xfBoardTileFromBoard = Matrix4f::Identity();
     xfBoardFromBoardWindow = Matrix4f::Identity();
   }
@@ -82,6 +76,9 @@ struct Transforms {
   }
   void SetTiles(int r, int c) {
     xfBoardTileFromBoard.SetScale(Vec3f(float(c),float(r),1));
+  }
+  void SetZoom(float scale) {
+    xfBoardFromScreen.SetScale(scale);
   }
   Matrix4f transform(Space to, Space from) {
     if (from == Space_Tile && to == Space_Pixel) {
@@ -110,8 +107,6 @@ struct Transforms {
   Matrix4f xfBoardFromBoardWindow;
 };
 
-Transforms xf;
-
 struct RendererImpl : public Renderer {
   RendererImpl() {}
 
@@ -119,6 +114,13 @@ struct RendererImpl : public Renderer {
   void Draw(const Board& b) override;
   void SetWindowSize(int w, int h) override;
   void SetCursorPos(Vec2d cursorPos) override;
+  void Touch(float x, float y, int type, int index) override;
+
+  Transforms xf;
+  bool dragdetect = false, multitouch = false, held = false;
+  float startDist;
+  Vec2f touchStart, touch2Start;
+  int framesHeld = 0;
 
   Scene scene;
   GLuint defaultVab;
@@ -131,8 +133,7 @@ struct RendererImpl : public Renderer {
   MultRect tiles;
   Rectangle testrect;
 
-  int width;
-  int height;
+  int width, height;
 
   Vec2d currPos;
 
@@ -283,6 +284,8 @@ void RendererImpl::Draw(const Board& b) {
   //glClearColor(0.05f, 0.05f, 0.05f, 0);
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
+
+
   float aspectRatio = float(height) / width;
   scene.projMat = Ortho(0.0f, 1.0f, 0.0f, float(height)/width, -1.0f, 1.0f);
 
@@ -313,7 +316,10 @@ void RendererImpl::Draw(const Board& b) {
       }
     }
     tiles.build(rects);
+    glScissor(100, 100, 200, 200);
+    glEnable(GL_SCISSOR_TEST);
     tiles.draw(scene, texProg);
+    glDisable(GL_SCISSOR_TEST);
   }
 
   if (dragdetect) {
@@ -333,6 +339,37 @@ void RendererImpl::Draw(const Board& b) {
 
   //testrect.draw(scene, constColorProg);
 
+}
+
+void RendererImpl::Touch(float x, float y, int type, int index) {
+  Vec3f posInPixels(x, y, 1.0f);
+  if (type == 261) {
+    if (index == 0) {
+      touch2Start = Vec2f(x, y);
+      multitouch = true;
+      dragdetect = true;
+    } else {
+      float xDist = fabs(touch2Start.x - x);
+      float yDist = fabs(touch2Start.y - y);
+      float startDist = sqrt((xDist*xDist)+(yDist*yDist));
+    } 
+  }
+  if (type == 1) {
+    Vec3f posInTiles = xf.transform(Space_Tile, Space_Pixel) * posInPixels;
+    if (held) {
+      ALOGV("Revealing tile x: %f, y: %f", posInTiles.x, posInTiles.y);
+      //b.reveal(posInTiles.x, posInTiles.y);
+      held = false;
+    } else {
+      //b.flag(posInTiles.x, posInTiles.y);
+    }
+    framesHeld = 0;
+  } if (type == 0 || type == 2) {
+    framesHeld++;
+    if (framesHeld >= 10) {
+      held = true;
+    }
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -395,7 +432,7 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setActivity(JNIEnv*
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setFilesDir(JNIEnv* env, jobject obj, jstring cmd);
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, jobject obj);
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width, jint height);
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y, jint type);
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y, jint type, jint index);
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, jobject obj);
 };
 
@@ -404,9 +441,7 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, j
 Renderer* rend = nullptr;
 
 Board board;
-int frame = 0, width, height;
-bool held = false;
-int framesHeld = 0;
+int frame = 0;
 int bWidth = 10, bHeight = 10, mines = 10;
 
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setActivity(JNIEnv* env, jobject obj, jobject activity) {
@@ -464,32 +499,11 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, j
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint jwidth, jint jheight) {  // If window shape changes
   appEnv = env;
   rend->SetWindowSize(jwidth, jheight);
-  width = jwidth;
-  height = jheight;
 }
 
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y, jint type) {  // Touch event
-  ALOGV("C++ touch coords x: %f, y: %f", x, y);
-  Vec3f posInPixels(x, y, 1.0f);
-  if (type == 262) {
-    dragdetect = true;
-  }
-  if (type == 1) {
-    Vec3f posInTiles = xf.transform(Space_Tile, Space_Pixel) * posInPixels;
-    if (held) {
-      ALOGV("Revealing tile x: %f, y: %f", posInTiles.x, posInTiles.y);
-      board.reveal(posInTiles.x, posInTiles.y);
-      held = false;
-    } else {
-      board.flag(posInTiles.x, posInTiles.y);
-    }
-    framesHeld = 0;
-  } if (type == 0 || type == 2) {
-    framesHeld++;
-    if (framesHeld >= 10) {
-      held = true;
-    }
-  }
+JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y, jint type, jint index) {  // Touch event
+  ALOGV("C++ touch coords x: %f, y: %f, type: %d, index: %d", x, y, type, index);
+  rend->Touch(x, y, type, index);
 }
 
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, jobject obj) {  // New frame
@@ -503,6 +517,6 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, j
 
   rend->Draw(board); 
 
-  ALOGV("Frame finished %d", count);
+  ALOGV("Frame finished %lld", count);
 
 }
