@@ -67,7 +67,7 @@ struct Transforms {
   Transforms() {
     xfScreenFromPixel = Matrix4f::Identity();
     xfBoardFromScreen = Matrix4f::Identity();
-    xfBoardWindowFromBoard = Matrix4f::Identity();
+    //xfBoardWindowFromBoard = Matrix4f::Identity();
     xfBoardTileFromBoard = Matrix4f::Identity();
     xfBoardFromBoardWindow = Matrix4f::Identity();
   }
@@ -103,7 +103,7 @@ struct Transforms {
     return Matrix4f();
   }
 
-  Matrix4f xfBoardWindowFromBoard;
+  //Matrix4f xfBoardWindowFromBoard;
   Matrix4f xfScreenFromPixel;
   Matrix4f xfBoardFromScreen;
   Matrix4f xfBoardTileFromBoard;
@@ -122,7 +122,7 @@ struct RendererImpl : public Renderer {
   Transforms xf;
   bool dragdetect = false, multitouch = false, held = false;
   float startDist;
-  Vec2f touchStart, touch2Start;
+  Vec2f touchStart, touch2Start, storePos;
   int framesHeld = 0;
 
   Scene scene;
@@ -354,7 +354,20 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
     } else {
       float xDist = fabs(touch2Start.x - x);
       float yDist = fabs(touch2Start.y - y);
-      float startDist = sqrt((xDist*xDist)+(yDist*yDist));
+      startDist = sqrt((xDist*xDist)+(yDist*yDist));
+    }
+  }
+  if (type == 2) {
+    if (multitouch) {
+      if (index == 0) {
+        storePos = Vec2f(x, y);
+      }
+      if (index == 1) {
+        float xDist = fabs(storePos.x - x);
+        float yDist = fabs(storePos.y - y);
+        float touchDist = sqrt((xDist*xDist)+(yDist*yDist));
+        ALOGV("Board Scale change by: %f", (touchDist/startDist));
+      }
     }
   }
   if (type == 1) {
