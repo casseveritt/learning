@@ -38,6 +38,7 @@ std::string baseDir;
 jobject appActivity;
 JavaVM * jvm = NULL;
 JNIEnv * appEnv = NULL;
+Board board;
 
 bool checkGlError(const char* funcName) {  // Checks if there have been errors
   GLint err = glGetError();
@@ -66,6 +67,7 @@ struct Transforms {
   Transforms() {
     xfScreenFromPixel = Matrix4f::Identity();
     xfBoardFromScreen = Matrix4f::Identity();
+    xfBoardWindowFromBoard = Matrix4f::Identity();
     xfBoardTileFromBoard = Matrix4f::Identity();
     xfBoardFromBoardWindow = Matrix4f::Identity();
   }
@@ -101,6 +103,7 @@ struct Transforms {
     return Matrix4f();
   }
 
+  Matrix4f xfBoardWindowFromBoard;
   Matrix4f xfScreenFromPixel;
   Matrix4f xfBoardFromScreen;
   Matrix4f xfBoardTileFromBoard;
@@ -316,14 +319,14 @@ void RendererImpl::Draw(const Board& b) {
       }
     }
     tiles.build(rects);
-    glScissor(100, 100, 200, 200);
+    glScissor(0, 0, 1080, 1500);
     glEnable(GL_SCISSOR_TEST);
     tiles.draw(scene, texProg);
     glDisable(GL_SCISSOR_TEST);
   }
 
   if (dragdetect) {
-    testrect.draw(scene, constColorProg);
+    //testrect.draw(scene, constColorProg);
   }
 
   double t1 = GetTimeInSeconds();
@@ -352,7 +355,7 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       float xDist = fabs(touch2Start.x - x);
       float yDist = fabs(touch2Start.y - y);
       float startDist = sqrt((xDist*xDist)+(yDist*yDist));
-    } 
+    }
   }
   if (type == 1) {
     Vec3f posInTiles = xf.transform(Space_Tile, Space_Pixel) * posInPixels;
@@ -440,7 +443,6 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, j
 
 Renderer* rend = nullptr;
 
-Board board;
 int frame = 0;
 int bWidth = 10, bHeight = 10, mines = 10;
 
