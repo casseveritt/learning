@@ -67,7 +67,7 @@ struct Transforms {
   Transforms() {
     xfScreenFromPixel = Matrix4f::Identity();
     xfBoardFromScreen = Matrix4f::Identity();
-    //xfBoardWindowFromBoard = Matrix4f::Identity();
+    xfBoardPose = Matrix4f::Identity();
     xfBoardTileFromBoard = Matrix4f::Identity();
     xfBoardFromBoardWindow = Matrix4f::Identity();
   }
@@ -82,12 +82,18 @@ struct Transforms {
   void SetZoom(float scale) {
     xfBoardFromScreen.SetScale(scale);
   }
+  void SetBoardPose(Matrix4f pose) {
+    xfBoardPose = pose * xfBoardPose;
+  }
   Matrix4f transform(Space to, Space from) {
     if (from == Space_Tile && to == Space_Pixel) {
-      return (xfBoardTileFromBoard * xfBoardFromScreen * xfScreenFromPixel).Inverted();
+      return (xfBoardTileFromBoard * xfBoardPose * xfBoardFromScreen * xfScreenFromPixel).Inverted();
     }
     if (from == Space_Tile && to == Space_Window) {
-      return (xfBoardTileFromBoard * xfBoardFromScreen).Inverted();
+      return (xfBoardTileFromBoard * xfBoardPose * xfBoardFromScreen).Inverted();
+    }
+    if (from == Space_Pixel && to == Space_Board) {
+      return (xfBoardFromScreen * xfScreenFromPixel);
     }
     if (from == Space_Board && to == Space_Pixel) {
       return (xfBoardFromScreen * xfScreenFromPixel).Inverted();
@@ -96,14 +102,14 @@ struct Transforms {
       return xfScreenFromPixel;
     }
     if (from == Space_Pixel && to == Space_Tile) {
-      return (xfBoardTileFromBoard * xfBoardFromScreen * xfScreenFromPixel);
+      return (xfBoardTileFromBoard * xfBoardPose * xfBoardFromScreen * xfScreenFromPixel);
     }
     ALOGE("Transforms::transform unsupported transform");
     exit(42);
     return Matrix4f();
   }
 
-  //Matrix4f xfBoardWindowFromBoard;
+  Matrix4f xfBoardPose;
   Matrix4f xfScreenFromPixel;
   Matrix4f xfBoardFromScreen;
   Matrix4f xfBoardTileFromBoard;
@@ -357,6 +363,13 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       startDist = sqrt((xDist*xDist)+(yDist*yDist));
     }
   }
+  if (type == 262) {
+    multitouch = false;
+    dragdetect = false;
+  }
+  if (type == 0) {
+    touchStart = Vec2f(x, y);
+  }
   if (type == 2) {
     if (multitouch) {
       if (index == 0) {
@@ -367,7 +380,16 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
         float yDist = fabs(storePos.y - y);
         float touchDist = sqrt((xDist*xDist)+(yDist*yDist));
         ALOGV("Board Scale change by: %f", (touchDist/startDist));
+        xf.SetBoardPose(Matrix4f::Scale(startDist/touchDist));
+        startDist = touchDist;
       }
+    }
+    //if (!dragdetect) {}
+    if (dragdetect && index == 0) {
+      Vec3f boardTouchStart = xf.transform(Space_Board, Space_Pixel) * Vec3f(touchStart.x, touchStart.y, 0.0f);
+      Vec3f boardTouch = xf.transform(Space_Board, Space_Pixel) * Vec3f(x, y, 0.0f);
+      xf.SetBoardPose(Matrix4f::Translate(Vec3f((boardTouchStart.x - boardTouch.x), (boardTouchStart.y - boardTouch.y), 0.0f)));
+      touchStart = Vec2f(x, y);
     }
   }
   if (type == 1) {
@@ -380,11 +402,6 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       //b.flag(posInTiles.x, posInTiles.y);
     }
     framesHeld = 0;
-  } if (type == 0 || type == 2) {
-    framesHeld++;
-    if (framesHeld >= 10) {
-      held = true;
-    }
   }
 }
 
