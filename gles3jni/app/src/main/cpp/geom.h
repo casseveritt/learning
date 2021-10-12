@@ -10,7 +10,7 @@ class Geom {
  public:
   GLuint b = 0;
   GLint pos_loc, col_loc, proj_loc, view_loc, model_loc, norm_loc;
-  //r3::Posef modelPose;
+  r3::Posef modelPose;
   r3::Matrix4f model;
   GLenum primType;
   struct Vertex {

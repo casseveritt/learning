@@ -56,8 +56,8 @@ static void printString(const char* name, GLenum s) {  // Prints out to log
 
 enum Space {
   Space_Pixel,
+  Space_Screen,
   Space_Window,
-  Space_BoardWindow,
   Space_Board,
   Space_Tile
 };
@@ -67,9 +67,8 @@ struct Transforms {
   Transforms() {
     xfScreenFromPixel = Matrix4f::Identity();
     xfBoardFromScreen = Matrix4f::Identity();
-    xfBoardPose = Matrix4f::Identity();
     xfBoardTileFromBoard = Matrix4f::Identity();
-    xfBoardFromBoardWindow = Matrix4f::Identity();
+    xfWindowFromScreen = Matrix4f::Identity();
   }
   void SetPixels(int w, int h) {
     auto s = Matrix4f::Scale(Vec3f((1.0f/w), -(1.0f/w),1));
@@ -77,20 +76,17 @@ struct Transforms {
     xfScreenFromPixel = t * s;
   }
   void SetTiles(int r, int c) {
-    xfBoardTileFromBoard.SetScale(Vec3f(float(c),float(r),1));
+    xfBoardTileFromBoard.SetScale(1);
   }
-  void SetZoom(float scale) {
-    xfBoardFromScreen.SetScale(scale);
-  }
-  void SetBoardPose(Matrix4f pose) {
-    xfBoardPose = pose * xfBoardPose;
+  void SetScreenFromBoard(Matrix4f xf) {
+    xfBoardFromScreen = xf.Inverted() ;
   }
   Matrix4f transform(Space to, Space from) {
     if (from == Space_Tile && to == Space_Pixel) {
-      return (xfBoardTileFromBoard * xfBoardPose * xfBoardFromScreen * xfScreenFromPixel).Inverted();
+      return (xfBoardTileFromBoard * xfBoardFromScreen * xfScreenFromPixel).Inverted();
     }
-    if (from == Space_Tile && to == Space_Window) {
-      return (xfBoardTileFromBoard * xfBoardPose * xfBoardFromScreen).Inverted();
+    if (from == Space_Tile && to == Space_Screen) {
+      return (xfBoardTileFromBoard * xfBoardFromScreen).Inverted();
     }
     if (from == Space_Pixel && to == Space_Board) {
       return (xfBoardFromScreen * xfScreenFromPixel);
@@ -98,22 +94,24 @@ struct Transforms {
     if (from == Space_Board && to == Space_Pixel) {
       return (xfBoardFromScreen * xfScreenFromPixel).Inverted();
     }
-    if (from == Space_Pixel && to == Space_Window) {
+    if (from == Space_Pixel && to == Space_Screen) {
       return xfScreenFromPixel;
     }
     if (from == Space_Pixel && to == Space_Tile) {
-      return (xfBoardTileFromBoard * xfBoardPose * xfBoardFromScreen * xfScreenFromPixel);
+      return (xfBoardTileFromBoard * xfBoardFromScreen * xfScreenFromPixel);
     }
-    ALOGE("Transforms::transform unsupported transform");
+    if (from == Space_Board && to == Space_Screen) {
+      return (xfBoardFromScreen).Inverted();
+    }
+    ALOGE("Transforms::transform unsupported transform to %d from %d", to, from);
     exit(42);
     return Matrix4f();
   }
 
-  Matrix4f xfBoardPose;
   Matrix4f xfScreenFromPixel;
+  Matrix4f xfWindowFromScreen;
   Matrix4f xfBoardFromScreen;
   Matrix4f xfBoardTileFromBoard;
-  Matrix4f xfBoardFromBoardWindow;
 };
 
 struct RendererImpl : public Renderer {
@@ -128,7 +126,7 @@ struct RendererImpl : public Renderer {
   Transforms xf;
   bool dragdetect = false, multitouch = false, held = false;
   float startDist;
-  Vec2f touchStart, touch2Start, storePos;
+  Vec3f touch[2], touchStart[2];
   int framesHeld = 0;
 
   Scene scene;
@@ -140,7 +138,7 @@ struct RendererImpl : public Renderer {
   GLuint unrev, flag, mine, clickMine;
 
   MultRect tiles;
-  Rectangle testrect;
+  Rectangle banner;
 
   int width, height;
 
@@ -228,13 +226,10 @@ void RendererImpl::Init(const Board& b) {
   ALOGV("Object building");
   xf.SetTiles(b.width, b.height);
 
-  tiles.s0 = 1.0f;
-  tiles.s1 = 1.0f;
-  //tiles.obj.modelPose = Posef();
-  //tiles.obj.model = xf.transform(Space_Pixel, Space_Board);
-  //tiles.obj.model = Matrix4f::Identity();
+  tiles.s0 = 1.0f / fmax(b.width, b.height);
+  tiles.s1 = tiles.s0;
 
-  testrect.build(1.0f,1.0f,Vec3f(1.0f,0.0f,1.0f));
+  banner.build(1.0f, 0.175f, Vec3f(1.0f,0.0f,1.0f));
 
   ALOGV("Done initializing");
 }
@@ -265,6 +260,8 @@ void RendererImpl::SetWindowSize(int w, int h) {
   height = h;
   xf.SetPixels(w, h);
   ALOGV("Screen Dimensions: Width = %d, Height = %d", w, h);
+  float aspectRatio = float(h)/w;
+  banner.obj.model = Matrix4f::Translate(Vec3f(0.0f, aspectRatio-0.175f, 0.0f)) * banner.obj.model;
 }
 
 void RendererImpl::SetCursorPos(Vec2d cursorPos) {
@@ -286,7 +283,7 @@ void RendererImpl::Draw(const Board& b) {
   scene.camPose.t.SetValue(0,0,1);
   scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), Vec3f(0, 0, -1), Vec3f(0, 1, 0));
 
-  tiles.obj.model = xf.transform(Space_Window, Space_Tile);
+  tiles.obj.model = xf.transform(Space_Screen, Space_Tile);
 
   //glViewport(0, 0, width, height);
 
@@ -325,7 +322,7 @@ void RendererImpl::Draw(const Board& b) {
       }
     }
     tiles.build(rects);
-    glScissor(0, 0, 1080, 1500);
+    glScissor(0, 0, 1080, 1750);
     glEnable(GL_SCISSOR_TEST);
     tiles.draw(scene, texProg);
     glDisable(GL_SCISSOR_TEST);
@@ -346,53 +343,60 @@ void RendererImpl::Draw(const Board& b) {
   }
   
 
-  //testrect.draw(scene, constColorProg);
+  banner.draw(scene, constColorProg);
 
 }
 
+#define PTR_DOWN 0
+#define PTR_UP 1
+#define PTR_MOVE 2
+#define PTR2_DOWN 261
+#define PTR2_UP 262
+
 void RendererImpl::Touch(float x, float y, int type, int index) {
   Vec3f posInPixels(x, y, 1.0f);
-  if (type == 261) {
-    if (index == 0) {
-      touch2Start = Vec2f(x, y);
-      multitouch = true;
-      dragdetect = true;
-    } else {
-      float xDist = fabs(touch2Start.x - x);
-      float yDist = fabs(touch2Start.y - y);
-      startDist = sqrt((xDist*xDist)+(yDist*yDist));
-    }
+  ALOGV("touch: type = %d, index = %d, x = %.0f, y = %.0f", type, index, x, y);
+  if (type == PTR_DOWN || type == PTR2_DOWN) {
+    touchStart[index] = Vec3f(x, y, 0.0f);
+  } else if (type == PTR_MOVE) {
+    touch[index] = Vec3f(x, y, 0.0f);
   }
-  if (type == 262) {
+
+  if (type == PTR2_DOWN && index == 1) {
+    ALOGV("multitouch");
+    multitouch = true;
+      //dragdetect = true;
+    startDist = (touchStart[0] - touchStart[1]).Length();
+  }
+
+  if (type == PTR2_UP) {
     multitouch = false;
     dragdetect = false;
   }
-  if (type == 0) {
-    touchStart = Vec2f(x, y);
-  }
-  if (type == 2) {
-    if (multitouch) {
-      if (index == 0) {
-        storePos = Vec2f(x, y);
-      }
-      if (index == 1) {
-        float xDist = fabs(storePos.x - x);
-        float yDist = fabs(storePos.y - y);
-        float touchDist = sqrt((xDist*xDist)+(yDist*yDist));
-        ALOGV("Board Scale change by: %f", (touchDist/startDist));
-        xf.SetBoardPose(Matrix4f::Scale(startDist/touchDist));
-        startDist = touchDist;
-      }
+
+  if (type == PTR_MOVE) {
+    if (multitouch && index == 1) {
+      Vec3f center = (touchStart[0] + touchStart[1]) * 0.5f;
+      Vec3f centerInBoard = xf.transform(Space_Board, Space_Pixel) * center;
+      Matrix4f translateCenter = Matrix4f::Translate(centerInBoard);
+
+
+      float dist = (touch[0] - touch[1]).Length();
+
+      float distScale = dist / startDist;
+
+      ALOGV("Board Scale change by: %f", distScale);
+      Matrix4f s = Matrix4f::Scale(distScale);
+      Matrix4f scaleBy = translateCenter.Inverted() * s * translateCenter;
+      xf.SetScreenFromBoard(s * xf.transform(Space_Screen, Space_Board));
+      startDist = dist;
     }
-    //if (!dragdetect) {}
+    if (!dragdetect) {
+    }
     if (dragdetect && index == 0) {
-      Vec3f boardTouchStart = xf.transform(Space_Board, Space_Pixel) * Vec3f(touchStart.x, touchStart.y, 0.0f);
-      Vec3f boardTouch = xf.transform(Space_Board, Space_Pixel) * Vec3f(x, y, 0.0f);
-      xf.SetBoardPose(Matrix4f::Translate(Vec3f((boardTouchStart.x - boardTouch.x), (boardTouchStart.y - boardTouch.y), 0.0f)));
-      touchStart = Vec2f(x, y);
     }
   }
-  if (type == 1) {
+  if (type == PTR_UP) {
     Vec3f posInTiles = xf.transform(Space_Tile, Space_Pixel) * posInPixels;
     if (held) {
       ALOGV("Revealing tile x: %f, y: %f", posInTiles.x, posInTiles.y);
