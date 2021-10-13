@@ -127,7 +127,7 @@ struct RendererImpl : public Renderer {
   bool dragdetect = false, multitouch = false, held = false, wait = false;
   float startDist;
   Matrix4f prevScreenFromBoard;
-  Vec3f touch[2], touchStart[2];
+  Vec3f touch[2], touchStart[2], dragStart;
   Vec3f centerInBoard;
   float scaleFactor;
   int framesheld = 0;
@@ -361,6 +361,7 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
   ALOGV("touch: type = %d, index = %d, x = %.0f, y = %.0f", type, index, x, y);
   if (type == PTR_DOWN || type == PTR2_DOWN) {
     touchStart[index] = Vec3f(x, y, 0.0f);
+    prevScreenFromBoard = xf.transform(Space_Screen, Space_Board);
   } else if (type == PTR_MOVE) {
     touch[index] = Vec3f(x, y, 0.0f);
   }
@@ -398,9 +399,19 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       Matrix4f scaleBy = translateCenterEnd * s * invTranslateCenterBegin;
       xf.SetScreenFromBoard(scaleBy * prevScreenFromBoard);
     }
-    if (!dragdetect && !multitouch) {
+    if (!dragdetect && !multitouch && !wait) {
+      float dragDist = (touchStart[0] - posInPixels).Length();
+      if (dragDist >= 50) {
+        dragdetect = true;
+        dragStart = Vec3f(x, y, 0.0f);
+      }
     }
-    if (dragdetect && index == 0) {
+    if (dragdetect) {
+      Vec3f posInScreen = xf.transform(Space_Screen, Space_Pixel) * posInPixels;
+      Vec3f dsInScreen = xf.transform(Space_Screen, Space_Pixel) * dragStart;
+      Vec3f tvec(posInScreen.x - dsInScreen.x, posInScreen.y - dsInScreen.y, 0.0f);
+      Matrix4f t = Matrix4f::Translate(tvec);
+      xf.SetScreenFromBoard(t * prevScreenFromBoard);
     }
   }
   if (type == PTR_UP) {
