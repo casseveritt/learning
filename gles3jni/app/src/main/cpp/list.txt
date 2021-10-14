@@ -1,4 +1,5 @@
-Touch state machine
+✓ Touch state machine
+Move board into RendererImpl
 Transform limits
 Banner
 - Reset game button

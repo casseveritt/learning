@@ -38,7 +38,6 @@ std::string baseDir;
 jobject appActivity;
 JavaVM * jvm = NULL;
 JNIEnv * appEnv = NULL;
-Board board;
 
 bool checkGlError(const char* funcName) {  // Checks if there have been errors
   GLint err = glGetError();
@@ -85,7 +84,7 @@ struct Transforms {
     xfScreenFromPixel = t * s;
   }
   void SetTiles(int r, int c) {
-    xfBoardTileFromBoard.SetScale(1);
+    xfBoardTileFromBoard.SetScale(fmax(r, c));
   }
   void SetScreenFromBoard(Matrix4f xf) {
     xfBoardFromScreen = xf.Inverted() ;
@@ -126,8 +125,8 @@ struct Transforms {
 struct RendererImpl : public Renderer {
   RendererImpl() {}
 
-  void Init(const Board& b) override;
-  void Draw(const Board& b) override;
+  void Init() override;
+  void Draw() override;
   void SetWindowSize(int w, int h) override;
   void SetCursorPos(Vec2d cursorPos) override;
   void Touch(float x, float y, int type, int index) override;
@@ -141,6 +140,9 @@ struct RendererImpl : public Renderer {
   Vec3f centerInBoard;
   float scaleFactor;
   int framesheld = 0;
+
+  Board board;
+  int bWidth = 10, bHeight = 10, mines = 10;
 
   Scene scene;
   GLuint defaultVab;
@@ -201,8 +203,10 @@ static GLuint load_image(const char* imgName) {
 
 // ----------------------------------------------------------------------------
 
-void RendererImpl::Init(const Board& b) {
+void RendererImpl::Init() {
 
+  srand(0); // Random board seed
+  board.build(bWidth, bHeight, mines);
 
   ALOGV("Gl init");
   GLint version_maj = 0;
@@ -237,36 +241,14 @@ void RendererImpl::Init(const Board& b) {
   clickMine = load_image("clickedMine.png");
 
   ALOGV("Object building");
-  xf.SetTiles(b.width, b.height);
+  xf.SetTiles(board.width, board.height);
 
-  tiles.s0 = 1.0f / fmax(b.width, b.height);
-  tiles.s1 = tiles.s0;
+  tiles.s0 = tiles.s1 = 1.0f;
 
   banner.build(1.0f, 0.175f, Vec3f(1.0f,0.0f,1.0f));
 
   ALOGV("Done initializing");
 }
-
-/*
-static void mouse_button_callback(int button, int action) {
-  if (button == GLFW_MOUSE_BUTTON_LEFT) {
-    if (action == GLFW_PRESS) {
-      leftClick = true;
-      anchor = prevPos;
-    } else if (action == GLFW_RELEASE) {
-      leftClick = false;
-    }
-  }
-  if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-    if (action == GLFW_PRESS) {
-      rightClick = (action == GLFW_PRESS);
-      anchor = prevPos;
-    } else if (action == GLFW_RELEASE) {
-      rightClick = false;
-    }
-  }
-}
-*/
 
 void RendererImpl::SetWindowSize(int w, int h) {
   width = w;
@@ -287,7 +269,7 @@ static double GetTimeInSeconds() {
   return double(int64_t(ts.tv_sec) * int64_t(1e9) + int64_t(ts.tv_nsec)) * 1e-9;
 }
 
-void RendererImpl::Draw(const Board& b) {
+void RendererImpl::Draw() {
   static int frames = 0; 
   static double sumtime = 0.0;
 
@@ -303,8 +285,6 @@ void RendererImpl::Draw(const Board& b) {
   //glClearColor(0.05f, 0.05f, 0.05f, 0);
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-
-
   float aspectRatio = float(height) / width;
   scene.projMat = Ortho(0.0f, 1.0f, 0.0f, float(height)/width, -1.0f, 1.0f);
 
@@ -313,9 +293,9 @@ void RendererImpl::Draw(const Board& b) {
   for (int i = 0; i < 13; i++) {
     std::vector<MultRect::Rect> rects;
     tiles.obj.tex = tex[i];
-    for (int x = 0; x < b.width; x++) {
-      for (int y = 0; y < b.height; y++) {
-        Board::Tile t = b.el(x, y);
+    for (int x = 0; x < board.width; x++) {
+      for (int y = 0; y < board.height; y++) {
+        Board::Tile t = board.el(x, y);
         MultRect::Rect r(x, y);
         if (i == t.adjMines && t.revealed) {
           rects.push_back(r);
@@ -394,7 +374,7 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
     } else if (type == PTR_UP) {
       Vec3f posInTiles = xf.transform(Space_Tile, Space_Pixel) * posInPixels;
       ALOGV("Flagging tile x: %f, y: %f", posInTiles.x, posInTiles.y);
-      //b.flag(posInTiles.x, posInTiles.y);
+      board.flag(posInTiles.x, posInTiles.y);
       ts = Idle;
     }
   }
@@ -407,7 +387,7 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       // Should also highlight tile being held
       if (type == PTR_UP) {
         ALOGV("Revealing tile x: %f, y: %f", posInTiles.x, posInTiles.y);
-        //b.reveal(posInTiles.x, posInTiles.y);
+        board.reveal(posInTiles.x, posInTiles.y);
         ts = Idle;
       }
     }
@@ -458,38 +438,6 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
   if (ts == WaitTillEnd && type == PTR_UP) {
     ts = Idle;
   }
-
-  /*
-  if (type == PTR2_DOWN && !wait && index == 1) {
-    ALOGV("multitouch");
-    multitouch = true;
-    startDist = (touchStart[0] - touchStart[1]).Length();
-    scaleFactor = 1.0;
-    prevScreenFromBoard = xf.transform(Space_Screen, Space_Board);
-    Vec3f centerInPix = (touchStart[0] + touchStart[1]) * 0.5f;
-    centerInBoard = xf.transform(Space_Screen, Space_Pixel) * centerInPix;
-  }
-
-  if (type == PTR_MOVE) {
-    if (multitouch && index == 1) {
-      Matrix4f invTranslateCenterBegin = Matrix4f::Translate(-centerInBoard);
-
-      Vec3f centerInPixEnd = (touch[0] + touch[1]) * 0.5f;
-      Vec3f centerInBoardEnd = xf.transform(Space_Screen, Space_Pixel) * centerInPixEnd;
-
-      Matrix4f translateCenterEnd = Matrix4f::Translate(centerInBoardEnd);
-
-      float dist = (touch[0] - touch[1]).Length();
-
-      scaleFactor = dist / startDist;
-
-      ALOGV("Board Scale change by: %f", scaleFactor);
-      Matrix4f s = Matrix4f::Scale(scaleFactor);
-      Matrix4f scaleBy = translateCenterEnd * s * invTranslateCenterBegin;
-      xf.SetScreenFromBoard(scaleBy * prevScreenFromBoard);
-    }
-  }
-  //*/
 }
 
 // ----------------------------------------------------------------------------
@@ -561,7 +509,6 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, j
 Renderer* rend = nullptr;
 
 int frame = 0;
-int bWidth = 10, bHeight = 10, mines = 10;
 
 JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setActivity(JNIEnv* env, jobject obj, jobject activity) {
   ALOGV("Activity Set");
@@ -606,11 +553,9 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, j
     ALOGV("File size: %i", size);
   }
 
-  srand(0); // Random board seed
   rend = CreateRenderer();
-  board.build(bWidth, bHeight, mines);
   ALOGV("rend->Init-ing");
-  rend->Init(board);
+  rend->Init();
 
   fclose(fp);
 }
@@ -634,7 +579,7 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, j
   glClearColor(f, f, f, 1);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  rend->Draw(board); 
+  rend->Draw(); 
 
   ALOGV("Frame finished %lld", count);
 
