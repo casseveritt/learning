@@ -62,6 +62,15 @@ enum Space {
   Space_Tile
 };
 
+enum TouchState {
+  Idle,
+  Touching,
+  Holding,
+  Dragging,
+  Pinching,
+  WaitTillEnd
+};
+
 struct Transforms {
 
   Transforms() {
@@ -124,7 +133,8 @@ struct RendererImpl : public Renderer {
   void Touch(float x, float y, int type, int index) override;
 
   Transforms xf;
-  bool dragdetect = false, multitouch = false, held = false, wait = false;
+
+  TouchState ts = Idle;
   float startDist;
   Matrix4f prevScreenFromBoard;
   Vec3f touch[2], touchStart[2], dragStart;
@@ -331,10 +341,6 @@ void RendererImpl::Draw(const Board& b) {
     glDisable(GL_SCISSOR_TEST);
   }
 
-  if (dragdetect) {
-    //testrect.draw(scene, constColorProg);
-  }
-
   double t1 = GetTimeInSeconds();
   frames++;
   sumtime += (t1 - t0);
@@ -366,7 +372,97 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
     touch[index] = Vec3f(x, y, 0.0f);
   }
 
-  if (type == PTR2_DOWN && index == 1) {
+  if (index == 0) {
+    ALOGV("TouchState: %d Type: %d", ts, type);
+  }
+
+  if (ts == Idle && type == PTR_DOWN) {
+    framesheld = 0;
+    ts = Touching;
+  }
+
+  if (ts == Touching) {
+    framesheld++;
+    float dragDist = (touchStart[0] - posInPixels).Length();
+    if (framesheld > 14) {
+      ts = Holding;
+    } else if (dragDist >= 50) {
+      dragStart = Vec3f(x, y, 0.0f);
+      ts = Dragging;
+    } else if (type == PTR2_DOWN) {
+      ts = Pinching;
+      startDist = (touchStart[0] - touchStart[1]).Length();
+      scaleFactor = 1.0;
+      Vec3f centerInPix = (touchStart[0] + touchStart[1]) * 0.5f;
+      centerInBoard = xf.transform(Space_Screen, Space_Pixel) * centerInPix;
+    } else if (type == PTR_UP) {
+      Vec3f posInTiles = xf.transform(Space_Tile, Space_Pixel) * posInPixels;
+      ALOGV("Flagging tile x: %f, y: %f", posInTiles.x, posInTiles.y);
+      //b.flag(posInTiles.x, posInTiles.y);
+      ts = Idle;
+    }
+  }
+
+  if (ts == Holding) {
+    if (type == PTR2_DOWN) {
+      ts = WaitTillEnd;
+    } else {
+      Vec3f posInTiles = xf.transform(Space_Tile, Space_Pixel) * posInPixels;
+      // Should also highlight tile being held
+      if (type == PTR_UP) {
+        ALOGV("Revealing tile x: %f, y: %f", posInTiles.x, posInTiles.y);
+        //b.reveal(posInTiles.x, posInTiles.y);
+        ts = Idle;
+      }
+    }
+  }
+
+  if (ts == Dragging) {
+    if (type == PTR2_DOWN) {
+      ts = WaitTillEnd;
+    } else {
+      Vec3f posInScreen = xf.transform(Space_Screen, Space_Pixel) * posInPixels;
+      Vec3f dsInScreen = xf.transform(Space_Screen, Space_Pixel) * dragStart;
+      Vec3f tvec(posInScreen.x - dsInScreen.x, posInScreen.y - dsInScreen.y, 0.0f);
+      Matrix4f t = Matrix4f::Translate(tvec);
+      xf.SetScreenFromBoard(t * prevScreenFromBoard);
+      if (type == PTR_UP) {
+        ts = Idle;
+      }
+    }
+  }
+
+  if (ts == Pinching) {
+    if (type == 6) {
+      ts = WaitTillEnd;
+    } else if (index == 1) {
+      Matrix4f invTranslateCenterBegin = Matrix4f::Translate(-centerInBoard);
+
+      Vec3f centerInPixEnd = (touch[0] + touch[1]) * 0.5f;
+      Vec3f centerInBoardEnd = xf.transform(Space_Screen, Space_Pixel) * centerInPixEnd;
+
+      Matrix4f translateCenterEnd = Matrix4f::Translate(centerInBoardEnd);
+
+      float dist = (touch[0] - touch[1]).Length();
+
+      scaleFactor = dist / startDist;
+
+      ALOGV("Board Scale change by: %f", scaleFactor);
+      Matrix4f s = Matrix4f::Scale(scaleFactor);
+      Matrix4f scaleBy = translateCenterEnd * s * invTranslateCenterBegin;
+      xf.SetScreenFromBoard(scaleBy * prevScreenFromBoard);
+      if (type == PTR2_UP) {
+        ts = WaitTillEnd;
+      }
+    }
+  }
+
+  if (ts == WaitTillEnd && type == PTR_UP) {
+    ts = Idle;
+  }
+
+  /*
+  if (type == PTR2_DOWN && !wait && index == 1) {
     ALOGV("multitouch");
     multitouch = true;
     startDist = (touchStart[0] - touchStart[1]).Length();
@@ -374,11 +470,6 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
     prevScreenFromBoard = xf.transform(Space_Screen, Space_Board);
     Vec3f centerInPix = (touchStart[0] + touchStart[1]) * 0.5f;
     centerInBoard = xf.transform(Space_Screen, Space_Pixel) * centerInPix;
-  }
-
-  if (type == PTR2_UP) {
-    multitouch = false;
-    wait = true;
   }
 
   if (type == PTR_MOVE) {
@@ -399,38 +490,8 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       Matrix4f scaleBy = translateCenterEnd * s * invTranslateCenterBegin;
       xf.SetScreenFromBoard(scaleBy * prevScreenFromBoard);
     }
-    if (!dragdetect && !multitouch && !wait) {
-      float dragDist = (touchStart[0] - posInPixels).Length();
-      if (dragDist >= 50) {
-        dragdetect = true;
-        dragStart = Vec3f(x, y, 0.0f);
-      }
-    }
-    if (dragdetect) {
-      Vec3f posInScreen = xf.transform(Space_Screen, Space_Pixel) * posInPixels;
-      Vec3f dsInScreen = xf.transform(Space_Screen, Space_Pixel) * dragStart;
-      Vec3f tvec(posInScreen.x - dsInScreen.x, posInScreen.y - dsInScreen.y, 0.0f);
-      Matrix4f t = Matrix4f::Translate(tvec);
-      xf.SetScreenFromBoard(t * prevScreenFromBoard);
-    }
   }
-  if (type == PTR_UP) {
-    if (wait) {
-      wait = false;
-    }
-    if (dragdetect) {
-      dragdetect = false;
-    }
-    else {
-      Vec3f posInTiles = xf.transform(Space_Tile, Space_Pixel) * posInPixels;
-      if (held) {
-        ALOGV("Revealing tile x: %f, y: %f", posInTiles.x, posInTiles.y);
-        //b.reveal(posInTiles.x, posInTiles.y);
-      } else {
-        //b.flag(posInTiles.x, posInTiles.y);
-      }
-    }
-  }
+  //*/
 }
 
 // ----------------------------------------------------------------------------
