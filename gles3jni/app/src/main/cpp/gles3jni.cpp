@@ -381,7 +381,7 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
     ts = Touching;
   }
 
-  if (ts == Touching) {
+  if (ts == Touching) { // Tap
     framesheld++;
     float dragDist = (touchStart[0] - posInPixels).Length();
     if (framesheld > 14) {
@@ -391,10 +391,6 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       ts = Dragging;
     } else if (type == PTR2_DOWN) {
       ts = Pinching;
-      startDist = (touchStart[0] - touchStart[1]).Length();
-      scaleFactor = 1.0;
-      Vec3f centerInPix = (touchStart[0] + touchStart[1]) * 0.5f;
-      centerInBoard = xf.transform(Space_Screen, Space_Pixel) * centerInPix;
     } else if (type == PTR_UP) {
       Vec3f posInTiles = xf.transform(Space_Tile, Space_Pixel) * posInPixels;
       ALOGV("Flagging tile x: %f, y: %f", posInTiles.x, posInTiles.y);
@@ -403,7 +399,7 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
     }
   }
 
-  if (ts == Holding) {
+  if (ts == Holding) { // Tap and hold in one place
     if (type == PTR2_DOWN) {
       ts = WaitTillEnd;
     } else {
@@ -417,7 +413,7 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
     }
   }
 
-  if (ts == Dragging) {
+  if (ts == Dragging) { // Pan around board
     if (type == PTR2_DOWN) {
       ts = WaitTillEnd;
     } else {
@@ -432,10 +428,12 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
     }
   }
 
-  if (ts == Pinching) {
-    if (type == 6) {
-      ts = WaitTillEnd;
-    } else if (index == 1) {
+  if (ts == Pinching) { // Scale gesture
+    if (type == PTR2_DOWN && index == 1) {
+      startDist = (touchStart[0] - touchStart[1]).Length();
+      Vec3f centerInPix = (touchStart[0] + touchStart[1]) * 0.5f;
+      centerInBoard = xf.transform(Space_Screen, Space_Pixel) * centerInPix;
+    } if (type == PTR_MOVE) {
       Matrix4f invTranslateCenterBegin = Matrix4f::Translate(-centerInBoard);
 
       Vec3f centerInPixEnd = (touch[0] + touch[1]) * 0.5f;
@@ -451,9 +449,9 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       Matrix4f s = Matrix4f::Scale(scaleFactor);
       Matrix4f scaleBy = translateCenterEnd * s * invTranslateCenterBegin;
       xf.SetScreenFromBoard(scaleBy * prevScreenFromBoard);
-      if (type == PTR2_UP) {
-        ts = WaitTillEnd;
-      }
+    }
+    if (type == PTR2_UP || type == 6) {
+      ts = WaitTillEnd;
     }
   }
 
