@@ -428,7 +428,14 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       ALOGV("Board Scale change by: %f", scaleFactor);
       Matrix4f s = Matrix4f::Scale(scaleFactor);
       Matrix4f scaleBy = translateCenterEnd * s * invTranslateCenterBegin;
-      xf.SetScreenFromBoard(scaleBy * prevScreenFromBoard);
+      scaleBy = scaleBy * prevScreenFromBoard;
+      if (scaleBy.m[0] < 0.5f) {
+        scaleBy.m[0] = scaleBy.m[5] = scaleBy.m[10] = 0.5f;
+      }
+      if (scaleBy.m[0] > 1.5f) {
+        scaleBy.m[0] = scaleBy.m[5] = scaleBy.m[10] = 1.5f;
+      }
+      xf.SetScreenFromBoard(scaleBy);
     }
     if (type == PTR2_UP || type == 6) {
       ts = WaitTillEnd;
