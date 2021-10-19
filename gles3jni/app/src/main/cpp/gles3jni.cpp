@@ -73,10 +73,15 @@ enum TouchState {
 struct Transforms {
 
   Transforms() {
+    xfBFSScale = 1.0f;
     xfScreenFromPixel = Matrix4f::Identity();
-    xfBoardFromScreen = Matrix4f::Identity();
     xfBoardTileFromBoard = Matrix4f::Identity();
     xfWindowFromScreen = Matrix4f::Identity();
+  }
+  Matrix4f GetBoardFromScreen() {
+    Matrix4f s = Matrix4f::Scale(xfBFSScale);
+    Matrix4f t = Matrix4f::Translate(Vec3f(xfBFSTranslate.x, xfBFSTranslate.y, 0.0f));
+    return t * s;
   }
   void SetPixels(int w, int h) {
     auto s = Matrix4f::Scale(Vec3f((1.0f/w), -(1.0f/w),1));
@@ -86,39 +91,38 @@ struct Transforms {
   void SetTiles(int r, int c) {
     xfBoardTileFromBoard.SetScale(fmax(r, c));
   }
-  void SetScreenFromBoard(Matrix4f xf) {
-    xfBoardFromScreen = xf.Inverted() ;
-  }
   Matrix4f transform(Space to, Space from) {
     if (from == Space_Tile && to == Space_Pixel) {
-      return (xfBoardTileFromBoard * xfBoardFromScreen * xfScreenFromPixel).Inverted();
+      return (xfBoardTileFromBoard * GetBoardFromScreen() * xfScreenFromPixel).Inverted();
     }
     if (from == Space_Tile && to == Space_Screen) {
-      return (xfBoardTileFromBoard * xfBoardFromScreen).Inverted();
+      return (xfBoardTileFromBoard * GetBoardFromScreen()).Inverted();
     }
     if (from == Space_Pixel && to == Space_Board) {
-      return (xfBoardFromScreen * xfScreenFromPixel);
+      return (GetBoardFromScreen() * xfScreenFromPixel);
     }
     if (from == Space_Board && to == Space_Pixel) {
-      return (xfBoardFromScreen * xfScreenFromPixel).Inverted();
+      return (GetBoardFromScreen() * xfScreenFromPixel).Inverted();
     }
     if (from == Space_Pixel && to == Space_Screen) {
       return xfScreenFromPixel;
     }
     if (from == Space_Pixel && to == Space_Tile) {
-      return (xfBoardTileFromBoard * xfBoardFromScreen * xfScreenFromPixel);
+      return (xfBoardTileFromBoard * GetBoardFromScreen() * xfScreenFromPixel);
     }
     if (from == Space_Board && to == Space_Screen) {
-      return (xfBoardFromScreen).Inverted();
+      return (GetBoardFromScreen()).Inverted();
     }
     ALOGE("Transforms::transform unsupported transform to %d from %d", to, from);
     exit(42);
     return Matrix4f();
   }
 
+  float xfBFSScale;
+  Vec2f xfBFSTranslate;
+
   Matrix4f xfScreenFromPixel;
   Matrix4f xfWindowFromScreen;
-  Matrix4f xfBoardFromScreen;
   Matrix4f xfBoardTileFromBoard;
 };
 
@@ -400,8 +404,9 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       Vec3f posInScreen = xf.transform(Space_Screen, Space_Pixel) * posInPixels;
       Vec3f dsInScreen = xf.transform(Space_Screen, Space_Pixel) * dragStart;
       Vec3f tvec(posInScreen.x - dsInScreen.x, posInScreen.y - dsInScreen.y, 0.0f);
-      Matrix4f t = Matrix4f::Translate(tvec);
-      xf.SetScreenFromBoard(t * prevScreenFromBoard);
+      xf.xfBFSTranslate = Vec2f(-tvec.x * xf.xfBFSScale, -tvec.y * xf.xfBFSScale);
+      //Matrix4f t = Matrix4f::Translate(tvec);
+      //xf.SetScreenFromBoard(t * prevScreenFromBoard);
       if (type == PTR_UP) {
         ts = Idle;
       }
@@ -428,14 +433,9 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       ALOGV("Board Scale change by: %f", scaleFactor);
       Matrix4f s = Matrix4f::Scale(scaleFactor);
       Matrix4f scaleBy = translateCenterEnd * s * invTranslateCenterBegin;
-      scaleBy = scaleBy * prevScreenFromBoard;
-      if (scaleBy.m[0] < 0.5f) {
-        scaleBy.m[0] = scaleBy.m[5] = scaleBy.m[10] = 0.5f;
+      if (scaleBy.m[0] > 0.5f && scaleBy.m[0] < 1.5f) {
+        xf.xfBFSScale = 1 / scaleBy.m[0];
       }
-      if (scaleBy.m[0] > 1.5f) {
-        scaleBy.m[0] = scaleBy.m[5] = scaleBy.m[10] = 1.5f;
-      }
-      xf.SetScreenFromBoard(scaleBy);
     }
     if (type == PTR2_UP || type == 6) {
       ts = WaitTillEnd;
