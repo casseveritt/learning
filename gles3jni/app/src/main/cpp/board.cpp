@@ -37,6 +37,19 @@ void Board::initialize(int fx, int fy) {
   }
 }
 
+void Board::reset() {
+  state = Uninitialized;
+  for (int x = 0; x < width; x++) {
+    for (int y = 0; y < height; y++) {
+      Tile& t = el(x, y);
+      t.revealed = false;
+      t.flagged = false;
+      t.isMine = false;
+      t.adjMines = 0;
+    }
+  }
+}
+
 void Board::checkWin() {
   int tilesToWin = (width * height) - numMines;
   for (int x = 0; x < width; x++) {

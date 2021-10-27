@@ -21,6 +21,7 @@ class Board {
   State state = Uninitialized;
 
   void build(int inx, int iny, int inb);
+  void reset();
   void initialize(int x, int y);
   void checkWin();
   void lostGame();

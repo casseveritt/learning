@@ -58,7 +58,9 @@ enum Space {
   Space_Screen,
   Space_Window,
   Space_Board,
-  Space_Tile
+  Space_Tile,
+  Space_Reset,
+  Space_Toggle
 };
 
 enum TouchState {
@@ -67,7 +69,8 @@ enum TouchState {
   Holding,
   Dragging,
   Pinching,
-  WaitTillEnd
+  WaitTillEnd,
+  TouchingBanner
 };
 
 struct UScaleBias2f {
@@ -88,6 +91,8 @@ struct UScaleBias2f {
 struct Transforms {
 
   Transforms() {
+    xfResetFromScreen = Matrix4f::Identity();
+    xfToggleFromScreen = Matrix4f::Identity();
     xfScreenFromPixel = Matrix4f::Identity();
     xfBoardTileFromBoard = Matrix4f::Identity();
     xfWindowFromScreen = Matrix4f::Identity();
@@ -122,6 +127,12 @@ struct Transforms {
     if (from == Space_Board && to == Space_Screen) {
       return xfBoardFromScreen.GetMatrix4Inverted();
     }
+    if (from == Space_Pixel && to == Space_Reset) {
+      return xfResetFromScreen * xfScreenFromPixel;
+    }
+    if (from == Space_Pixel && to == Space_Toggle) {
+      return xfToggleFromScreen * xfScreenFromPixel;
+    }
     ALOGE("Transforms::transform unsupported transform to %d from %d", to, from);
     exit(42);
     return Matrix4f();
@@ -129,6 +140,8 @@ struct Transforms {
 
   UScaleBias2f xfBoardFromScreen;
 
+  Matrix4f xfResetFromScreen;
+  Matrix4f xfToggleFromScreen;
   Matrix4f xfScreenFromPixel;
   Matrix4f xfWindowFromScreen;
   Matrix4f xfBoardTileFromBoard;
@@ -152,6 +165,7 @@ struct RendererImpl : public Renderer {
   Vec3f centerInBoard;
   float scaleFactor;
   int framesheld = 0;
+  float screenHeight = 0.0f;
 
   Board board;
   int bWidth = 10, bHeight = 10, mines = 10;
@@ -165,7 +179,7 @@ struct RendererImpl : public Renderer {
   GLuint unrev, flag, mine, clickMine;
 
   MultRect tiles;
-  Rectangle banner;
+  Rectangle banner, timer, resetButton, toggleButton;
 
   int width, height;
 
@@ -257,8 +271,6 @@ void RendererImpl::Init() {
 
   tiles.s0 = tiles.s1 = 1.0f;
 
-  banner.build(1.0f, 0.175f, Vec3f(1.0f,0.0f,1.0f));
-
   ALOGV("Done initializing");
 }
 
@@ -268,7 +280,23 @@ void RendererImpl::SetWindowSize(int w, int h) {
   xf.SetPixels(w, h);
   ALOGV("Screen Dimensions: Width = %d, Height = %d", w, h);
   float aspectRatio = float(h)/w;
-  banner.obj.model = Matrix4f::Translate(Vec3f(0.0f, aspectRatio-0.175f, 0.0f)) * banner.obj.model;
+  screenHeight = aspectRatio;
+
+  banner.build(1.0f, 0.15f, Vec3f(0.8f, 0.8f, 0.8f));
+  resetButton.build(0.125f, 0.125f, Vec3f(0.2f, 0.2f, 0.2f));
+  toggleButton.build(0.075f, 0.075f, Vec3f(0.5f, 0.25f, 0.25f));
+
+  banner.obj.model = Matrix4f::Translate(Vec3f(0.0f, aspectRatio-0.15f, 0.0f)) * banner.obj.model;
+  resetButton.obj.model = Matrix4f::Translate(Vec3f(0.4375f, aspectRatio-0.1375f, 0.0f)) * resetButton.obj.model;
+  toggleButton.obj.model = Matrix4f::Translate(Vec3f(0.725f, aspectRatio-0.1125f, 0.0f)) * toggleButton.obj.model;
+
+  Matrix4f s = Matrix4f::Scale(1.0f/0.125f);
+  Matrix4f t = Matrix4f::Translate(Vec3f(-0.4375f, -(aspectRatio-0.1375f), 0.0f));
+  xf.xfResetFromScreen = s * t;
+
+  s = Matrix4f::Scale(1.0f/0.075f);
+  t = Matrix4f::Translate(Vec3f(-0.725f, -(aspectRatio-0.1125f), 0.0f));
+  xf.xfToggleFromScreen = s * t;
 }
 
 void RendererImpl::SetCursorPos(Vec2d cursorPos) {
@@ -285,7 +313,7 @@ void RendererImpl::Draw() {
   static int frames = 0; 
   static double sumtime = 0.0;
 
-  double t0 = GetTimeInSeconds();
+  double t0 = GetTimeInSeconds(); 
 
   scene.camPose.t.SetValue(0,0,1);
   scene.camPose.r.SetValue(Vec3f(0, 0, -1), Vec3f(0, 1, 0), Vec3f(0, 0, -1), Vec3f(0, 1, 0));
@@ -327,7 +355,7 @@ void RendererImpl::Draw() {
       }
     }
     tiles.build(rects);
-    glScissor(0, 0, 1080, 1750);
+    glScissor(0, 0, 1080, 1800);
     glEnable(GL_SCISSOR_TEST);
     tiles.draw(scene, texProg);
     glDisable(GL_SCISSOR_TEST);
@@ -343,8 +371,9 @@ void RendererImpl::Draw() {
     sumtime = 0.0;
   }
   
-
   banner.draw(scene, constColorProg);
+  resetButton.draw(scene, constColorProg);
+  toggleButton.draw(scene, constColorProg);
 
 }
 
@@ -384,10 +413,18 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
     } else if (type == PTR2_DOWN) {
       ts = Pinching;
     } else if (type == PTR_UP) {
-      Vec3f posInTiles = xf.transform(Space_Tile, Space_Pixel) * posInPixels;
-      ALOGV("Flagging tile x: %f, y: %f", posInTiles.x, posInTiles.y);
-      board.flag(posInTiles.x, posInTiles.y);
-      ts = Idle;
+      Vec3f resetButtPos = xf.transform(Space_Reset, Space_Pixel) * posInPixels;
+      Vec3f toggleButtPos = xf.transform(Space_Toggle, Space_Pixel) * posInPixels;
+      if (1.0f > resetButtPos.x && resetButtPos.x > 0.0f && 1.0f > resetButtPos.y && resetButtPos.y > 0.0f) {
+        board.reset();
+      } else if (1.0f > toggleButtPos.x && toggleButtPos.x > 0.0f && 1.0f > toggleButtPos.y && toggleButtPos.y > 0.0f) {
+
+      } else {
+        Vec3f posInTiles = xf.transform(Space_Tile, Space_Pixel) * posInPixels;
+        ALOGV("Flagging tile x: %f, y: %f", posInTiles.x, posInTiles.y);
+        board.flag(posInTiles.x, posInTiles.y);
+        ts = Idle;
+      }
     }
   }
 
@@ -413,10 +450,16 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       Vec3f dsInScreen = xf.transform(Space_Screen, Space_Pixel) * dragStart;
       Vec3f tvec = posInScreen - dsInScreen;
       Matrix4f tmat = Matrix4f::Translate(-tvec);
-      Matrix4f xfBoardFromScreen = prevScreenFromBoard.Inverted() * tmat;
-      xf.xfBoardFromScreen.scale = xfBoardFromScreen.m[0];
-      xf.xfBoardFromScreen.trans.x = xfBoardFromScreen.m[12];
-      xf.xfBoardFromScreen.trans.y = xfBoardFromScreen.m[13];
+
+      Vec3f blCornerInScreen = xf.transform(Space_Screen, Space_Board) * Vec3f(0,0,0);
+      Vec3f trCornerInScreen = xf.transform(Space_Screen, Space_Board) * Vec3f(1,1,0);
+
+      if (blCornerInScreen.x < 0.1f && trCornerInScreen.x > 0.9f) {
+        Matrix4f xfBoardFromScreen = prevScreenFromBoard.Inverted() * tmat;
+        xf.xfBoardFromScreen.scale = xfBoardFromScreen.m[0];
+        xf.xfBoardFromScreen.trans.x = xfBoardFromScreen.m[12];
+        xf.xfBoardFromScreen.trans.y = xfBoardFromScreen.m[13];
+      }
       if (type == PTR_UP) {
         ts = Idle;
       }
@@ -428,7 +471,8 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       startDist = (touchStart[0] - touchStart[1]).Length();
       Vec3f centerInPix = (touchStart[0] + touchStart[1]) * 0.5f;
       centerInBoard = xf.transform(Space_Board, Space_Pixel) * centerInPix;
-    } if (type == PTR_MOVE) {
+    }
+    if (type == PTR_MOVE) {
       Matrix4f invCenterTrans = Matrix4f::Translate(-centerInBoard);
       Vec3f newCenterInBoard = (prevScreenFromBoard.Inverted() * xf.transform(Space_Screen, Space_Pixel)) * ((touch[0] + touch[1]) * 0.5f);
       Matrix4f centerTrans = Matrix4f::Translate(newCenterInBoard);
@@ -446,7 +490,7 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       xfBfS.trans.x = xfBoardFromScreen.m[12];
       xfBfS.trans.y = xfBoardFromScreen.m[13];
 
-      if (0.5f < xfBfS.scale && xfBfS.scale < 1.5f) {
+      if (0.5f < xfBfS.scale && xfBfS.scale < 1.0f) {
         xf.xfBoardFromScreen = xfBfS;
       }
     }

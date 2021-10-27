@@ -303,6 +303,12 @@ class Vec3 {
     v[2] = z_;
   }
 
+  Vec3(Vec2<T> tp) {
+    v[0] = tp.x;
+    v[1] = tp.y;
+    v[2] = 1.0f;
+  }
+
   void GetValue(T& x_, T& y_, T& z_) const {
     x_ = v[0];
     y_ = v[1];

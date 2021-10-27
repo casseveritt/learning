@@ -2,12 +2,12 @@
 ✓ Move board into RendererImpl
 Transform limits
 Banner
-- Reset game button
+- ✓ Reset game button
 - Toggle reveal and flag modes
 - Timer
 Main Menu
-Difficulty options
-- Custom board option
+- Difficulty options
+  - Custom board option
 Save game progress
 New pixel art
 App name
