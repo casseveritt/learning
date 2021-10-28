@@ -450,12 +450,17 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       Vec3f dsInScreen = xf.transform(Space_Screen, Space_Pixel) * dragStart;
       Vec3f tvec = posInScreen - dsInScreen;
       Matrix4f tmat = Matrix4f::Translate(-tvec);
+      Matrix4f xfBoardFromScreen = prevScreenFromBoard.Inverted() * tmat;
+      Matrix4f xfScreenFromBoard = xfBoardFromScreen.Inverted();
 
-      Vec3f blCornerInScreen = xf.transform(Space_Screen, Space_Board) * Vec3f(0,0,0);
-      Vec3f trCornerInScreen = xf.transform(Space_Screen, Space_Board) * Vec3f(1,1,0);
+      Vec3f blCornerInScreen = xfScreenFromBoard * Vec3f(0,0,0);
+      Vec3f trCornerInScreen = xfScreenFromBoard * Vec3f(1,1,0);
 
-      if (blCornerInScreen.x < 0.1f && trCornerInScreen.x > 0.9f) {
-        Matrix4f xfBoardFromScreen = prevScreenFromBoard.Inverted() * tmat;
+      bool lInBounds = blCornerInScreen.x < 0.05f;
+      bool bInBounds = blCornerInScreen.y < 0.05f;
+      bool rInBounds = trCornerInScreen.x > 1.05f;
+
+      if (lInBounds && bInBounds && rInBounds) {
         xf.xfBoardFromScreen.scale = xfBoardFromScreen.m[0];
         xf.xfBoardFromScreen.trans.x = xfBoardFromScreen.m[12];
         xf.xfBoardFromScreen.trans.y = xfBoardFromScreen.m[13];
