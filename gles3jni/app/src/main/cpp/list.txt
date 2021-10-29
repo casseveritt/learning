@@ -1,10 +1,10 @@
 ✓ Touch state machine
 ✓ Move board into RendererImpl
-Transform limits
+✓ Transform limits
 Banner
 - ✓ Reset game button
 - Toggle reveal and flag modes
-- Timer
+- ✓ Timer
 Main Menu
 - Difficulty options
   - Custom board option

@@ -147,6 +147,12 @@ struct Transforms {
   Matrix4f xfBoardTileFromBoard;
 };
 
+static double GetTimeInSeconds() {
+  timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return double(int64_t(ts.tv_sec) * int64_t(1e9) + int64_t(ts.tv_nsec)) * 1e-9;
+}
+
 struct RendererImpl : public Renderer {
   RendererImpl() {}
 
@@ -161,7 +167,7 @@ struct RendererImpl : public Renderer {
   TouchState ts = Idle;
   float startDist;
   Matrix4f prevScreenFromBoard;
-  Vec3f touch[2], touchStart[2], dragStart;
+  Vec3f touch[2], touchStart[2], dragStart, lastTouch[2];
   Vec3f centerInBoard;
   float scaleFactor;
   int framesheld = 0;
@@ -169,17 +175,20 @@ struct RendererImpl : public Renderer {
 
   Board board;
   int bWidth = 10, bHeight = 10, mines = 10;
+  bool tapFlag = false;
 
   Scene scene;
   GLuint defaultVab;
+  double startTime, timeElapsed;
 
   Prog constColorProg, texProg;
 
   GLuint zero, one, two, three, four, five, six, seven, eight;
   GLuint unrev, flag, mine, clickMine;
+  GLuint timer0, timer1, timer2, timer3, timer4, timer5, timer6, timer7, timer8, timer9; 
 
   MultRect tiles;
-  Rectangle banner, timer, resetButton, toggleButton;
+  Rectangle banner, timer, resetButton, toggleButton, digit1, digit2, digit3;
 
   int width, height;
 
@@ -266,10 +275,24 @@ void RendererImpl::Init() {
   mine = load_image("mine.png");
   clickMine = load_image("clickedMine.png");
 
+  timer0 = load_image("Timer0.png");
+  timer1 = load_image("Timer1.png");
+  timer2 = load_image("Timer2.png");
+  timer3 = load_image("Timer3.png");
+  timer4 = load_image("Timer4.png");
+  timer5 = load_image("Timer5.png");
+  timer6 = load_image("Timer6.png");
+  timer7 = load_image("Timer7.png");
+  timer8 = load_image("Timer8.png");
+  timer9 = load_image("Timer9.png");
+
   ALOGV("Object building");
   xf.SetTiles(board.width, board.height);
 
   tiles.s0 = tiles.s1 = 1.0f;
+
+  startTime = GetTimeInSeconds();
+  timeElapsed = 0.0;
 
   ALOGV("Done initializing");
 }
@@ -286,9 +309,17 @@ void RendererImpl::SetWindowSize(int w, int h) {
   resetButton.build(0.125f, 0.125f, Vec3f(0.2f, 0.2f, 0.2f));
   toggleButton.build(0.075f, 0.075f, Vec3f(0.5f, 0.25f, 0.25f));
 
+  digit1.build(0.05, 0.1, Vec3f(0.0f, 0.0f, 1.0f));
+  digit2.build(0.05, 0.1, Vec3f(0.0f, 1.0f, 0.0f));
+  digit3.build(0.05, 0.1, Vec3f(1.0f, 0.0f, 0.0f));
+
   banner.obj.model = Matrix4f::Translate(Vec3f(0.0f, aspectRatio-0.15f, 0.0f)) * banner.obj.model;
   resetButton.obj.model = Matrix4f::Translate(Vec3f(0.4375f, aspectRatio-0.1375f, 0.0f)) * resetButton.obj.model;
   toggleButton.obj.model = Matrix4f::Translate(Vec3f(0.725f, aspectRatio-0.1125f, 0.0f)) * toggleButton.obj.model;
+
+  digit1.obj.model = Matrix4f::Translate(Vec3f(0.25, aspectRatio-0.125f, 0.0f)) * digit1.obj.model;
+  digit2.obj.model = Matrix4f::Translate(Vec3f(0.20, aspectRatio-0.125f, 0.0f)) * digit2.obj.model;
+  digit3.obj.model = Matrix4f::Translate(Vec3f(0.15, aspectRatio-0.125f, 0.0f)) * digit3.obj.model;
 
   Matrix4f s = Matrix4f::Scale(1.0f/0.125f);
   Matrix4f t = Matrix4f::Translate(Vec3f(-0.4375f, -(aspectRatio-0.1375f), 0.0f));
@@ -301,12 +332,6 @@ void RendererImpl::SetWindowSize(int w, int h) {
 
 void RendererImpl::SetCursorPos(Vec2d cursorPos) {
   currPos = cursorPos;
-}
-
-static double GetTimeInSeconds() {
-  timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return double(int64_t(ts.tv_sec) * int64_t(1e9) + int64_t(ts.tv_nsec)) * 1e-9;
 }
 
 void RendererImpl::Draw() {
@@ -355,7 +380,7 @@ void RendererImpl::Draw() {
       }
     }
     tiles.build(rects);
-    glScissor(0, 0, 1080, 1800);
+    glScissor(0, 0, 1080, 1900);
     glEnable(GL_SCISSOR_TEST);
     tiles.draw(scene, texProg);
     glDisable(GL_SCISSOR_TEST);
@@ -370,10 +395,28 @@ void RendererImpl::Draw() {
     frames = 0;
     sumtime = 0.0;
   }
+
+  if (board.state == 0) {
+    startTime = GetTimeInSeconds();
+  }
+  if (board.state == 1) {
+    timeElapsed = GetTimeInSeconds() - startTime;
+  }
+  int firstDig = fmod(timeElapsed, 10);
+  int secondDig = fmod((timeElapsed / 10), 10);
+  int thirdDig = fmod((timeElapsed / 100), 10);
+  GLuint digitTextures[] = {timer0, timer1, timer2, timer3, timer4, timer5, timer6, timer7, timer8, timer9};
+  digit1.obj.tex = digitTextures[firstDig];
+  digit2.obj.tex = digitTextures[secondDig];
+  digit3.obj.tex = digitTextures[thirdDig];
   
   banner.draw(scene, constColorProg);
   resetButton.draw(scene, constColorProg);
   toggleButton.draw(scene, constColorProg);
+
+  digit1.draw(scene, texProg);
+  digit2.draw(scene, texProg);
+  digit3.draw(scene, texProg);
 
 }
 
@@ -412,20 +455,28 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       ts = Dragging;
     } else if (type == PTR2_DOWN) {
       ts = Pinching;
-    } else if (type == PTR_UP) {
+    }
+    else if (type == PTR_UP) {
       Vec3f resetButtPos = xf.transform(Space_Reset, Space_Pixel) * posInPixels;
       Vec3f toggleButtPos = xf.transform(Space_Toggle, Space_Pixel) * posInPixels;
       if (1.0f > resetButtPos.x && resetButtPos.x > 0.0f && 1.0f > resetButtPos.y && resetButtPos.y > 0.0f) {
         board.reset();
+        tapFlag = false;
+        startTime = GetTimeInSeconds();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
       } else if (1.0f > toggleButtPos.x && toggleButtPos.x > 0.0f && 1.0f > toggleButtPos.y && toggleButtPos.y > 0.0f) {
-
+        tapFlag = !tapFlag;
       } else {
         Vec3f posInTiles = xf.transform(Space_Tile, Space_Pixel) * posInPixels;
         ALOGV("Flagging tile x: %f, y: %f", posInTiles.x, posInTiles.y);
-        board.flag(posInTiles.x, posInTiles.y);
+        if (tapFlag) {
+          board.flag(posInTiles.x, posInTiles.y);
+        } else {
+          board.reveal(posInTiles.x, posInTiles.y);
+        }
         ts = Idle;
       }
     }
+    lastTouch[0] = touch[0];
   }
 
   if (ts == Holding) { // Tap and hold in one place
@@ -458,9 +509,10 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
 
       bool lInBounds = blCornerInScreen.x < 0.05f;
       bool bInBounds = blCornerInScreen.y < 0.05f;
-      bool rInBounds = trCornerInScreen.x > 1.05f;
+      bool rInBounds = trCornerInScreen.x > 0.95f;
+      bool tInBounds = trCornerInScreen.y > 0.95f;
 
-      if (lInBounds && bInBounds && rInBounds) {
+      if (lInBounds && bInBounds && rInBounds && tInBounds) {
         xf.xfBoardFromScreen.scale = xfBoardFromScreen.m[0];
         xf.xfBoardFromScreen.trans.x = xfBoardFromScreen.m[12];
         xf.xfBoardFromScreen.trans.y = xfBoardFromScreen.m[13];
@@ -476,6 +528,7 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       startDist = (touchStart[0] - touchStart[1]).Length();
       Vec3f centerInPix = (touchStart[0] + touchStart[1]) * 0.5f;
       centerInBoard = xf.transform(Space_Board, Space_Pixel) * centerInPix;
+      lastTouch[1] = touch[1];
     }
     if (type == PTR_MOVE) {
       Matrix4f invCenterTrans = Matrix4f::Translate(-centerInBoard);
@@ -614,6 +667,17 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, j
   appMaterializeFile("flagged.png");
   appMaterializeFile("mine.png");
   appMaterializeFile("unrevealed.png");
+
+  appMaterializeFile("Timer0.png");
+  appMaterializeFile("Timer1.png");
+  appMaterializeFile("Timer2.png");
+  appMaterializeFile("Timer3.png");
+  appMaterializeFile("Timer4.png");
+  appMaterializeFile("Timer5.png");
+  appMaterializeFile("Timer6.png");
+  appMaterializeFile("Timer7.png");
+  appMaterializeFile("Timer8.png");
+  appMaterializeFile("Timer9.png");
 
   FILE* fp = fopen((baseDir + "ccol.fs").c_str(), "r");
   if (fp != nullptr) {
