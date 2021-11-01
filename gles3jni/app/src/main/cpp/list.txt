@@ -3,8 +3,9 @@
 ✓ Transform limits
 Banner
 - ✓ Reset game button
-- Toggle reveal and flag modes
+- ✓ Toggle reveal and flag modes
 - ✓ Timer
+Publish app
 Main Menu
 - Difficulty options
   - Custom board option
@@ -12,4 +13,3 @@ Save game progress
 New pixel art
 App name
 App icon
-Publish app
