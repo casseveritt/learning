@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "gles3jni.h"
+#include "minesweeper.h"
 #include "scene.h"
 
 enum ShaderType {

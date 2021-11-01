@@ -25,7 +25,7 @@
 
 #include "board.h"
 #include "geom.h"
-#include "gles3jni.h"
+#include "minesweeper.h"
 #include "linear.h"
 #include "multrect.h"
 #include "render.h"
@@ -618,12 +618,12 @@ bool appMaterializeFile( const char * filename ) {
 // ----------------------------------------------------------------------------
 
 extern "C" {
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setActivity(JNIEnv* env, jobject obj, jobject activity);
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setFilesDir(JNIEnv* env, jobject obj, jstring cmd);
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, jobject obj);
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint width, jint height);
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y, jint type, jint index);
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, jobject obj);
+JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_setActivity(JNIEnv* env, jobject obj, jobject activity);
+JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_setFilesDir(JNIEnv* env, jobject obj, jstring cmd);
+JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_init(JNIEnv* env, jobject obj);
+JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_resize(JNIEnv* env, jobject obj, jint width, jint height);
+JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y, jint type, jint index);
+JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_step(JNIEnv* env, jobject obj);
 };
 
 // Java interaction
@@ -632,13 +632,13 @@ Renderer* rend = nullptr;
 
 int frame = 0;
 
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setActivity(JNIEnv* env, jobject obj, jobject activity) {
+JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_setActivity(JNIEnv* env, jobject obj, jobject activity) {
   ALOGV("Activity Set");
   appActivity = env->NewGlobalRef( activity );
   appEnv = env;
 }
 
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setFilesDir(JNIEnv* env, jobject obj, jstring cmd) {
+JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_setFilesDir(JNIEnv* env, jobject obj, jstring cmd) {
   appEnv = env;
   const char * str = env->GetStringUTFChars( cmd, NULL );
   ALOGV("setFilesDir: %s", str );  
@@ -647,7 +647,7 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_setFilesDir(JNIEnv*
   env->ReleaseStringUTFChars( cmd, str );
 }
 
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, jobject obj) {  // Initialization
+JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_init(JNIEnv* env, jobject obj) {  // Initialization
   appEnv = env;
   appMaterializeFile("ccol.fs");
   appMaterializeFile("ccol.vs");
@@ -693,17 +693,17 @@ JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_init(JNIEnv* env, j
   fclose(fp);
 }
 
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_resize(JNIEnv* env, jobject obj, jint jwidth, jint jheight) {  // If window shape changes
+JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_resize(JNIEnv* env, jobject obj, jint jwidth, jint jheight) {  // If window shape changes
   appEnv = env;
   rend->SetWindowSize(jwidth, jheight);
 }
 
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y, jint type, jint index) {  // Touch event
+JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y, jint type, jint index) {  // Touch event
   ALOGV("C++ touch coords x: %f, y: %f, type: %d, index: %d", x, y, type, index);
   rend->Touch(x, y, type, index);
 }
 
-JNIEXPORT void JNICALL Java_com_android_gles3jni_GLES3JNILib_step(JNIEnv* env, jobject obj) {  // New frame
+JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_step(JNIEnv* env, jobject obj) {  // New frame
   appEnv = env;
 
   static int64_t count = 0;

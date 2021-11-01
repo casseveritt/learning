@@ -23,7 +23,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-rtti -fno-exceptions -Wall")
 set(OPENGL_LIB GLESv3)
 
-add_library(gles3jni SHARED
+add_library(minesweeper SHARED
             stb_image.h
             stb_image_write.h
             stb.h
@@ -40,10 +40,10 @@ add_library(gles3jni SHARED
             rectangle.cpp
             prog.h
             prog.cpp
-            gles3jni.cpp )
+            minesweeper.cpp )
 
-# Include libraries needed for gles3jni lib
-target_link_libraries(gles3jni
+# Include libraries needed for minesweeper lib
+target_link_libraries(minesweeper
             ${OPENGL_LIB}
             android
             EGL

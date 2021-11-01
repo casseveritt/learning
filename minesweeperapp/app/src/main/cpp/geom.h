@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 
-#include "gles3jni.h"
+#include "minesweeper.h"
 #include "linear.h"
 #include "prog.h"
 #include "scene.h"

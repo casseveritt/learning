@@ -1,6 +1,6 @@
-gles3jni
+minesweeper
 =========
-gles3jni is an Android C++ sample that demonstrates how to use OpenGL ES 3.0 from JNI/native code.
+minesweeper is an Android C++ sample that demonstrates how to use OpenGL ES 3.0 from JNI/native code.
 
 The OpenGL ES 3.0 rendering path uses a few new features compared to the
 OpenGL ES 2.0 path:

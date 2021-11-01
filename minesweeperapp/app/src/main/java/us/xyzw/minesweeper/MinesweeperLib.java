@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-#pragma once
+package com.android.minesweeper;
 
-#include <GLES3/gl32.h>
-#include <android/log.h>
-#include <math.h>
-#define GLSL_VERSION "#version 310 es\n"
-#define DEBUG 1
+import android.app.Activity;
 
-#define LOG_TAG "GLES3JNI"
-#define ALOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
-#if DEBUG
-#define ALOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__)
-#else
-#define ALOGV(...)
-#endif
+// Wrapper for native library
+
+public class MinesweeperLib {
+
+     static {
+          System.loadLibrary("minesweeper");
+     }
+
+     public static native void setActivity( Activity activity );
+     public static native void setFilesDir( String cmd );
+     public static native void init();
+     public static native void resize(int width, int height);
+     public static native void step();
+     public static native void touch(float x, float y, int type, int index); // Purposefully simple
+}

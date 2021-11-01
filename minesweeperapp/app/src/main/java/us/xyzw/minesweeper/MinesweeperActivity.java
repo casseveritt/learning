@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.gles3jni;
+package com.android.minesweeper;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -26,17 +26,17 @@ import java.io.IOException;
 
 import java.io.File;
 
-public class GLES3JNIActivity extends Activity {
+public class MinesweeperActivity extends Activity {
 
-    private static final String TAG = "gles3jni";
+    private static final String TAG = "minesweeper";
 
-    GLES3JNIView mView;
+    MinesweeperView mView;
 
     @Override protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-        GLES3JNILib.setActivity(this);
-        GLES3JNILib.setFilesDir(getFilesDir().getAbsolutePath());
-        mView = new GLES3JNIView(getApplication());
+        MinesweeperLib.setActivity(this);
+        MinesweeperLib.setFilesDir(getFilesDir().getAbsolutePath());
+        mView = new MinesweeperView(getApplication());
         setContentView(mView);
     }
 
