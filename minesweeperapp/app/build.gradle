@@ -9,7 +9,7 @@ android {
     ndkVersion '21.2.6472646'
 
     defaultConfig {
-        applicationId 'com.android.minesweeper'
+        applicationId 'us.xyzw.minesweeper'
         minSdkVersion "${platformVersion}"
         targetSdkVersion 29
         externalNativeBuild {

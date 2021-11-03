@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.minesweeper;
+package us.xyzw.minesweeper;
 
 import android.content.Context;
 import android.graphics.PixelFormat;

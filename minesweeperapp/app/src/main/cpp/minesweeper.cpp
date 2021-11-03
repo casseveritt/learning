@@ -60,7 +60,8 @@ enum Space {
   Space_Board,
   Space_Tile,
   Space_Reset,
-  Space_Toggle
+  Space_Toggle,
+  Space_StartButton
 };
 
 enum TouchState {
@@ -93,6 +94,7 @@ struct Transforms {
   Transforms() {
     xfResetFromScreen = Matrix4f::Identity();
     xfToggleFromScreen = Matrix4f::Identity();
+    xfStartButtonFromScreen = Matrix4f::Identity();
     xfScreenFromPixel = Matrix4f::Identity();
     xfBoardTileFromBoard = Matrix4f::Identity();
     xfWindowFromScreen = Matrix4f::Identity();
@@ -133,6 +135,9 @@ struct Transforms {
     if (from == Space_Pixel && to == Space_Toggle) {
       return xfToggleFromScreen * xfScreenFromPixel;
     }
+    if (from == Space_Pixel && to == Space_StartButton) {
+      return xfStartButtonFromScreen * xfScreenFromPixel;
+    }
     ALOGE("Transforms::transform unsupported transform to %d from %d", to, from);
     exit(42);
     return Matrix4f();
@@ -142,6 +147,7 @@ struct Transforms {
 
   Matrix4f xfResetFromScreen;
   Matrix4f xfToggleFromScreen;
+  Matrix4f xfStartButtonFromScreen;
   Matrix4f xfScreenFromPixel;
   Matrix4f xfWindowFromScreen;
   Matrix4f xfBoardTileFromBoard;
@@ -175,7 +181,7 @@ struct RendererImpl : public Renderer {
 
   Board board;
   int bWidth = 10, bHeight = 10, mines = 10;
-  bool tapFlag = false;
+  bool tapFlag = false, playing = false;
 
   Scene scene;
   GLuint defaultVab;
@@ -189,6 +195,7 @@ struct RendererImpl : public Renderer {
 
   MultRect tiles;
   Rectangle banner, timer, resetButton, toggleButton, digit1, digit2, digit3;
+  Rectangle  title, startButton;
 
   int width, height;
 
@@ -309,6 +316,9 @@ void RendererImpl::SetWindowSize(int w, int h) {
   resetButton.build(0.125f, 0.125f, Vec3f(0.2f, 0.2f, 0.2f));
   toggleButton.build(0.075f, 0.075f, Vec3f(0.5f, 0.25f, 0.25f));
 
+  title.build(1.0f, aspectRatio, Vec3f(0.0f, 1.0f, 1.0f));
+  startButton.build(0.4f, 0.15f, Vec3f(1.0f, 0.0f, 0.0f));
+
   digit1.build(0.05, 0.1, Vec3f(0.0f, 0.0f, 1.0f));
   digit2.build(0.05, 0.1, Vec3f(0.0f, 1.0f, 0.0f));
   digit3.build(0.05, 0.1, Vec3f(1.0f, 0.0f, 0.0f));
@@ -316,6 +326,8 @@ void RendererImpl::SetWindowSize(int w, int h) {
   banner.obj.model = Matrix4f::Translate(Vec3f(0.0f, aspectRatio-0.15f, 0.0f)) * banner.obj.model;
   resetButton.obj.model = Matrix4f::Translate(Vec3f(0.4375f, aspectRatio-0.1375f, 0.0f)) * resetButton.obj.model;
   toggleButton.obj.model = Matrix4f::Translate(Vec3f(0.725f, aspectRatio-0.1125f, 0.0f)) * toggleButton.obj.model;
+
+  startButton.obj.model = Matrix4f::Translate(Vec3f(0.3f, 1.0f, 0.0f)) * startButton.obj.model;
 
   digit1.obj.model = Matrix4f::Translate(Vec3f(0.25, aspectRatio-0.125f, 0.0f)) * digit1.obj.model;
   digit2.obj.model = Matrix4f::Translate(Vec3f(0.20, aspectRatio-0.125f, 0.0f)) * digit2.obj.model;
@@ -328,6 +340,10 @@ void RendererImpl::SetWindowSize(int w, int h) {
   s = Matrix4f::Scale(1.0f/0.075f);
   t = Matrix4f::Translate(Vec3f(-0.725f, -(aspectRatio-0.1125f), 0.0f));
   xf.xfToggleFromScreen = s * t;
+
+  s = Matrix4f::Scale(Vec3f(1.0f/0.4f, 1.0f/0.15f, 0.0f));
+  t = Matrix4f::Translate(Vec3f(-0.3f, -1.0f, 0.0f));
+  xf.xfStartButtonFromScreen = s * t;
 }
 
 void RendererImpl::SetCursorPos(Vec2d cursorPos) {
@@ -353,71 +369,76 @@ void RendererImpl::Draw() {
   float aspectRatio = float(height) / width;
   scene.projMat = Ortho(0.0f, 1.0f, 0.0f, float(height)/width, -1.0f, 1.0f);
 
-  GLuint tex[] = {zero, one, two, three, four, five, six, seven, eight, unrev, flag, mine, clickMine};
+  if (!playing) {
+    title.draw(scene, constColorProg);
+    startButton.draw(scene, constColorProg);
+  }
+  else {
+    GLuint tex[] = {zero, one, two, three, four, five, six, seven, eight, unrev, flag, mine, clickMine};
 
-  for (int i = 0; i < 13; i++) {
-    std::vector<MultRect::Rect> rects;
-    tiles.obj.tex = tex[i];
-    for (int x = 0; x < board.width; x++) {
-      for (int y = 0; y < board.height; y++) {
-        Board::Tile t = board.el(x, y);
-        MultRect::Rect r(x, y);
-        if (i == t.adjMines && t.revealed) {
-          rects.push_back(r);
-        } else if (i == 9 && !t.revealed) {
-          rects.push_back(r);
-        } else if (i == 10 && t.flagged) {
-          rects.push_back(r);
-        } else if (i == 11 && t.isMine && t.revealed) {
-          rects.push_back(r);
-        } else if (i == 12 && t.isMine && t.revealed && t.flagged) {
-          rects.push_back(r);
-        }
+    for (int i = 0; i < 13; i++) {
+      std::vector<MultRect::Rect> rects;
+      tiles.obj.tex = tex[i];
+      for (int x = 0; x < board.width; x++) {
+        for (int y = 0; y < board.height; y++) {
+          Board::Tile t = board.el(x, y);
+          MultRect::Rect r(x, y);
+          if (i == t.adjMines && t.revealed) {
+            rects.push_back(r);
+          } else if (i == 9 && !t.revealed) {
+            rects.push_back(r);
+          } else if (i == 10 && t.flagged) {
+            rects.push_back(r);
+          } else if (i == 11 && t.isMine && t.revealed) {
+            rects.push_back(r);
+          } else if (i == 12 && t.isMine && t.revealed && t.flagged) {
+            rects.push_back(r);
+          }
         // rects.push_back(MultRect::Rect(x,y));
         // setTile(b.el(x, y), xSide, ySide);
         // rect.obj.modelPose.t = Vec3f((xSide * x), (ySide * (b.height - (1 + y))), 0.0f);
         // rect.draw(scene, texProg);
+        }
       }
+      tiles.build(rects);
+      glScissor(0, 0, 1080, 1900);
+      glEnable(GL_SCISSOR_TEST);
+      tiles.draw(scene, texProg);
+      glDisable(GL_SCISSOR_TEST);
     }
-    tiles.build(rects);
-    glScissor(0, 0, 1080, 1900);
-    glEnable(GL_SCISSOR_TEST);
-    tiles.draw(scene, texProg);
-    glDisable(GL_SCISSOR_TEST);
-  }
 
-  double t1 = GetTimeInSeconds();
-  frames++;
-  sumtime += (t1 - t0);
-  if (frames >= 100) {
+    double t1 = GetTimeInSeconds();
+    frames++;
+    sumtime += (t1 - t0);
+    if (frames >= 100) {
     // printf("avg frame time = %d msec\n", int((sumtime / frames) * 1000));
     // printf("avg fps = %d\n", int((frames / (sumtime))));
-    frames = 0;
-    sumtime = 0.0;
-  }
+      frames = 0;
+      sumtime = 0.0;
+    }
 
-  if (board.state == 0) {
-    startTime = GetTimeInSeconds();
-  }
-  if (board.state == 1) {
-    timeElapsed = GetTimeInSeconds() - startTime;
-  }
-  int firstDig = fmod(timeElapsed, 10);
-  int secondDig = fmod((timeElapsed / 10), 10);
-  int thirdDig = fmod((timeElapsed / 100), 10);
-  GLuint digitTextures[] = {timer0, timer1, timer2, timer3, timer4, timer5, timer6, timer7, timer8, timer9};
-  digit1.obj.tex = digitTextures[firstDig];
-  digit2.obj.tex = digitTextures[secondDig];
-  digit3.obj.tex = digitTextures[thirdDig];
-  
-  banner.draw(scene, constColorProg);
-  resetButton.draw(scene, constColorProg);
-  toggleButton.draw(scene, constColorProg);
+    if (board.state == 0) {
+      startTime = GetTimeInSeconds();
+    }
+    if (board.state == 1) {
+      timeElapsed = GetTimeInSeconds() - startTime;
+    }
+    int firstDig = fmod(timeElapsed, 10);
+    int secondDig = fmod((timeElapsed / 10), 10);
+    int thirdDig = fmod((timeElapsed / 100), 10);
+    GLuint digitTextures[] = {timer0, timer1, timer2, timer3, timer4, timer5, timer6, timer7, timer8, timer9};
+    digit1.obj.tex = digitTextures[firstDig];
+    digit2.obj.tex = digitTextures[secondDig];
+    digit3.obj.tex = digitTextures[thirdDig];
 
-  digit1.draw(scene, texProg);
-  digit2.draw(scene, texProg);
-  digit3.draw(scene, texProg);
+    banner.draw(scene, constColorProg);
+    resetButton.draw(scene, constColorProg);
+    toggleButton.draw(scene, constColorProg);
 
+    digit1.draw(scene, texProg);
+    digit2.draw(scene, texProg);
+    digit3.draw(scene, texProg);
+  }
 }
 
 #define PTR_DOWN 0
@@ -459,13 +480,20 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
     else if (type == PTR_UP) {
       Vec3f resetButtPos = xf.transform(Space_Reset, Space_Pixel) * posInPixels;
       Vec3f toggleButtPos = xf.transform(Space_Toggle, Space_Pixel) * posInPixels;
+      Vec3f startButtPos = xf.transform(Space_StartButton, Space_Pixel) * posInPixels;
       if (1.0f > resetButtPos.x && resetButtPos.x > 0.0f && 1.0f > resetButtPos.y && resetButtPos.y > 0.0f) {
         board.reset();
         tapFlag = false;
         startTime = GetTimeInSeconds();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
-      } else if (1.0f > toggleButtPos.x && toggleButtPos.x > 0.0f && 1.0f > toggleButtPos.y && toggleButtPos.y > 0.0f) {
+      }
+      else if (1.0f > toggleButtPos.x && toggleButtPos.x > 0.0f && 1.0f > toggleButtPos.y && toggleButtPos.y > 0.0f) {
         tapFlag = !tapFlag;
-      } else {
+      }
+      else if (1.0f > startButtPos.x && startButtPos.x > 0.0f && 1.0f > startButtPos.y && startButtPos.y > 0.0f) {
+        ALOGV("Start board");
+        playing = true;
+      }
+      else {
         Vec3f posInTiles = xf.transform(Space_Tile, Space_Pixel) * posInPixels;
         ALOGV("Flagging tile x: %f, y: %f", posInTiles.x, posInTiles.y);
         if (tapFlag) {
@@ -618,12 +646,12 @@ bool appMaterializeFile( const char * filename ) {
 // ----------------------------------------------------------------------------
 
 extern "C" {
-JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_setActivity(JNIEnv* env, jobject obj, jobject activity);
-JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_setFilesDir(JNIEnv* env, jobject obj, jstring cmd);
-JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_init(JNIEnv* env, jobject obj);
-JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_resize(JNIEnv* env, jobject obj, jint width, jint height);
-JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y, jint type, jint index);
-JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_step(JNIEnv* env, jobject obj);
+JNIEXPORT void JNICALL Java_us_xyzw_minesweeper_MinesweeperLib_setActivity(JNIEnv* env, jobject obj, jobject activity);
+JNIEXPORT void JNICALL Java_us_xyzw_minesweeper_MinesweeperLib_setFilesDir(JNIEnv* env, jobject obj, jstring cmd);
+JNIEXPORT void JNICALL Java_us_xyzw_minesweeper_MinesweeperLib_init(JNIEnv* env, jobject obj);
+JNIEXPORT void JNICALL Java_us_xyzw_minesweeper_MinesweeperLib_resize(JNIEnv* env, jobject obj, jint width, jint height);
+JNIEXPORT void JNICALL Java_us_xyzw_minesweeper_MinesweeperLib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y, jint type, jint index);
+JNIEXPORT void JNICALL Java_us_xyzw_minesweeper_MinesweeperLib_step(JNIEnv* env, jobject obj);
 };
 
 // Java interaction
@@ -632,13 +660,13 @@ Renderer* rend = nullptr;
 
 int frame = 0;
 
-JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_setActivity(JNIEnv* env, jobject obj, jobject activity) {
+JNIEXPORT void JNICALL Java_us_xyzw_minesweeper_MinesweeperLib_setActivity(JNIEnv* env, jobject obj, jobject activity) {
   ALOGV("Activity Set");
   appActivity = env->NewGlobalRef( activity );
   appEnv = env;
 }
 
-JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_setFilesDir(JNIEnv* env, jobject obj, jstring cmd) {
+JNIEXPORT void JNICALL Java_us_xyzw_minesweeper_MinesweeperLib_setFilesDir(JNIEnv* env, jobject obj, jstring cmd) {
   appEnv = env;
   const char * str = env->GetStringUTFChars( cmd, NULL );
   ALOGV("setFilesDir: %s", str );  
@@ -647,7 +675,7 @@ JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_setFilesDir(J
   env->ReleaseStringUTFChars( cmd, str );
 }
 
-JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_init(JNIEnv* env, jobject obj) {  // Initialization
+JNIEXPORT void JNICALL Java_us_xyzw_minesweeper_MinesweeperLib_init(JNIEnv* env, jobject obj) {  // Initialization
   appEnv = env;
   appMaterializeFile("ccol.fs");
   appMaterializeFile("ccol.vs");
@@ -693,17 +721,17 @@ JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_init(JNIEnv* 
   fclose(fp);
 }
 
-JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_resize(JNIEnv* env, jobject obj, jint jwidth, jint jheight) {  // If window shape changes
+JNIEXPORT void JNICALL Java_us_xyzw_minesweeper_MinesweeperLib_resize(JNIEnv* env, jobject obj, jint jwidth, jint jheight) {  // If window shape changes
   appEnv = env;
   rend->SetWindowSize(jwidth, jheight);
 }
 
-JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y, jint type, jint index) {  // Touch event
+JNIEXPORT void JNICALL Java_us_xyzw_minesweeper_MinesweeperLib_touch(JNIEnv* env, jobject obj, jfloat x, jfloat y, jint type, jint index) {  // Touch event
   ALOGV("C++ touch coords x: %f, y: %f, type: %d, index: %d", x, y, type, index);
   rend->Touch(x, y, type, index);
 }
 
-JNIEXPORT void JNICALL Java_com_android_minesweeper_MinesweeperLib_step(JNIEnv* env, jobject obj) {  // New frame
+JNIEXPORT void JNICALL Java_us_xyzw_minesweeper_MinesweeperLib_step(JNIEnv* env, jobject obj) {  // New frame
   appEnv = env;
 
   static int64_t count = 0;
