@@ -191,11 +191,12 @@ struct RendererImpl : public Renderer {
 
   GLuint zero, one, two, three, four, five, six, seven, eight;
   GLuint unrev, flag, mine, clickMine;
-  GLuint timer0, timer1, timer2, timer3, timer4, timer5, timer6, timer7, timer8, timer9; 
+  GLuint timer0, timer1, timer2, timer3, timer4, timer5, timer6, timer7, timer8, timer9;
+  GLuint start, easy, intermediate, expert;
 
   MultRect tiles;
   Rectangle banner, timer, resetButton, toggleButton, digit1, digit2, digit3;
-  Rectangle  title, startButton;
+  Rectangle  title, startButton, difficulty, easyButton, interButton, expertButton;
 
   int width, height;
 
@@ -293,8 +294,15 @@ void RendererImpl::Init() {
   timer8 = load_image("Timer8.png");
   timer9 = load_image("Timer9.png");
 
+  start = load_image("startbutton.png");
+  easy = load_image("easybutton.png");
+  intermediate = load_image("intermediatebutton.png");
+  expert = load_image("expertbutton.png");
+
   ALOGV("Object building");
   xf.SetTiles(board.width, board.height);
+  toggleButton.obj.tex = mine;
+  startButton.obj.tex = start;
 
   tiles.s0 = tiles.s1 = 1.0f;
 
@@ -316,8 +324,8 @@ void RendererImpl::SetWindowSize(int w, int h) {
   resetButton.build(0.125f, 0.125f, Vec3f(0.2f, 0.2f, 0.2f));
   toggleButton.build(0.075f, 0.075f, Vec3f(0.5f, 0.25f, 0.25f));
 
-  title.build(1.0f, aspectRatio, Vec3f(0.0f, 1.0f, 1.0f));
-  startButton.build(0.4f, 0.15f, Vec3f(1.0f, 0.0f, 0.0f));
+  title.build(1.0f, aspectRatio, Vec3f(0.95f, 0.95f, 0.95f));
+  startButton.build(0.4f, 0.15f, Vec3f(0.9f, 0.9f, 0.9f));
 
   digit1.build(0.05, 0.1, Vec3f(0.0f, 0.0f, 1.0f));
   digit2.build(0.05, 0.1, Vec3f(0.0f, 1.0f, 0.0f));
@@ -327,7 +335,7 @@ void RendererImpl::SetWindowSize(int w, int h) {
   resetButton.obj.model = Matrix4f::Translate(Vec3f(0.4375f, aspectRatio-0.1375f, 0.0f)) * resetButton.obj.model;
   toggleButton.obj.model = Matrix4f::Translate(Vec3f(0.725f, aspectRatio-0.1125f, 0.0f)) * toggleButton.obj.model;
 
-  startButton.obj.model = Matrix4f::Translate(Vec3f(0.3f, 1.0f, 0.0f)) * startButton.obj.model;
+  startButton.obj.model = Matrix4f::Translate(Vec3f(0.3f, 1.25f, 0.0f)) * startButton.obj.model;
 
   digit1.obj.model = Matrix4f::Translate(Vec3f(0.25, aspectRatio-0.125f, 0.0f)) * digit1.obj.model;
   digit2.obj.model = Matrix4f::Translate(Vec3f(0.20, aspectRatio-0.125f, 0.0f)) * digit2.obj.model;
@@ -342,7 +350,7 @@ void RendererImpl::SetWindowSize(int w, int h) {
   xf.xfToggleFromScreen = s * t;
 
   s = Matrix4f::Scale(Vec3f(1.0f/0.4f, 1.0f/0.15f, 0.0f));
-  t = Matrix4f::Translate(Vec3f(-0.3f, -1.0f, 0.0f));
+  t = Matrix4f::Translate(Vec3f(-0.3f, -1.25f, 0.0f));
   xf.xfStartButtonFromScreen = s * t;
 }
 
@@ -371,7 +379,7 @@ void RendererImpl::Draw() {
 
   if (!playing) {
     title.draw(scene, constColorProg);
-    startButton.draw(scene, constColorProg);
+    startButton.draw(scene, texProg);
   }
   else {
     GLuint tex[] = {zero, one, two, three, four, five, six, seven, eight, unrev, flag, mine, clickMine};
@@ -433,7 +441,7 @@ void RendererImpl::Draw() {
 
     banner.draw(scene, constColorProg);
     resetButton.draw(scene, constColorProg);
-    toggleButton.draw(scene, constColorProg);
+    toggleButton.draw(scene, texProg);
 
     digit1.draw(scene, texProg);
     digit2.draw(scene, texProg);
@@ -488,6 +496,12 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       }
       else if (1.0f > toggleButtPos.x && toggleButtPos.x > 0.0f && 1.0f > toggleButtPos.y && toggleButtPos.y > 0.0f) {
         tapFlag = !tapFlag;
+        if (tapFlag) {
+          toggleButton.obj.tex = flag;
+        }
+        else {
+          toggleButton.obj.tex = mine;
+        }
       }
       else if (1.0f > startButtPos.x && startButtPos.x > 0.0f && 1.0f > startButtPos.y && startButtPos.y > 0.0f) {
         ALOGV("Start board");
@@ -706,6 +720,11 @@ JNIEXPORT void JNICALL Java_us_xyzw_minesweeper_MinesweeperLib_init(JNIEnv* env,
   appMaterializeFile("Timer7.png");
   appMaterializeFile("Timer8.png");
   appMaterializeFile("Timer9.png");
+
+  appMaterializeFile("startbutton.png");
+  appMaterializeFile("easybutton.png");
+  appMaterializeFile("intermediatebutton.png");
+  appMaterializeFile("expertbutton.png");
 
   FILE* fp = fopen((baseDir + "ccol.fs").c_str(), "r");
   if (fp != nullptr) {
