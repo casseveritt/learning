@@ -5,12 +5,16 @@
 - ✓ Reset game button
 - ✓ Toggle reveal and flag modes
 - ✓ Timer
-Publish app
+✓ App name
+✓ App icon
+✓ New pixel art
+Crazy input mitigation
 Main Menu
 - Difficulty options
   - Custom board option
+Publish app
 Save game progress
-New pixel art
-✓ App name
-✓ App icon
- 
+
+Intersect test in rect (Replacing individual spaces for buttons and such)
+Separation of minesweeper from app API (For use on other projects)
+Attempt methods of making boards more likely to be beatable

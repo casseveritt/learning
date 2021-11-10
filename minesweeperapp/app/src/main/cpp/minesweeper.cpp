@@ -58,10 +58,7 @@ enum Space {
   Space_Screen,
   Space_Window,
   Space_Board,
-  Space_Tile,
-  Space_Reset,
-  Space_Toggle,
-  Space_StartButton
+  Space_Tile
 };
 
 enum TouchState {
@@ -70,8 +67,7 @@ enum TouchState {
   Holding,
   Dragging,
   Pinching,
-  WaitTillEnd,
-  TouchingBanner
+  WaitTillEnd
 };
 
 struct UScaleBias2f {
@@ -129,15 +125,6 @@ struct Transforms {
     if (from == Space_Board && to == Space_Screen) {
       return xfBoardFromScreen.GetMatrix4Inverted();
     }
-    if (from == Space_Pixel && to == Space_Reset) {
-      return xfResetFromScreen * xfScreenFromPixel;
-    }
-    if (from == Space_Pixel && to == Space_Toggle) {
-      return xfToggleFromScreen * xfScreenFromPixel;
-    }
-    if (from == Space_Pixel && to == Space_StartButton) {
-      return xfStartButtonFromScreen * xfScreenFromPixel;
-    }
     ALOGE("Transforms::transform unsupported transform to %d from %d", to, from);
     exit(42);
     return Matrix4f();
@@ -181,7 +168,7 @@ struct RendererImpl : public Renderer {
 
   Board board;
   int bWidth = 10, bHeight = 10, mines = 10;
-  bool tapFlag = false, playing = false;
+  bool tapFlag = false, playing = false, difficulties = false;
 
   Scene scene;
   GLuint defaultVab;
@@ -303,6 +290,9 @@ void RendererImpl::Init() {
   xf.SetTiles(board.width, board.height);
   toggleButton.obj.tex = mine;
   startButton.obj.tex = start;
+  easyButton.obj.tex = easy;
+  interButton.obj.tex = intermediate;
+  expertButton.obj.tex = expert;
 
   tiles.s0 = tiles.s1 = 1.0f;
 
@@ -326,6 +316,10 @@ void RendererImpl::SetWindowSize(int w, int h) {
 
   title.build(1.0f, aspectRatio, Vec3f(0.95f, 0.95f, 0.95f));
   startButton.build(0.4f, 0.15f, Vec3f(0.9f, 0.9f, 0.9f));
+  difficulty.build(0.5f, 0.65f, Vec3f(0.9f, 0.9f, 0.9f));
+  easyButton.build(0.4f, 0.15f, Vec3f(0.9f, 0.9f, 0.9f));
+  interButton.build(0.4f, 0.15f, Vec3f(0.9f, 0.9f, 0.9f));
+  expertButton.build(0.4f, 0.15f, Vec3f(0.9f, 0.9f, 0.9f));
 
   digit1.build(0.05, 0.1, Vec3f(0.0f, 0.0f, 1.0f));
   digit2.build(0.05, 0.1, Vec3f(0.0f, 1.0f, 0.0f));
@@ -336,22 +330,14 @@ void RendererImpl::SetWindowSize(int w, int h) {
   toggleButton.obj.model = Matrix4f::Translate(Vec3f(0.725f, aspectRatio-0.1125f, 0.0f)) * toggleButton.obj.model;
 
   startButton.obj.model = Matrix4f::Translate(Vec3f(0.3f, 1.25f, 0.0f)) * startButton.obj.model;
+  difficulty.obj.model = Matrix4f::Translate(Vec3f(0.25f, 1.0f, 0.0f)) * difficulty.obj.model;
+  easyButton.obj.model = Matrix4f::Translate(Vec3f(0.3f, 1.45f, 0.0f)) * easyButton.obj.model;
+  interButton.obj.model = Matrix4f::Translate(Vec3f(0.3f, 1.25f, 0.0f)) * interButton.obj.model;
+  expertButton.obj.model = Matrix4f::Translate(Vec3f(0.3f, 1.05f, 0.0f)) * expertButton.obj.model;
 
   digit1.obj.model = Matrix4f::Translate(Vec3f(0.25, aspectRatio-0.125f, 0.0f)) * digit1.obj.model;
   digit2.obj.model = Matrix4f::Translate(Vec3f(0.20, aspectRatio-0.125f, 0.0f)) * digit2.obj.model;
   digit3.obj.model = Matrix4f::Translate(Vec3f(0.15, aspectRatio-0.125f, 0.0f)) * digit3.obj.model;
-
-  Matrix4f s = Matrix4f::Scale(1.0f/0.125f);
-  Matrix4f t = Matrix4f::Translate(Vec3f(-0.4375f, -(aspectRatio-0.1375f), 0.0f));
-  xf.xfResetFromScreen = s * t;
-
-  s = Matrix4f::Scale(1.0f/0.075f);
-  t = Matrix4f::Translate(Vec3f(-0.725f, -(aspectRatio-0.1125f), 0.0f));
-  xf.xfToggleFromScreen = s * t;
-
-  s = Matrix4f::Scale(Vec3f(1.0f/0.4f, 1.0f/0.15f, 0.0f));
-  t = Matrix4f::Translate(Vec3f(-0.3f, -1.25f, 0.0f));
-  xf.xfStartButtonFromScreen = s * t;
 }
 
 void RendererImpl::SetCursorPos(Vec2d cursorPos) {
@@ -359,7 +345,7 @@ void RendererImpl::SetCursorPos(Vec2d cursorPos) {
 }
 
 void RendererImpl::Draw() {
-  static int frames = 0; 
+  static int frames = 0;
   static double sumtime = 0.0;
 
   double t0 = GetTimeInSeconds(); 
@@ -380,6 +366,12 @@ void RendererImpl::Draw() {
   if (!playing) {
     title.draw(scene, constColorProg);
     startButton.draw(scene, texProg);
+    if (difficulties) {
+      difficulty.draw(scene, constColorProg);
+      easyButton.draw(scene, texProg);
+      interButton.draw(scene, texProg);
+      expertButton.draw(scene, texProg);
+    }
   }
   else {
     GLuint tex[] = {zero, one, two, three, four, five, six, seven, eight, unrev, flag, mine, clickMine};
@@ -486,15 +478,13 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
       ts = Pinching;
     }
     else if (type == PTR_UP) {
-      Vec3f resetButtPos = xf.transform(Space_Reset, Space_Pixel) * posInPixels;
-      Vec3f toggleButtPos = xf.transform(Space_Toggle, Space_Pixel) * posInPixels;
-      Vec3f startButtPos = xf.transform(Space_StartButton, Space_Pixel) * posInPixels;
-      if (1.0f > resetButtPos.x && resetButtPos.x > 0.0f && 1.0f > resetButtPos.y && resetButtPos.y > 0.0f) {
+      Vec3f screenClick = xf.transform(Space_Screen, Space_Pixel) * posInPixels;
+      if (resetButton.intersect(screenClick)) {
         board.reset();
         tapFlag = false;
         startTime = GetTimeInSeconds();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
       }
-      else if (1.0f > toggleButtPos.x && toggleButtPos.x > 0.0f && 1.0f > toggleButtPos.y && toggleButtPos.y > 0.0f) {
+      else if (toggleButton.intersect(screenClick)) {
         tapFlag = !tapFlag;
         if (tapFlag) {
           toggleButton.obj.tex = flag;
@@ -503,8 +493,23 @@ void RendererImpl::Touch(float x, float y, int type, int index) {
           toggleButton.obj.tex = mine;
         }
       }
-      else if (1.0f > startButtPos.x && startButtPos.x > 0.0f && 1.0f > startButtPos.y && startButtPos.y > 0.0f) {
+      else if (startButton.intersect(screenClick)) {
         ALOGV("Start board");
+        difficulties = true;
+      }
+      else if (easyButton.intersect(screenClick)) {
+        board.build(9, 9, 10);
+        difficulties = false;
+        playing = true;
+      }
+      else if (interButton.intersect(screenClick)) {
+        board.build(16, 16, 40);
+        difficulties = false;
+        playing = true;
+      }
+      else if (expertButton.intersect(screenClick)) {
+        board.build(30, 16, 99);
+        difficulties = false;
         playing = true;
       }
       else {
