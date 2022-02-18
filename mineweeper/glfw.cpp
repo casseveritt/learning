@@ -27,14 +27,7 @@ Board board;
 int bWidth = 10, bHeight = 10, mines = 10;
 
 bool MSARunning = false; // Minesweeper Algorithm
-struct MSATile {
-  int adjMines = 0;
-  int adjFlags = 0;
-  int adjUnrev = 0;
-  bool revealed = false;
-  bool flagged = false;
-};
-std::vector<MSATile> playerBoard;
+Vec2i startLoc;
 double t0, t1;
 
 static double getTimeInSeconds() {
@@ -55,34 +48,34 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
     frame = 0;
     switch (key) {
       case GLFW_KEY_ESCAPE:
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-        break;
+      glfwSetWindowShouldClose(window, GLFW_TRUE);
+      break;
       case GLFW_KEY_V:
-        MSARunning = !MSARunning;
-        t0 = getTimeInSeconds();
-        break;
+      MSARunning = !MSARunning;
+      t0 = getTimeInSeconds();
+      break;
       default:
-        break;
+      break;
     }
   }
 }
 
 static void mouse_button_callback(GLFWwindow* window, int button, int action, int /*mods*/) {
-  if (button == GLFW_MOUSE_BUTTON_LEFT) {
-    if (action != GLFW_PRESS) {
-      leftClick++;
+if (button == GLFW_MOUSE_BUTTON_LEFT) {
+  if (action != GLFW_PRESS) {
+    leftClick++;
       // printf("left click = %d\n", leftClick.load());
-    }
-    glfwGetCursorPos(window, &rend->prevPos.x, &rend->prevPos.y);
-    rend->SetCursorPos(rend->prevPos);
   }
-  if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-    if (action == GLFW_PRESS) {
-      rightClick++;
+  glfwGetCursorPos(window, &rend->prevPos.x, &rend->prevPos.y);
+  rend->SetCursorPos(rend->prevPos);
+}
+if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+  if (action == GLFW_PRESS) {
+    rightClick++;
       // printf("right click = %d\n", rightClick.load());
-    }
-    glfwGetCursorPos(window, &rend->prevPos.x, &rend->prevPos.y);
   }
+  glfwGetCursorPos(window, &rend->prevPos.x, &rend->prevPos.y);
+}
 }
 
 /*
@@ -93,6 +86,67 @@ static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) 
   }
 }
 */
+
+static void CheckTiles(Vec2i tileCoord, std::vector<float>& prob) {
+  Board::Tile t = board.board[tileCoord.x, tileCoord.y];
+  if (t.checked) {
+    return;
+  }
+  printf("check\n");
+  t.adjMines += 1;
+  int x = tileCoord.x;
+  int y = tileCoord.y;
+  int numUnrev = 0;
+  int numFlags = 0;
+  for (int yy = std::max(y - 1, 0); yy < std::min(y + 2, bHeight); yy++) {
+    for (int xx = std::max(x - 1, 0); xx < std::min(x + 2, bWidth); xx++) {
+      Board::Tile tile = board.board[xx, yy];
+      tile.checked = true;
+      if ((xx != x) || (yy != y)) {
+        if (!tile.revealed && !tile.flagged) {
+          numUnrev++;
+        }
+        if (tile.flagged) {
+          numFlags++;
+        }
+        CheckTiles(Vec2i(xx, yy), prob);
+      }
+    }
+  }
+  /*
+  if ((numUnrev + numFlags) == t.adjMines) {
+    for (int yy = std::max(y - 1, 0); yy < std::min(y + 2, bHeight); yy++) {
+      for (int xx = std::max(x - 1, 0); xx < std::min(x + 2, bWidth); xx++) {
+        if ((xx != x) || (yy != y)) {
+          Board::Tile tile = board.board[tileCoord.x, tileCoord.y];
+          if (!tile.revealed && !tile.flagged) {
+            tile.flagged = true;
+          }
+          CheckTiles(Vec2i(xx, yy), prob);
+        }
+      }
+    }
+  }
+  */
+  return;
+}
+
+static void MinesweeperAlgorithm() {
+  if (board.state == 0) {
+    startLoc = Vec2i(rand()%bWidth, rand()%bHeight);
+    board.reveal(startLoc.x, startLoc.y);
+  }
+  else if (board.state == 1) {
+    std::vector<float> probability((bWidth * bHeight), -1.0f);
+    CheckTiles(startLoc, probability);
+    for (Board::Tile tile : board.board) {
+      tile.checked = false;
+    }
+  }
+  else {
+    MSARunning = false;
+  }
+}
 
 int main(int argc, char** argv) {
   timespec ts;
@@ -145,7 +199,7 @@ int main(int argc, char** argv) {
   uint32_t prevLeftClick = 0;
   uint32_t prevRightClick = 0;
 
-  while (!glfwWindowShouldClose(window)) {
+  while (!glfwWindowShouldClose(window)) { // Main loop
     t1 = getTimeInSeconds();
     glfwGetFramebufferSize(window, &width, &height);
 
@@ -157,6 +211,9 @@ int main(int argc, char** argv) {
       int row = board.height * (p.y / height);
       int col = board.width * (p.x / width);
       board.reveal(col, row);
+      if (board.state == 0) {
+        startLoc = Vec2i(col, row);
+      }
     }
 
     if (prevRightClick < rightClick.load()) {
@@ -171,11 +228,7 @@ int main(int argc, char** argv) {
 
     if (MSARunning && (t1-t0)*1000 >= 1000) {
       printf("Do stuff\n");
-      if (board.state == 0) {
-        board.reveal(rand()%bWidth, rand()%bHeight);
-      } else if (board.state == 1) {
-        std::vector<float> probability;
-      }
+      MinesweeperAlgorithm();
       t0 = t1;
     }
 

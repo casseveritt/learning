@@ -5,21 +5,32 @@ def platformVersion = 24      // openGLES 3.2 min api level
 // def platformVersion = 12    //openGLES 2 min api level
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 30
     ndkVersion '21.2.6472646'
 
     defaultConfig {
         applicationId 'us.xyzw.minesweeper'
         minSdkVersion "${platformVersion}"
-        targetSdkVersion 29
+        targetSdkVersion 30
         externalNativeBuild {
             cmake {
                 arguments '-DANDROID_STL=c++_static'
             }
         }
+        versionName '0.0.1'
+        versionCode 1
+    }
+    signingConfigs {
+        release {
+            storeFile file('../lucasEveritt.keystore')
+            keyAlias 'alias_name'
+            storePassword 'qNM#Cjz7Xg6T*U7yQg'
+            keyPassword 'qNM#Cjz7Xg6T*U7yQg'
+        }
     }
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled = false
             proguardFiles getDefaultProguardFile('proguard-android.txt'),
                           'proguard-rules.pro'

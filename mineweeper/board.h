@@ -15,6 +15,7 @@ class Board {
     bool revealed = false;
     bool flagged = false;
     bool isMine = false;
+    bool checked = false; // MSA checked tile
   };
   std::vector<Tile> board;
   int width, height, numMines;//, tilesToWin;
