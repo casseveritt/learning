@@ -1,6 +1,7 @@
 *.o
 gl
 minesweeper
+stereo
 *.bak
 .depend
 
