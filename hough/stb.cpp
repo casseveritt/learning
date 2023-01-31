@@ -7,7 +7,7 @@
 
 unsigned char * image_load( const char * filename, int * w, int * h, int * n )
 {
-	return stbi_load( filename, w, h, n, 4 );
+	return stbi_load( filename, w, h, n, 0 );
 }
 
 void image_free( unsigned char * img )
