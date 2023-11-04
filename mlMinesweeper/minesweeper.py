@@ -29,7 +29,7 @@ def initBoard(x,y):
             print(str(prob))
             if rand <= prob:
                 t: tile
-                if False:
+                if abs(xCoord-x) <= 1 and abs(yCoord-y) <= 1:
                     t = tile(False)
                     t.bom = False
                 else:
@@ -61,7 +61,7 @@ def printBoard():
 
 def main():
 
-    initBoard(0,0)
+    initBoard(2,2)
 
     printBoard()
     print(str(len(board)))
