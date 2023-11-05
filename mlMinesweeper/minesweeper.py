@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from random import random
 
-w: int = 5
-h: int = 5
-b: int = 6
+w: int = 10
+h: int = 10
+b: int = 25
+gameRunning: bool = True
 
 @dataclass
 class tile:
@@ -24,9 +25,6 @@ def initBoard(x,y):
         for yCoord in range(h):
             rand: float = random()
             prob: float = bombs/tiles
-            print(str(bombs), end=" ")
-            print(str(rand), end = " ")
-            print(str(prob))
             if rand <= prob:
                 t: tile
                 if abs(xCoord-x) <= 1 and abs(yCoord-y) <= 1:
@@ -37,33 +35,53 @@ def initBoard(x,y):
                     t.bom = True
                     bombs = bombs - 1
                 board.append(t)
-                print(str(board[-1].bom))
             else:
                 t: tile = tile(False)
                 t.bom = False
                 board.append(t)
             tiles = tiles - 1
+    xCoord: int = 0
+    yCoord: int = 0
+    for tie in board: # Increment count of tiles around a bomb
+        if tie.bom:
+            if xCoord > 0 and yCoord < h-1:
+                board[index(xCoord-1,yCoord-1)].prox += 1
+            if xCoord > 0:
+                board[index(xCoord-1,yCoord)].prox += 1
+            if xCoord > 0 and yCoord > 0:
+                board[index(xCoord-1,yCoord+1)].prox += 1
+            if yCoord < h-1:
+                board[index(xCoord,yCoord-1)].prox += 1
+            if yCoord > 0:
+                board[index(xCoord,yCoord+1)].prox += 1
+            if xCoord < w-1 and yCoord < h-1:
+                board[index(xCoord+1,yCoord-1)].prox += 1
+            if xCoord < w-1:
+                board[index(xCoord+1,yCoord)].prox += 1
+            if xCoord < w-1 and yCoord > 0:
+                board[index(xCoord+1,yCoord+1)].prox += 1
+        xCoord += 1
+        if xCoord == 10:
+            xCoord = 0
+            yCoord += 1
+    
 
 def printBoard():
     count: int = 0
-    bombCount: int = 0
     for til in board:
         if til.bom:
-            print("x ", end="")
-            bombCount = bombCount + 1
+            print("X", end=" ")
         else:
-            print("o ", end="")
+            print(str(til.prox), end=" ")
         count = count + 1
         if count == (w):
             print("")
             count = 0
-    print(str(bombCount))
 
 def main():
-
-    initBoard(2,2)
-
+        
+    initBoard(3,3)
+        
     printBoard()
-    print(str(len(board)))
 
 main()
