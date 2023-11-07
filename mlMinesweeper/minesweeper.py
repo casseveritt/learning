@@ -10,6 +10,7 @@ gameRunning: bool = True
 class tile:
     bom: bool
     rvl: bool = False
+    flg: bool = False
     prox: int = 0 
 
 board = []
@@ -18,21 +19,43 @@ def index(x,y):
     i: int = x + (y*h)
     return i
 
-def printBoard(x,y):
+def printBoard():
     count: int = 0
     boardIndex: int = 0
     for til in board:
-        if boardIndex == (y*w)+x:
-            print("*", end=" ")
-        elif til.bom:
+        if til.bom:
             print("X", end=" ")
-        else:
+        elif til.rvl:
             print(str(til.prox), end=" ")
+        else:
+            print("#", end=" ")
         count += 1
         boardIndex += 1
         if count == (w):
             print("")
             count = 0
+
+def reveal(x,y):
+    board[(y*w)+x].rvl = True
+    if board[(y*w)+x].prox == 0:
+        if y > 0 and x > 0 and board[((y-1)*w)+(x-1)].rvl == False:
+            reveal(x-1, y-1)
+        if y > 0 and board[((y-1)*w)+x].rvl == False:
+            reveal(x, y-1)
+        if y > 0 and x < (w-1) and board[((y-1)*w)+(x+1)].rvl == False:
+            reveal(x+1, y-1)
+                
+        if x > 0 and board[(y*w)+(x-1)].rvl == False:
+            reveal(x-1, y)
+        if x < (w-1) and board[(y*w)+(x+1)].rvl == False:
+            reveal(x+1, y)
+        
+        if y < (h-1) and x > 0 and board[((y+1)*w)+(x-1)].rvl == False:
+            reveal(x-1, y+1)
+        if y < (h-1) and board[((y+1)*w)+x].rvl == False:
+            reveal(x, y+1)
+        if y < (h-1) and x < (w-1) and board[((y+1)*w)+(x+1)].rvl == False:
+            reveal(x+1, y+1)
 
 def initBoard(x,y):
     tiles: int = w*h
@@ -78,12 +101,13 @@ def initBoard(x,y):
                     board[((i+1)*w)+j].prox += 1
                 if i < (h-1) and j < (w-1):
                     board[((i+1)*w)+(j+1)].prox += 1
+    reveal(x,y)
 
 def main():
     
     initBoard(3,3)
         
-    printBoard(3,3)
+    printBoard()
 
 def new_func():
     return 0
