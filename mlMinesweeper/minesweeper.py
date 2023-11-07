@@ -18,6 +18,22 @@ def index(x,y):
     i: int = x + (y*h)
     return i
 
+def printBoard(x,y):
+    count: int = 0
+    boardIndex: int = 0
+    for til in board:
+        if boardIndex == (y*w)+x:
+            print("*", end=" ")
+        elif til.bom:
+            print("X", end=" ")
+        else:
+            print(str(til.prox), end=" ")
+        count += 1
+        boardIndex += 1
+        if count == (w):
+            print("")
+            count = 0
+
 def initBoard(x,y):
     tiles: int = w*h
     bombs: int = b
@@ -40,48 +56,36 @@ def initBoard(x,y):
                 t.bom = False
                 board.append(t)
             tiles = tiles - 1
-    xCoord: int = 0
-    yCoord: int = 0
-    for tie in board: # Increment count of tiles around a bomb
-        if tie.bom:
-            if xCoord > 0 and yCoord < h-1:
-                board[index(xCoord-1,yCoord-1)].prox += 1
-            if xCoord > 0:
-                board[index(xCoord-1,yCoord)].prox += 1
-            if xCoord > 0 and yCoord > 0:
-                board[index(xCoord-1,yCoord+1)].prox += 1
-            if yCoord < h-1:
-                board[index(xCoord,yCoord-1)].prox += 1
-            if yCoord > 0:
-                board[index(xCoord,yCoord+1)].prox += 1
-            if xCoord < w-1 and yCoord < h-1:
-                board[index(xCoord+1,yCoord-1)].prox += 1
-            if xCoord < w-1:
-                board[index(xCoord+1,yCoord)].prox += 1
-            if xCoord < w-1 and yCoord > 0:
-                board[index(xCoord+1,yCoord+1)].prox += 1
-        xCoord += 1
-        if xCoord == 10:
-            xCoord = 0
-            yCoord += 1
     
-
-def printBoard():
-    count: int = 0
-    for til in board:
-        if til.bom:
-            print("X", end=" ")
-        else:
-            print(str(til.prox), end=" ")
-        count = count + 1
-        if count == (w):
-            print("")
-            count = 0
+    for i in range(h):
+        for j in range(w):
+            if board[(i*w)+j].bom:
+                if i > 0 and j > 0:
+                    board[((i-1)*w)+(j-1)].prox += 1
+                if i > 0:
+                    board[((i-1)*w)+j].prox += 1
+                if i > 0 and j < (w-1):
+                    board[((i-1)*w)+(j+1)].prox += 1
+                
+                if j > 0:
+                    board[(i*w)+(j-1)].prox += 1
+                if j < (w-1):
+                    board[(i*w)+(j+1)].prox += 1
+                
+                if i < (h-1) and j > 0:
+                    board[((i+1)*w)+(j-1)].prox += 1
+                if i < (h-1):
+                    board[((i+1)*w)+j].prox += 1
+                if i < (h-1) and j < (w-1):
+                    board[((i+1)*w)+(j+1)].prox += 1
 
 def main():
-        
+    
     initBoard(3,3)
         
-    printBoard()
+    printBoard(3,3)
+
+def new_func():
+    return 0
 
 main()
