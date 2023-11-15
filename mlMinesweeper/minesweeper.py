@@ -12,9 +12,10 @@ class tile:
     rvl: bool = False
     flg: bool = False
     checked: bool = False
-    prox: int = 0 
+    prox: int = 0
 
 board = []
+proximity = []
 
 def index(x,y):
     i: int = x + (y*w)
@@ -33,7 +34,7 @@ def printBoard():
             else:
                 print(str(til.prox), end=" ")
         elif til.flg:
-            print("%", end=" ")
+            print("=", end=" ")
         else:
             print("#", end=" ")
         count += 1
@@ -42,9 +43,31 @@ def printBoard():
             print("")
             count = 0
 
+def findProx(x,y):
+    proximity.clear()
+    if y > 0 and x > 0:
+        proximity.append(board[index(x-1, y-1)])
+    if y > 0:
+        proximity.append(board[index(x, y-1)])
+    if y > 0:
+        proximity.append(board[index(x+1, y-1)])
+            
+    if x > 0:
+        proximity.append(board[index(x-1, y)])
+    if x < (w-1):
+        proximity.append(board[index(x+1, y)])
+    
+    if y < (h-1) and x > 0:
+        proximity.append(board[index(x-1, y+1)])
+    if y < (h-1):
+        proximity.append(board[index(x, y+1)])
+    if y < (h-1) and x < (w-1):
+        proximity.append(board[index(x+1, y+1)])
+
 def reveal(x,y):
-    board[(y*w)+x].rvl = True
-    if board[(y*w)+x].prox == 0:
+    board[index(x,y)].rvl = True
+    if board[index(x,y)].prox == 0:
+        findProx(x,y)
         if y > 0 and x > 0 and board[((y-1)*w)+(x-1)].rvl == False:
             reveal(x-1, y-1)
         if y > 0 and board[((y-1)*w)+x].rvl == False:
