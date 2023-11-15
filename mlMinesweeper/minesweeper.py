@@ -9,6 +9,8 @@ gameRunning: bool = True
 @dataclass
 class tile:
     bom: bool
+    x: int
+    y: int
     rvl: bool = False
     flg: bool = False
     checked: bool = False
@@ -42,9 +44,31 @@ def printBoard():
         if count == (w):
             print("")
             count = 0
+            
+def printProx():
+    count: int = 0
+    boardIndex: int = 0
+    for til in proximity:
+        til.checked = False
+        if til.rvl:
+            if til.bom:
+                print("X", end=" ")
+            elif til.prox == 0:
+                print(".", end=" ")
+            else:
+                print(str(til.prox), end=" ")
+        elif til.flg:
+            print("=", end=" ")
+        else:
+            print("#", end=" ")
+        count += 1
+        boardIndex += 1
+        if count == (w):
+            print("")
+            count = 0
 
 def findProx(x,y):
-    proximity.clear()
+    del proximity [ : ]
     if y > 0 and x > 0:
         proximity.append(board[index(x-1, y-1)])
     if y > 0:
@@ -66,26 +90,17 @@ def findProx(x,y):
 
 def reveal(x,y):
     board[index(x,y)].rvl = True
+    localProximity = []
     if board[index(x,y)].prox == 0:
         findProx(x,y)
-        if y > 0 and x > 0 and board[((y-1)*w)+(x-1)].rvl == False:
-            reveal(x-1, y-1)
-        if y > 0 and board[((y-1)*w)+x].rvl == False:
-            reveal(x, y-1)
-        if y > 0 and x < (w-1) and board[((y-1)*w)+(x+1)].rvl == False:
-            reveal(x+1, y-1)
-                
-        if x > 0 and board[(y*w)+(x-1)].rvl == False:
-            reveal(x-1, y)
-        if x < (w-1) and board[(y*w)+(x+1)].rvl == False:
-            reveal(x+1, y)
-        
-        if y < (h-1) and x > 0 and board[((y+1)*w)+(x-1)].rvl == False:
-            reveal(x-1, y+1)
-        if y < (h-1) and board[((y+1)*w)+x].rvl == False:
-            reveal(x, y+1)
-        if y < (h-1) and x < (w-1) and board[((y+1)*w)+(x+1)].rvl == False:
-            reveal(x+1, y+1)
+        localProximity = proximity
+        for proxTile in localProximity:
+            if proxTile.rvl == False:
+                printProx()
+                print("\nRevealing ", proxTile.x, proxTile.y, proxTile.rvl)
+                printBoard()
+                reveal(proxTile.x, proxTile.y)
+                printBoard()
 
 def initBoard(x,y):
     tiles: int = w*h
@@ -97,15 +112,15 @@ def initBoard(x,y):
             if rand <= prob:
                 t: tile
                 if abs(xCoord-x) <= 1 and abs(yCoord-y) <= 1:
-                    t = tile(False)
+                    t = tile(False, xCoord, yCoord)
                     t.bom = False
                 else:
-                    t = tile(True)
+                    t = tile(True, xCoord, yCoord)
                     t.bom = True
                     bombs = bombs - 1
                 board.append(t)
             else:
-                t: tile = tile(False)
+                t: tile = tile(False, xCoord, yCoord)
                 t.bom = False
                 board.append(t)
             tiles = tiles - 1
@@ -258,15 +273,15 @@ def main():
     
     print("")
     
-    evalTile(3,3)
+    #evalTile(3,3)
     
-    printBoard()
+    #printBoard()
     
-    print("")
+    #print("")
     
-    evalTile(3,3)
+    #evalTile(3,3)
     
-    printBoard()
+    #printBoard()
 
 def new_func():
     return 0
