@@ -47,6 +47,29 @@ def printBoard():
             print("")
             count = 0
 
+def printTile(ind):
+    if board[ind].rvl:
+        if board[ind].bom:
+            print("X", end=" ")
+        elif board[ind].prox == 0:
+            print(".", end=" ")
+        else:
+            print(str(board[ind].prox), end=" ")
+    elif board[ind].flg:
+        if board[ind].bom:
+            print("=", end=" ")
+        else:
+            print("/", end=" ")
+    else:
+        print("#", end=" ")
+
+def printProx():
+    for index in range(len(proximity)-1):
+        printTile(proximity[index])
+        if abs(proximity[index] - proximity[index+1]) == 2:
+            print(".", end=" ")
+    print(proximity[index])
+
 def findProx(ind):
     x: int = ind % w
     y: int = ind // w
@@ -117,30 +140,34 @@ def evalTile(ind):
     revealedTiles: int = 0
     flaggedTiles: int = 0
     tilesAround: int = 0
+    localGroup = []
+    localGroup = proximity.copy()
     findProx(ind)
-    for proxCoord in proximity:
-        tilesAround += 1
+    tilesAround = len(localGroup)
+    for proxCoord in localGroup:
         if board[proxCoord].rvl:
             revealedTiles += 1
         elif board[proxCoord].flg:
             flaggedTiles += 1
     
-    print(board[ind].prox, revealedTiles, flaggedTiles, len(proximity), end=" ")
+    printProx()
+    
+    print("Prox:", board[ind].prox, "Revealed:", revealedTiles, "Flagged:", flaggedTiles, "Tiles:", len(localGroup), end="\n")
     
     if tilesAround == (revealedTiles + flaggedTiles):
-        for proxCoord in proximity:
+        for proxCoord in localGroup:
             if board[proxCoord].rvl == True and board[proxCoord].checked == False:
                 evalTile(proxCoord)
                 
-    if flaggedTiles == board[ind].prox:
-        print("Revealing")
-        for proxCoord in proximity:
-            if board[proxCoord].rvl == False and board[proxCoord].flg == False:
-                reveal(proxCoord)
+    #if flaggedTiles == board[ind].prox:
+    #    print("Revealing")
+    #    for proxCoord in localGroup:
+    #        if board[proxCoord].rvl == False and board[proxCoord].flg == False:
+    #            reveal(proxCoord)
     
     elif (tilesAround-revealedTiles) == board[ind].prox:
         print("Flagging")
-        for proxCoord in proximity:
+        for proxCoord in localGroup:
             if board[proxCoord].rvl == False:
                 board[proxCoord].flg = True
 
